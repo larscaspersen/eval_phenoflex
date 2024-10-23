@@ -1,5 +1,34 @@
-#used for apple data, lake constance, where I compared different model calibration strategies
-
+#' Evaluation function for single fitting of cultivars
+#'  
+#' Takes model parameters for PhenoFlex, parameters of yc, zc, s1, Tu, theta_c, pie_c, tau, Tf, Tb, slope. 
+#' 
+#' The function is used to calibrate the PhenoFlex model. We assumed that the Tc and theta_star parameter
+#' do not contribute much to the calibrated model performance and fixed them
+#' to their default values. 
+#' 
+#' I used the function for the analysis on apple cultivars at lake Constance, though the 
+#' results will probaly be not part of the final paper.
+#' 
+#' @param x model parameters of PhenoFlex, new format. yc, zc, s1, Tu, theta_c, pie_c, tau, Tf, Tb, slope. 
+#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
+#' the 'custom_GDH_wrapper' function for that
+#' @param bloomJDays numeric containing the days of the year with the observed bloom
+#' @param SeasonList list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
+#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
+#' generated using \link[chillR]{genSeasonList}
+#' @param Tc numeric, by default 36. Critical temperature (°C) parameter of the GDH model.
+#' @param theta_star numeric, by default 279. Optimal temperature (K) for chill accumulation of the
+#' Dynamic Model. 
+#' @param return_pred logical, by default FALSE. If set TRUE the function will return
+#' bloom dates instead of the output required by the global optimzation algorithm.
+#' @param na_penalty numeric, by default 365. Penalty for the phenology
+#' prediction function when it fails return a bloom prediction
+#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
+#' second is 'g' which is the values of the additional model constraints defined in the function.
+#' If the flag for return_pred set TRUE, then it returns bloom dates
+#' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
+#' 
+#' @export eval_phenoflex_onlyreq
 eval_phenoflex_single  <- function(x, 
                                    modelfn,
                                    bloomJDays,

@@ -52,21 +52,6 @@ in which the Q10 parameter was used to constraint the E0 and E1 parameters. The 
 parameter how much a chemical process increases by increasing the temperature by 10 degree 
 Celsius. Biological reactions typically a Q10 value ranging from 2 to 3. Here, ranges of 1.5 to 3.5 were used as a threshold.
 }
-\examples{
-\dontrun{
-#          yc,  zc,  s1, Tu,    E0,      E1,     A0,         A1,   Tf, Tc, Tb,  slope
-par <-   c(40, 190, 0.5, 25, 3372.8,  9900.3, 6319.5, 5.939917e13,  4, 36,  4,  1.60)
-
-#prepare weather data
-weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
-hourtemps<-stack_hourly_temps(weather, latitude=50.4)
-seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
-
-custom_PhenoFlex_GDHwrapper(x = seasonList[[1]], par = par)
-
-
-}
-}
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}
 }

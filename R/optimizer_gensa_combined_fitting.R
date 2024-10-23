@@ -1,6 +1,40 @@
-#wrapper for the GenSA optimization of combined fitting
-
-phenologyFitter_combined_fitting <- function (par.guess = NULL, modelfn = PhenoFlex_GDHwrapper, bloomJDays, 
+#' Evaluation function for combined fitting of cultivars, using GenSA optimizer
+#'  
+#' Takes model parameters for PhenoFlex, parameters of yc, zc, s1 for individual cultivars and the remaining ones are shared. 
+#' Used the function for the apple study in Bonn and Asturias (Hajar Mojahid)  
+#' 
+#' The function evaluates a set of parameters, it assumes the chill requirement (yc), heat
+#' requirement (zc) and transition parameter (s1) cultivar-specific and the remaining
+#' parameters for chill and heat submodels are shared. The function is mainly used
+#' in model calibration and gets called by the global optimization algorithm. 
+#' 
+#' @param par.guess vector, numeric. Initial guess of the model parameters 
+#' yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope
+#' @param modelfn function used within the evaluation function to calculate the actual bloomday, by default we
+#' are using the PhenoFlex_GDHwrapper f chillR package
+#' @param bloomJDays numeric containing the days of the year with the observed bloom
+#' @param SeasonList list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
+#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
+#' generated using \link[chillR]{genSeasonList}
+#' @param n_cult numeric, indicates the number of cultivars combined in the study
+#' @param par_type character, controls if we use the old type (with E0, E1, A0, A1) or 
+#' when equal to "new" for the format with (theta_star, theta_c, pie_c, tau)
+#' @param control list, contains arguments controling the GenSA optimization algorithm.
+#' For more details see in the documentation of the GenSA package.
+#' @param lower vector, contains lower bound of the search space for the parameters
+#' @param upper vector, contains upper bound of the search space for the parameters
+#' @param seed numeric, sets seed to make the random process of optimization reproducible
+#' @param ... further arguments for the modelfn function
+#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
+#' second is 'g' which is the values of the additional model constraints defined in the function.
+#' If the flag for return_pred set TRUE, then it returns bloom dates
+#' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
+#' @importFrom GenSA GenSA
+#' @importFrom purrr map_dbl
+#' @importFrom chillR PhenoFlex_GDHwrapper
+#' 
+#' @export phenologyFitter_combined_fitting
+phenologyFitter_combined_fitting <- function (par.guess = NULL, modelfn = chillR::PhenoFlex_GDHwrapper, bloomJDays, 
                                               SeasonList, 
                                               n_cult, 
                                               par_type = 'old',
