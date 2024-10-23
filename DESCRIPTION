@@ -3,3 +3,4 @@ Type: Package
 Title: Custom Evaluation functions for PhenoFlex
 Version: 0.0.1.0
 RoxygenNote: 7.3.2
+Encoding: UTF-8
