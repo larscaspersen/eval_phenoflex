@@ -1,5 +1,58 @@
-#used in the almond study, and the lake constance study
-
+#' Evaluation function for combined fitting of cultivars
+#'  
+#' Takes model parameters for PhenoFlex, parameters of yc, zc, s1 for individual cultivars and the remaining ones are shared. 
+#' Used the function for the Combined Fitting of Almond Cultivars,
+#' as well as the almond study in Afghanistan (Atifullah Shinwari) and
+#' the apple study in Bonn and Asturias (Hajar Mojahid)  
+#' 
+#' The function evaluates a set of parameters, it assumes the chill requirement (yc), heat
+#' requirement (zc) and transition parameter (s1) cultivar-specific and the remaining
+#' parameters for chill and heat submodels are shared. The function is mainly used
+#' in model calibration and gets called by the global optimization algorithm. 
+#' 
+#' @param x model parameters of PhenoFlex, new format: 
+#' c(rep(yc, n_culivars), rep(zc, n_cultivars), rep(s1, n_cultivars), Tu, theta_c, pie_c, tau, Tf, Tb, slope)
+#' will get converted to the format: E0, E1, A0, A1, Tf, slope to run the Dynamic Model 
+#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
+#' the 'custom_GDH_wrapper' function for that
+#' @param bloomJDays numeric containing the days of the year with the observed bloom
+#' @param SeasonList list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
+#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
+#' generated using \link[chillR]{genSeasonList}
+#' @param ncult numeric, indicates the number of cultivars combined in the study
+#' @param Tc numeric, by default 36. Critical temperature (°C) parameter of the GDH model.
+#' @param theta_star numeric, by default 279. Optimal temperature (K) for chill accumulation of the
+#' Dynamic Model. 
+#' @param return_pred logical, by default FALSE. If set TRUE the function will return
+#' bloom dates instead of the output required by the global optimzation algorithm.
+#' @param na_penalty numeric, by default 365. Penalty for the phenology
+#' prediction function when it fails return a bloom prediction
+#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
+#' second is 'g' which is the values of the additional model constraints defined in the function.
+#' If the flag for return_pred set TRUE, then it returns bloom dates
+#' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
+#' @importFrom purrr map_dbl
+#' @importFrom purrr map
+#' @importFrom assertthat are_equal
+#' @importFrom nleqslv nleqslv
+#' @examples 
+#' \dontrun{
+#' 
+#' ncult <- 3
+#' #          theta_star, theta_c, pie_c, tau, Tf, slope
+#' par <-   c(rep(40, ncult), zc(300, ncult), rep(0.5, ncult), 26, 281, ?, ?, 
+#' 
+#' #prepare weather data
+#' weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
+#' hourtemps<-stack_hourly_temps(weather, latitude=50.4)
+#' seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
+#' 
+#' #get endodormancy / ecodormancy release date
+#' #--> prepare SeasonList for different cultivars
+#' 
+#' eval_phenoflex_combined(x = par, par = SeasonList)
+#' }
+#' @export eval_phenoflex_combined
 eval_phenoflex_combined  <- function(x,
                                      modelfn,
                                      bloomJDays,

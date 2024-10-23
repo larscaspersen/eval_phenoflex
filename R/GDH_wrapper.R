@@ -21,19 +21,24 @@
 #' cultivar. Needs to be a function loaded in the environment. Can also be a custom function.
 #' By default "calc_cv", which calculates the coefficient of variation.
 #' @return sum of the dispersion function. This will be subject to global optimization. 
+#' @details
+#' Used this function for the Olive study of Efe Deger
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @importFrom purrr map_dbl
 #' @examples 
 #' \dontrun{
-#' #          yc,  zc,  s1, Tu,    E0,      E1,     A0,         A1,   Tf, Tc, Tb,  slope
-#' par <-   c(40, 190, 0.5, 25, 3372.8,  9900.3, 6319.5, 5.939917e13,  4, 36,  4,  1.60)
+#' #          Tb, Tu, Tc
+#' par <-   c(4,  26, 36)
 #' 
 #' #prepare weather data
 #' weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
 #' hourtemps<-stack_hourly_temps(weather, latitude=50.4)
 #' seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
 #' 
-#' custom_PhenoFlex_GDHwrapper(x = seasonList[[1]], par = par)
+#' #get endodormancy / ecodormancy release date
+#' #--> prepare SeasonList for different cultivars
+#' 
+#' eval_function_gdh(x = par, par = SeasonList)
 #' 
 #' 
 #' }
