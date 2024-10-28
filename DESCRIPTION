@@ -1,4 +1,4 @@
-Package: eval_pheno
+Package: evalpheno
 Type: Package
 Title: Custom Evaluation functions for PhenoFlex
 Version: 0.0.1.0
