@@ -10,7 +10,7 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 <!--[![CRAN status](https://www.r-pkg.org/badges/version/hexsession)](https://CRAN.R-project.org/package=hexsession)>
 <!-- badges: end -->
 
-\`evalpheno\`\` is a collection of evaluation functions and wrapper
+`evalpheno` is a collection of evaluation functions and wrapper
 functions that allow customized calibration phenology models coming from
 the PhenoFlex modeling framework.
 
