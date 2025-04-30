@@ -148,7 +148,7 @@ eval_phenoflex_three_stages  <- function(x,
       }
       
       
-      chill_met_at_budburst <- x[budburst_index, 3] >= yc
+      chill_met_at_budburst <- x[JDay_budburst, 3] >= yc
       
       return(list(JDay_fullbloom = JDay_fullbloom,
                   JDay_budburst = JDay_budburst,
