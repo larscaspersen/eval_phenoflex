@@ -176,13 +176,7 @@ eval_phenoflex_three_stages  <- function(x,
     pred_firstbloom[chill_at_budburst == FALSE] <- na_penalty
   }
   
-  #equality constraints should be always stated before inequality constraints, according to meigo vignette
-  #(but we dont have any in this case)
-  g[1] <- sum() - nrow(bloomdates_df)
-  
-  
-  
-  
+
   #calculate the combined rss
   rss_firstbloom <- sum((pred_firstbloom - bloomdates_df$firstbloom)^2)
   rss_fullbloom <- sum((pred_fullbloom - bloomdates_df$fullbloom)^2)
