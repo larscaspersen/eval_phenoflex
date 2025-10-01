@@ -31,6 +31,9 @@ generated using \link[chillR]{genSeasonList}}
 
 \item{theta_star}{numeric, by default 286. Is the optimal temperature for chill accumulation measured in Kelvin}
 
+\item{return_pred}{boolean, by default FALSE. If set TRUE, then the evaluation function
+does not return the performance score but the predicted bloom dates.}
+
 \item{na_penalty}{numeric, value which is used when the model fails to generate a prediction
 for the bloom date. By default 365}
 }
@@ -39,7 +42,7 @@ list with two elements. First is called 'f' and contains the residual sum of squ
 second is 'g' which is the values of the additional model constraints defined in the function.
 }
 \description{
-This function works like \link[LarsChill]{evaluation_function_meigo} except that it uses 
+This function works like \link[evalpheno]{evaluation_function_meigo} except that it uses 
 parameters theta_star, theta_c, tau and pie_c instead of the commonly used
 E0, E1, A0 and A1 parameters, which get calculated in an intermediate step.
 }

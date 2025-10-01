@@ -17,7 +17,7 @@
 #' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
 #' generated using \link[chillR]{genSeasonList}
 #' @param par_fixed parameters of chill and heat submodel, order: Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope 
-#' @param constraints logical, by default set TRUE. Indicates if there are further
+#' @param constrains logical, by default set TRUE. Indicates if there are further
 #' checks on the parameters except the boundaries of the optimization algorithm
 #' @param return_pred logical, by default FALSE. If set TRUE the function will return
 #' bloom dates instead of the output required by the global optimzation algorithm.

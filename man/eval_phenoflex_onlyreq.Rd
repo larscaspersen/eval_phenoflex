@@ -33,14 +33,14 @@ generated using \link[chillR]{genSeasonList}}
 
 \item{par_fixed}{parameters of chill and heat submodel, order: Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope}
 
+\item{constrains}{logical, by default set TRUE. Indicates if there are further
+checks on the parameters except the boundaries of the optimization algorithm}
+
 \item{return_pred}{logical, by default FALSE. If set TRUE the function will return
 bloom dates instead of the output required by the global optimzation algorithm.}
 
 \item{na_penalty}{numeric, by default 365. Penalty for the phenology
 prediction function when it fails return a bloom prediction}
-
-\item{constraints}{logical, by default set TRUE. Indicates if there are further
-checks on the parameters except the boundaries of the optimization algorithm}
 }
 \value{
 list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 

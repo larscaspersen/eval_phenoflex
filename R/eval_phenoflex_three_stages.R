@@ -32,6 +32,7 @@
 #' @importFrom purrr map
 #' @importFrom assertthat are_equal
 #' @importFrom nleqslv nleqslv
+#' @importFrom tidyr replace_na
 #' @examples 
 #' \dontrun{
 #' 
@@ -157,14 +158,14 @@ eval_phenoflex_three_stages  <- function(x,
   
   #extract the individual obtained julian days
   pred_fullbloom <- purrr::map_dbl(pred_rest, 'JDay_fullbloom') %>% 
-    replace_na(na_penalty)
+    tidyr::replace_na(na_penalty)
   
   pred_budburst <- purrr::map_dbl(pred_rest, 'JDay_budburst') %>% 
-    replace_na(na_penalty)
+    tidyr::replace_na(na_penalty)
   
   #extract the predicted start of the bloom
   pred_firstbloom <- purrr::map_dbl(model_out, 'JDay') %>% 
-    replace_na(na_penalty)
+    tidyr::replace_na(na_penalty)
   
   
   #in cases where the chill requirement was not met at budburst, the prediction becomes 365 instead

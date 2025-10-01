@@ -1,6 +1,6 @@
 #' Function used in the optimization process to generate bloom data
 #' 
-#' This function works like \link[LarsChill]{evaluation_function_meigo} except that it uses 
+#' This function works like \link[evalpheno]{evaluation_function_meigo} except that it uses 
 #' parameters theta_star, theta_c, tau and pie_c instead of the commonly used
 #' E0, E1, A0 and A1 parameters, which get calculated in an intermediate step.
 #' 

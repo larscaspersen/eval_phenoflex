@@ -1,7 +1,7 @@
 Package: evalpheno
 Type: Package
 Title: Custom Evaluation functions for PhenoFlex
-Version: 0.0.1.0
+Version: 0.0.1.1
 RoxygenNote: 7.3.2
 Encoding: UTF-8
 License: GPL (>= 3)
@@ -13,5 +13,12 @@ Authors@R:
              email = "lcaspers@uni-bonn.de",
              comment = c(ORCID = "0009-0000-3057-7327")))
 Description: Contains evaluation functions and wrapper functions for calibrating the PhenoFlex model.
-Imports: LarsChill, assertthat, chillR, nleqslv, purrr
-Suggests: GenSA
+Imports: 
+    LarsChill,
+    assertthat,
+    chillR,
+    nleqslv,
+    purrr,
+    GenSA,
+    magrittr,
+    tidyr

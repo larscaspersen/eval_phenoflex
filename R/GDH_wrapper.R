@@ -52,8 +52,7 @@ eval_function_gdh <- function(x, SeasonList, dispersion_fun = 'calc_cv'){
       GDH_wrapper(p$Temp, x)
     })
     #calculate the dispersion function
-    get(dispersion_fun)(gdh) %>%
-      return()
+      return(get(dispersion_fun)(gdh))
   })
   return(sum(coefficinets_of_variation))
 }
@@ -78,6 +77,6 @@ GDH_wrapper <- function(Temp, par, summ = TRUE){
 }
 
 calc_cv <- function(x){
-  sd(x) / mean(x) * 100 %>%
+  stats::sd(x) / mean(x) * 100 %>%
     return()
 }
