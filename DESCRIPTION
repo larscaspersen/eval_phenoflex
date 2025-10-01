@@ -13,3 +13,5 @@ Authors@R:
              email = "lcaspers@uni-bonn.de",
              comment = c(ORCID = "0009-0000-3057-7327")))
 Description: Contains evaluation functions and wrapper functions for calibrating the PhenoFlex model.
+Imports: LarsChill, assertthat, chillR, nleqslv, purrr
+Suggests: GenSA
