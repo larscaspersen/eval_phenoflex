@@ -3,6 +3,8 @@
 export("%>%")
 export(custom_PhenoFlex_GDHwrapper)
 export(custom_PhenoFlex_GDHwrapper_v2)
+export(eval_all_daoptim)
+export(eval_fixed_daoptim)
 export(eval_function_endodormancy_meigo)
 export(eval_function_gdh)
 export(eval_phenoflex_combined)
