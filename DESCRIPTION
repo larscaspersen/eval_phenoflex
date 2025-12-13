@@ -21,4 +21,7 @@ Imports:
     purrr,
     GenSA,
     magrittr,
+    Rcpp,
     tidyr
+LinkingTo:
+    Rcpp
