@@ -27,50 +27,49 @@ inline double PFcn(const double T, const double Tf, const double slope) {
 }
 
 //' @title partial_overlap_model
- //' @description Partial Overlap Model, combining the dynamic model for chill accumulation and the GDH model
- //'
- //' @param yc numeric, Critical value defining end of chill accumulation
- //' @param b1 numeric. Heat requirement at minimum chilling
- //' @param b2 numeric. Heat requiement at maximum chilling
- //' @param b3 numeric. Scales the compensation from heat and chill requirement. Low b3 leads to linear compensation, high b3 to much heat needed to compensate chill.
- //' @param ol numeric. Controls how much longer chill accumulates after reaching yc. Chill accumulation stops when share of heat requirement is surprassed.
- //' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
- //' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
- //' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
- //' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
- //' @param slope numeric. Slope parameter for sigmoidal function
- //' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal functionr
- //' @param Tb numeric. GDH base temperature (lower threshold)  //' @param Tc numeric. GDH upper temperature (upper threshold)
- //' @param Tu numeric. GDH optimal temperature 
- //' @param Tc numeric. GDH critical temperature 
- //' @param Delta numeric. Width of Gaussian heat accumulation model
- //' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
- //' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
- //' @useDynLib evalpheno
- //' @author Lars Caspersen <lcaspers@uni-bonn.de>
- //' @return
- //' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
- //' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
- //' @examples
- //' data(KA_weather)
- //' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
- //' iSeason <- genSeason(hourtemps, years=c(2009))
- //' yc <- 40
- //' b1 <- 1119
- //' b2 <- 8677
- //' b3 <- 0.01119
- //' ol <- 0.75
- //' x <- po_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
- //'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
- //'                yc=yc, b1 = b1, b2=b2, b3=b3, ol = ol, stopatzc=TRUE, basic_output=FALSE)
- //' DBreakDay <- x$bloomindex
- //' ii <- c(1:DBreakDay)
- //' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
- //' abline(h=zc, lty=2)
- //' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
- //' abline(h=yc, lty=2)
- //' @export
- // [[Rcpp::export]]
+//' @description Partial Overlap Model, combining the dynamic model for chill accumulation and the GDH model
+//'
+//' @param yc numeric, Critical value defining end of chill accumulation
+//' @param b1 numeric. Heat requirement at minimum chilling
+//' @param b2 numeric. Heat requiement at maximum chilling
+//' @param b3 numeric. Scales the compensation from heat and chill requirement. Low b3 leads to linear compensation, high b3 to much heat needed to compensate chill.
+//' @param ol numeric. Controls how much longer chill accumulates after reaching yc. Chill accumulation stops when share of heat requirement is surprassed.
+//' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
+//' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
+//' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
+//' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
+//' @param slope numeric. Slope parameter for sigmoidal function //' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function
+//' @param Tb numeric. GDH base temperature (lower threshold)  
+//' @param Tu numeric. GDH optimal temperature 
+//' @param Tc numeric. GDH critical temperature 
+//' @param Delta numeric. Width of Gaussian heat accumulation model
+//' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
+//' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+//' @useDynLib evalpheno
+//' @author Lars Caspersen <lcaspers@uni-bonn.de>
+//' @return
+//' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
+//' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+//' @examples
+//' data(KA_weather)
+//' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
+//' iSeason <- genSeason(hourtemps, years=c(2009))
+//' yc <- 40
+//' b1 <- 1119
+//' b2 <- 8677
+//' b3 <- 0.01119
+//' ol <- 0.75
+//' x <- po_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
+//'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
+//'                yc=yc, b1 = b1, b2=b2, b3=b3, ol = ol, stopatzc=TRUE, basic_output=FALSE)
+//' DBreakDay <- x$bloomindex
+//' ii <- c(1:DBreakDay)
+//' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
+//' abline(h=zc, lty=2)
+//' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
+//' abline(h=yc, lty=2)
+//' @export
+// [[Rcpp::export]]
  List po_model(NumericVector temp,
                 NumericVector times,
                 const double yc=40,
@@ -118,8 +117,8 @@ inline double PFcn(const double T, const double Tf, const double slope) {
      if(deg_celsius) ti += 273.;
      xs[i] = A0/A1 * exp(-(E0-E1)/ti);
      
-     //' only accumulate chill when the overlap of chill and heat is not exhausted
-     //' otherwise stop accumulation
+     // only accumulate chill when the overlap of chill and heat is not exhausted
+     // otherwise stop accumulation
      const double k1 = A1*exp(-E1/ti);
      if(z[i] < z_chill_stop){
        x[i+1] = xs[i] - (xs[i] - x[i])*exp(-k1*(times[i+1]-times[i]));
@@ -138,8 +137,8 @@ inline double PFcn(const double T, const double Tf, const double slope) {
      }
 
      
-     //' compare if accumulated chill is larger than yc
-     //' if yes accumulate heat
+     // compare if accumulated chill is larger than yc
+     // if yes accumulate heat
      if(y[i+1] >= yc){
        //' calculate heat increment and add to z
        z[i+1] = z[i] + P1z(ti, _Tu, _Tb, _Tc);
@@ -148,8 +147,8 @@ inline double PFcn(const double T, const double Tf, const double slope) {
        z_crit = b1 + (b2 / exp(b3 * x[i+1]));
      }
      
-     //' if z_crit calculated (and not zero as default)
-     //' check if it is reached, if so return bloom index
+     // if z_crit calculated (and not zero as default)
+     // check if it is reached, if so return bloom index
      if(z_crit != 0){
        if(z[i+1] >= z_crit){
          // i+2 for Fortran index convention in R

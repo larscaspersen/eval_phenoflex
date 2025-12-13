@@ -33,47 +33,47 @@ inline double PFcn(const double T, const double Tf, const double slope) {
 }
 
 //' @title parallel_model
- //' @description Parallel model, combining dynamic model for chill accumulation and the GDH model
- //'
- //' @param yc numeric. Critical value defining end of chill accumulation
- //' @param zc numeric. Critical value of z determining the end of heat accumulation
- //' @param kmin numeric. Share of buds that can flower without receiving chill. 
- //' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
- //' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
- //' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
- //' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
- //' @param slope numeric. Slope parameter for sigmoidal function
- //' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function
- //' @param Tb numeric. GDH base temperature (lower threshold) 
- //' @param Tu numeric. GDH optimal temperature 
- //' @param Tc numeric. GDH upper temperature (upper threshold)
- //' @param Delta numeric. Width of Gaussian heat accumulation model
- //' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
- //' @param deg_celsius boolean. If set `TRUE` function assumes degree celsius temperature parameters, otherwise kelvin.
- //' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
- //' @useDynLib evalpheno
- //' @author Lars Caspersen <lcaspers@uni-bonn.de>
- //' @return
- //' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
- //' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
- //' @examples
- //' data(KA_weather)
- //' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
- //' iSeason <- genSeason(hourtemps, years=c(2009))
- //' zc <- 6000
- //' yc <- 40
- //' kmin <- 0.1
- //' x <- parallel_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
- //'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
- //'                zc=zc, stopatzc=TRUE, yc=yc, kmin = kmin, basic_output=FALSE)
- //' DBreakDay <- x$bloomindex
- //' ii <- c(1:DBreakDay)
- //' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
- //' abline(h=zc, lty=2)
- //' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
- //' abline(h=yc, lty=2)
- //' @export
- // [[Rcpp::export]]
+//' @description Parallel model, combining dynamic model for chill accumulation and the GDH model
+//'
+//' @param yc numeric. Critical value defining end of chill accumulation
+//' @param zc numeric. Critical value of z determining the end of heat accumulation
+//' @param kmin numeric. Share of buds that can flower without receiving chill. 
+//' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
+//' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
+//' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
+//' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
+//' @param slope numeric. Slope parameter for sigmoidal function
+//' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function
+//' @param Tb numeric. GDH base temperature (lower threshold) 
+//' @param Tu numeric. GDH optimal temperature 
+//' @param Tc numeric. GDH upper temperature (upper threshold)
+//' @param Delta numeric. Width of Gaussian heat accumulation model
+//' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
+//' @param deg_celsius boolean. If set `TRUE` function assumes degree celsius temperature parameters, otherwise kelvin.
+//' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+//' @useDynLib evalpheno
+//' @author Lars Caspersen <lcaspers@uni-bonn.de>
+//' @return
+//' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
+//' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+//' @examples
+//' data(KA_weather)
+//' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
+//' iSeason <- genSeason(hourtemps, years=c(2009))
+//' zc <- 6000
+//' yc <- 40
+//' kmin <- 0.1
+//' x <- parallel_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
+//'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
+//'                zc=zc, stopatzc=TRUE, yc=yc, kmin = kmin, basic_output=FALSE)
+//' DBreakDay <- x$bloomindex
+//' ii <- c(1:DBreakDay)
+//' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
+//' abline(h=zc, lty=2)
+//' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
+//' abline(h=yc, lty=2)
+//' @export
+// [[Rcpp::export]]
  List parallel_model(NumericVector temp,
                NumericVector times,
                const double yc=40,
@@ -134,12 +134,12 @@ inline double PFcn(const double T, const double Tf, const double slope) {
      x[i+1] -= delta;
     }
     
-   //' calculate heat increment and add to z
+   // calculate heat increment and add to z
    z[i+1] = z[i] + (Com(kmin, yc, y[i+1]) * P1z(ti, _Tu, _Tb, _Tc));
    
  
- //' if z_crit calculated (and not zero as default)
- //' check if it is reached, if so return bloom index
+ // if z_crit calculated (and not zero as default)
+ // check if it is reached, if so return bloom index
  if(z[i+1] >= zc){
    // i+2 for Fortran index convention in R
    bloomindex = i+2;

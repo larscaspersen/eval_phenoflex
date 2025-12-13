@@ -2,22 +2,135 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' @title parallel_model
-NULL
-
+#' @description Parallel model, combining dynamic model for chill accumulation and the GDH model
+#'
+#' @param yc numeric. Critical value defining end of chill accumulation
+#' @param zc numeric. Critical value of z determining the end of heat accumulation
+#' @param kmin numeric. Share of buds that can flower without receiving chill. 
+#' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
+#' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
+#' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
+#' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
+#' @param slope numeric. Slope parameter for sigmoidal function
+#' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function
+#' @param Tb numeric. GDH base temperature (lower threshold) 
+#' @param Tu numeric. GDH optimal temperature 
+#' @param Tc numeric. GDH upper temperature (upper threshold)
+#' @param Delta numeric. Width of Gaussian heat accumulation model
+#' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
+#' @param deg_celsius boolean. If set `TRUE` function assumes degree celsius temperature parameters, otherwise kelvin.
+#' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+#' @useDynLib evalpheno
+#' @author Lars Caspersen <lcaspers@uni-bonn.de>
+#' @return
+#' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
+#' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+#' @examples
+#' data(KA_weather)
+#' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
+#' iSeason <- genSeason(hourtemps, years=c(2009))
+#' zc <- 6000
+#' yc <- 40
+#' kmin <- 0.1
+#' x <- parallel_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
+#'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
+#'                zc=zc, stopatzc=TRUE, yc=yc, kmin = kmin, basic_output=FALSE)
+#' DBreakDay <- x$bloomindex
+#' ii <- c(1:DBreakDay)
+#' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
+#' abline(h=zc, lty=2)
+#' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
+#' abline(h=yc, lty=2)
+#' @export
 parallel_model <- function(temp, times, yc = 40, zc = 1119, kmin = 0.1, A0 = 6319.5, A1 = 5.939917e13, E0 = 3372.8, E1 = 9900.3, slope = 1.6, Tf = 4, Tu = 25, Tb = 4, Tc = 36, Delta = 4, stopatzc = TRUE, deg_celsius = TRUE, basic_output = TRUE) {
     .Call('_evalpheno_parallel_model', PACKAGE = 'evalpheno', temp, times, yc, zc, kmin, A0, A1, E0, E1, slope, Tf, Tu, Tb, Tc, Delta, stopatzc, deg_celsius, basic_output)
 }
 
 #' @title partial_overlap_model
-NULL
-
+#' @description Partial Overlap Model, combining the dynamic model for chill accumulation and the GDH model
+#'
+#' @param yc numeric, Critical value defining end of chill accumulation
+#' @param b1 numeric. Heat requirement at minimum chilling
+#' @param b2 numeric. Heat requiement at maximum chilling
+#' @param b3 numeric. Scales the compensation from heat and chill requirement. Low b3 leads to linear compensation, high b3 to much heat needed to compensate chill.
+#' @param ol numeric. Controls how much longer chill accumulates after reaching yc. Chill accumulation stops when share of heat requirement is surprassed.
+#' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
+#' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
+#' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
+#' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
+#' @param slope numeric. Slope parameter for sigmoidal function //' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function
+#' @param Tb numeric. GDH base temperature (lower threshold)  
+#' @param Tu numeric. GDH optimal temperature 
+#' @param Tc numeric. GDH critical temperature 
+#' @param Delta numeric. Width of Gaussian heat accumulation model
+#' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
+#' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+#' @useDynLib evalpheno
+#' @author Lars Caspersen <lcaspers@uni-bonn.de>
+#' @return
+#' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
+#' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+#' @examples
+#' data(KA_weather)
+#' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
+#' iSeason <- genSeason(hourtemps, years=c(2009))
+#' yc <- 40
+#' b1 <- 1119
+#' b2 <- 8677
+#' b3 <- 0.01119
+#' ol <- 0.75
+#' x <- po_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
+#'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
+#'                yc=yc, b1 = b1, b2=b2, b3=b3, ol = ol, stopatzc=TRUE, basic_output=FALSE)
+#' DBreakDay <- x$bloomindex
+#' ii <- c(1:DBreakDay)
+#' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
+#' abline(h=zc, lty=2)
+#' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
+#' abline(h=yc, lty=2)
+#' @export
 po_model <- function(temp, times, yc = 40, b1 = 1119, b2 = 8677, b3 = 0.01119, ol = 0.75, A0 = 6319.5, A1 = 5.939917e13, E0 = 3372.8, E1 = 9900.3, slope = 1.6, Tf = 4, Tu = 25, Tb = 4, Tc = 36, Delta = 4, stopatzc = TRUE, deg_celsius = TRUE, basic_output = TRUE) {
     .Call('_evalpheno_po_model', PACKAGE = 'evalpheno', temp, times, yc, b1, b2, b3, ol, A0, A1, E0, E1, slope, Tf, Tu, Tb, Tc, Delta, stopatzc, deg_celsius, basic_output)
 }
 
 #' @title Sequential Model
-NULL
-
+#' @description Sequential Model, combining the dynamic model for chill accumulation and the GDH model
+#'
+#' @param yc numeric. Critical value defining end of chill accumulation
+#' @param zc numeric. Critical value of z determining the end of heat accumulation
+#' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
+#' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
+#' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
+#' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
+#' @param slope numeric. Slope parameter for sigmoidal function
+#' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function
+#' @param Tb numeric. GDH base temperature (lower threshold) 
+#' @param Tu numeric. GDH optimal temperature 
+#' @param Tc numeric. GDH upper temperature (upper threshold)
+#' @param Delta numeric. Width of Gaussian heat accumulation model
+#' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
+#' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+#' @useDynLib evalpheno
+#' @author Lars Caspersen <lcaspers@uni-bonn.de>
+#' @return
+#' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
+#' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+#' @examples
+#' data(KA_weather)
+#' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
+#' iSeason <- genSeason(hourtemps, years=c(2009))
+#' zc <- 190
+#' yc <- 6000
+#' x <- seq_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
+#'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
+#'                yc = yc, zc=zc, stopatzc=TRUE basic_output=FALSE)
+#' DBreakDay <- x$bloomindex
+#' ii <- c(1:DBreakDay)
+#' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
+#' abline(h=zc, lty=2)
+#' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
+#' abline(h=yc, lty=2)
+#' @export
 seq_model <- function(temp, times, yc = 40, zc = 6000, A0 = 6319.5, A1 = 5.939917e13, E0 = 3372.8, E1 = 9900.3, slope = 1.6, Tf = 4, Tu = 25, Tb = 4, Tc = 36, Delta = 4, stopatzc = TRUE, deg_celsius = TRUE, basic_output = TRUE) {
     .Call('_evalpheno_seq_model', PACKAGE = 'evalpheno', temp, times, yc, zc, A0, A1, E0, E1, slope, Tf, Tu, Tb, Tc, Delta, stopatzc, deg_celsius, basic_output)
 }

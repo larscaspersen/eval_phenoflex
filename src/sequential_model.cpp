@@ -27,44 +27,44 @@ inline double PFcn(const double T, const double Tf, const double slope) {
 }
 
 //' @title Sequential Model
- //' @description Sequential Model, combining the dynamic model for chill accumulation and the GDH model
- //'
- //' @param yc numeric. Critical value defining end of chill accumulation
- //' @param zc numeric. Critical value of z determining the end of heat accumulation
- //' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
- //' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
- //' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
- //' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
- //' @param slope numeric. Slope parameter for sigmoidal function
- //' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function
- //' @param Tb numeric. GDH base temperature (lower threshold) 
- //' @param Tu numeric. GDH optimal temperature 
- //' @param Tc numeric. GDH upper temperature (upper threshold)
- //' @param Delta numeric. Width of Gaussian heat accumulation model
- //' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
- //' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
- //' @useDynLib evalpheno
- //' @author Lars Caspersen <lcaspers@uni-bonn.de>
- //' @return
- //' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
- //' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
- //' @examples
- //' data(KA_weather)
- //' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
- //' iSeason <- genSeason(hourtemps, years=c(2009))
- //' zc <- 190
- //' yc <- 6000
- //' x <- seq_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
- //'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
- //'                yc = yc, zc=zc, stopatzc=TRUE basic_output=FALSE)
- //' DBreakDay <- x$bloomindex
- //' ii <- c(1:DBreakDay)
- //' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
- //' abline(h=zc, lty=2)
- //' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
- //' abline(h=yc, lty=2)
- //' @export
- // [[Rcpp::export]]
+//' @description Sequential Model, combining the dynamic model for chill accumulation and the GDH model
+//'
+//' @param yc numeric. Critical value defining end of chill accumulation
+//' @param zc numeric. Critical value of z determining the end of heat accumulation
+//' @param A0 numeric. Parameter \eqn{A_0}{A0} of the dynamic model
+//' @param A1 numeric. Parameter \eqn{A_1}{A1} of the dynamic model
+//' @param E0 numeric. Parameter \eqn{E_0}{E0} of the dynamic model
+//' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
+//' @param slope numeric. Slope parameter for sigmoidal function
+//' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function
+//' @param Tb numeric. GDH base temperature (lower threshold) 
+//' @param Tu numeric. GDH optimal temperature 
+//' @param Tc numeric. GDH upper temperature (upper threshold)
+//' @param Delta numeric. Width of Gaussian heat accumulation model
+//' @param stopatzc boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.
+//' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+//' @useDynLib evalpheno
+//' @author Lars Caspersen <lcaspers@uni-bonn.de>
+//' @return
+//' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
+//' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+//' @examples
+//' data(KA_weather)
+//' hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
+//' iSeason <- genSeason(hourtemps, years=c(2009))
+//' zc <- 190
+//' yc <- 6000
+//' x <- seq_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
+//'                times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
+//'                yc = yc, zc=zc, stopatzc=TRUE basic_output=FALSE)
+//' DBreakDay <- x$bloomindex
+//' ii <- c(1:DBreakDay)
+//' plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
+//' abline(h=zc, lty=2)
+//' plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
+//' abline(h=yc, lty=2)
+//' @export
+// [[Rcpp::export]]
  List seq_model(NumericVector temp,
                NumericVector times,
                const double yc=40,
@@ -108,8 +108,8 @@ inline double PFcn(const double T, const double Tf, const double slope) {
      xs[i] = A0/A1 * exp(-(E0-E1)/ti);
      
   
- //' only accumulate chill when the overlap of chill and heat is not exhausted
- //' otherwise stop accumulation
+ // only accumulate chill when the overlap of chill and heat is not exhausted
+ // otherwise stop accumulation
  const double k1 = A1*exp(-E1/ti);
  if(y[i] < yc){
    x[i+1] = xs[i] - (xs[i] - x[i])*exp(-k1*(times[i+1]-times[i]));
@@ -120,7 +120,7 @@ inline double PFcn(const double T, const double Tf, const double slope) {
    y[i+1] = y[i];
  }
  
- //' in case the increment is larger than one, convert pdbf to dbf
+ // in case the increment is larger than one, convert pdbf to dbf
  if(x[i+1] >= 1.) {
    double delta = PFcn(ti, _Tf, slope) * x[i+1];
    y[i+1] += delta;
@@ -128,16 +128,16 @@ inline double PFcn(const double T, const double Tf, const double slope) {
  }
  
  
- //' compare if accumulated chill is larger than yc
- //' if yes accumulate heat
+ // compare if accumulated chill is larger than yc
+ // if yes accumulate heat
  if(y[i] >= yc){
    //' calculate heat increment and add to z
  z[i+1] = z[i] + P1z(ti, _Tu, _Tb, _Tc);
    
  }
  
- //' if z_crit calculated (and not zero as default)
- //' check if it is reached, if so return bloom index
+ // if z_crit calculated (and not zero as default)
+ // check if it is reached, if so return bloom index
  if(z[i+1] >= zc){
      // i+2 for Fortran index convention in R
      bloomindex = i+2;
