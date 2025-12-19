@@ -46,7 +46,7 @@ pop_out <- PhenoFlex_pop(temp = s$Temp,
                          zc = zc_pop,
                          i_cut = i_cut,
                          max_days_forcing = 40,
-                         force_temp = 23, 
+                         forcing_temperature = 23, 
                          s1 = 0.5,
                          E0 = 4153.5,
                          E1 = 12888.8,
@@ -56,6 +56,8 @@ pop_out <- PhenoFlex_pop(temp = s$Temp,
                          Tf = 277-273, 
                          basic_output = FALSE)
 
+hist(pop_out$exp/24)
+plot(ecdf(pop_out$exp/24))
 
 
 i_cut_debug <- i_cut +1
