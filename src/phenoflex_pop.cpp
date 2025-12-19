@@ -122,7 +122,7 @@ List run_forcing_experiment(NumericVector y,
                               const int timestep,
                               const int max_days_forcing,
                               const double forcing_increment,
-                              const int placeholder_fail = -999){
+                              const int placeholder_fail = 999){
   
   const int hours = 24; //numbers of hours forcing per day
   double y_i = y[timestep]; // get amount of chill at forcing experiment 
@@ -180,7 +180,7 @@ List PhenoFlex_pop(NumericVector temp,
   const int N = yc.size();
   const int time_steps = times.size();
   const int n_experiments = i_cut_vec.size();
-  const int placeholder_fail = -999;
+  const int placeholder_fail = 999;
   double forcing_increment = 0;
   //double z_effec = 0; //share of potential heat that becomes effective (forcing experiment)
   bool return_force_exp = false;
