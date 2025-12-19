@@ -173,24 +173,22 @@ List PhenoFlex_pop(NumericVector temp,
   int n_run = yc.size();
 
   Rcpp::NumericVector bloom_ind(n_run);
-  List x_pop(n_run);
-  List y_pop(n_run);
-  List z_pop(n_run);
-  
-  ////////////////////
-  //DEBUGGING
-  
-  List z_effec_list(n_run);
-
-  // END DEBUGGING
-  ////////////////////
-  
-  List exp_bloom_pop(n_run); //list with the forcing of the individual cutting days
+  NumericMatrix x_pop(times.size(), n_run);
+  NumericMatrix y_pop(times.size(), n_run);
+  NumericMatrix z_pop(times.size(), n_run);
+  NumericMatrix exp_bloom_pop(i_cut_vec.size(),n_run); //list with the forcing of the individual cutting days
   //vector with as many positions as experiments
   // entry says how many time steps after cutting the zc was reached
   //-999 in case it was not met
   
+  
+  ////////////////////
+  //DEBUGGING
+  
+  NumericMatrix z_effec_exp(i_cut_vec.size(), n_run);
 
+  // END DEBUGGING
+  ////////////////////
   
 
   //run phenoflex, return complex output
@@ -222,9 +220,17 @@ List PhenoFlex_pop(NumericVector temp,
     Rcpp::NumericVector z_effec_vec(i_cut_vec.size());
     
     if (basic_output == false){
-      x_pop[i] = pheno_out["x"];
-      y_pop[i] = pheno_out["y"];
-      z_pop[i] = pheno_out["z"];
+      //extract values from phenoflex list
+      NumericVector x_int = pheno_out["x"];
+      NumericVector y_int = pheno_out["y"];
+      NumericVector z_int = pheno_out["z"];
+
+      //save results to matrix
+      std::copy(x_int.begin(), x_int.end(), x_pop.begin() + i * times.size());
+      std::copy(y_int.begin(), y_int.end(), y_pop.begin() + i * times.size());
+      std::copy(z_int.begin(), z_int.end(), z_pop.begin() + i * times.size());
+      
+
     }
     
     
@@ -234,7 +240,7 @@ List PhenoFlex_pop(NumericVector temp,
       //iterate over forcing experiment days
       for (int j = 0; j<i_cut_vec.size(); j++) {
         
-        NumericVector chill = y_pop[i]; // extract the i-th NumericVector 
+        NumericVector chill = y_pop.column(i); // extract the i-th NumericVector 
         double val = chill[i_cut_vec[j]]; // get amount of chill at forcing experiment 
         z_effec = PFcn(val, yc[i], s1); //calculate effectivity of forcing experiment
 
@@ -243,7 +249,7 @@ List PhenoFlex_pop(NumericVector temp,
         z_effec_vec[j] = z_effec;
         ////////
         
-        NumericVector  z_vec = z_pop[i]; //extract heat accumulated for that individual
+        NumericVector  z_vec = z_pop.column(i); //extract heat accumulated for that individual
         
         //amount of forcing already accumulated before cutting
         double base_force = z_vec[i_cut_vec[j]];
@@ -266,12 +272,13 @@ List PhenoFlex_pop(NumericVector temp,
       } //end loop time steps forcing experiments
     } //end experiment
     
-    //save result to list
-    exp_bloom_pop[i] = exp_bloom_i;
+    //save result to matrix
+    std::copy(exp_bloom_i.begin(), exp_bloom_i.end(), exp_bloom_pop.begin() + i * i_cut_vec.size());
     
     ////////
     //DEBUG
-    z_effec_list[i] = z_effec_vec;
+    std::copy(z_effec_vec.begin(), z_effec_vec.end(), z_effec_exp.begin() + i * i_cut_vec.size());
+    //z_effec_list[i] = z_effec_vec;
     ////////
     
   } //end loop population members
@@ -284,6 +291,6 @@ List PhenoFlex_pop(NumericVector temp,
                       Named("y") = y_pop,
                       Named("z") = z_pop,
                       Named("exp") = exp_bloom_pop,
-                      Named("z_effec") = z_effec_list,
+                      Named("z_effec") = z_effec_exp,
                       Named("exp_force_inc") = force_inc));
 }
