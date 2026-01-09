@@ -22,18 +22,19 @@ PhenoFlex(temp = s$Temp, times = seq_along(s$Temp),
           slope = 1.6,
           Tf = 277-273)
 
-yc_mean <- 20
+yc_mean <- (72+35)/ 2
 yc_sd <- 5
 zc_mean = 200
 zc_sd = 10
-n <- 10
+n <- 100
 
 set.seed(12345)
 yc_pop <- rnorm(n = n, mean = yc_mean, sd = yc_sd)
 zc_pop <- rnorm(n = n, mean = zc_mean, sd = zc_sd)
 
 #the function expects to get already the position at which the forcing experiment should take place
-jday_cut <- c(320)
+jday_cut <- c(307,321, 335, 349, 363, 12, 26, 40, 54)
+jday_name <- c('Nov 03', 'Nov 17', 'Dec 01', 'Dec 15', 'Dec 29', 'Jan 12', 'Jan 26', 'Feb 09', 'Feb23')
 i_cut <-purrr::map_int(jday_cut, function(x){
   floor(median(which(x == s$JDay)))
 })  
@@ -47,7 +48,7 @@ pop_out <- PhenoFlex_pop(temp = s$Temp,
                          i_cut = i_cut,
                          max_days_forcing = 40,
                          forcing_temperature = 23, 
-                         s1 = 0.5,
+                         s1 = 0.2,
                          E0 = 4153.5,
                          E1 = 12888.8,
                          A0 = 139500,
@@ -56,9 +57,22 @@ pop_out <- PhenoFlex_pop(temp = s$Temp,
                          Tf = 277-273, 
                          basic_output = FALSE)
 
-hist(pop_out$exp/24)
-plot(ecdf(pop_out$exp/24))
+pop_out$exp
+hist(pop_out$exp[1,]/24)
 
+pop_out$exp %>% 
+  as.data.frame() %>% 
+  mutate(jday = jday_cut) %>% 
+  pivot_longer(cols = -jday) %>%
+  mutate(jday_mod = ifelse(jday > 220, yes = jday - 365, no = jday),
+         value_mod = value / 24,
+         jday_fact = factor(jday, levels = jday_cut, 
+                            labels = jday_name)) %>% 
+  ggplot(aes(x = value_mod)) +
+  stat_ecdf(aes(color = jday_fact),
+            geom = 'step', size = 1.5) +
+  coord_cartesian(xlim = c(0,40)) +
+  facet_wrap(~jday_fact)
 
 i_cut_debug <- i_cut +1
 
