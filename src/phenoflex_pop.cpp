@@ -169,6 +169,7 @@ List PhenoFlex_pop(NumericVector temp,
                    const double Tc=36,
                    const double Delta=4,
                    const int Imodel=0,
+                   const int placeholder_fail = 9999,
                    const int seed = 12345,
                    bool stopatzc = true,
                    bool deg_celsius = true,
@@ -180,7 +181,6 @@ List PhenoFlex_pop(NumericVector temp,
   const int N = yc.size();
   const int time_steps = times.size();
   const int n_experiments = i_cut_vec.size();
-  const int placeholder_fail = 999;
   double forcing_increment = 0;
   //double z_effec = 0; //share of potential heat that becomes effective (forcing experiment)
   bool return_force_exp = false;
