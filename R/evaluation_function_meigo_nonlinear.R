@@ -57,8 +57,7 @@ evaluation_function_meigo_nonlinear <- function(x,
   params[4] <- x[8]     #pi_c
   
   
-  output<-nleqslv::nleqslv(c(500, 15000), solve_nle, jac=NULL, params, xscalm="auto", method="Newton",
-                  control=list(trace=0,allowSingular=TRUE))
+  output <- .fit_chill_parameters(params)
   
   
   #This is a numerical method which can produce non-convergence. Check this
@@ -79,8 +78,8 @@ evaluation_function_meigo_nonlinear <- function(x,
     
     q=1/params[1]-1/params[2]
     
-    A1 <- -exp(E1/params[1])/params[3]*log(1-exp((E0-E1)*q))
-    A0 <- A1*exp((E0-E1)/params[2])
+    A1 <- output$A1
+    A0 <- output$A0
   }
   
   

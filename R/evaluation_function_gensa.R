@@ -55,9 +55,7 @@ evaluation_function_gensa <- function (x,
     params[4] <- x[8]
     
     #convert parameters
-    output <- nleqslv::nleqslv(c(500, 15000), solve_nle, 
-                               jac = NULL, params, xscalm = "auto", method = "Newton", 
-                               control = list(trace = 0, allowSingular = TRUE))
+    output <- .fit_chill_parameters(params)
     if (output$termcd >= 3) {
       E0 <- NA
       E1 <- NA
@@ -69,9 +67,8 @@ evaluation_function_gensa <- function (x,
       E0 <- output$x[1]
       E1 <- output$x[2]
       q = 1/params[1] - 1/params[2]
-      A1 <- -exp(E1/params[1])/params[3] * log(1 - exp((E0 - 
-                                                          E1) * q))
-      A0 <- A1 * exp((E0 - E1)/params[2])
+      A1 <- output$A1
+      A0 <- output$A0
     }
     par[5:8] <- c(E0, E1, A0, A1)
   }
@@ -80,7 +77,7 @@ evaluation_function_gensa <- function (x,
   #check for q10 criterion, if failed then penalize
   q10_e0 <- exp((10 * par[5])/(297 * 279))
   q10_e1 <- exp((10 * par[6])/(297 * 279))
-  if(q10_e0 < q10_lower | q10_e1 > q10_upper | q10_e1 < q10_lower | q10_e1 > q10_upper){
+  if(q10_e0 < q10_lower | q10_e0 > q10_upper | q10_e1 < q10_lower | q10_e1 > q10_upper){
     return(q10_penalty)
   }
   
