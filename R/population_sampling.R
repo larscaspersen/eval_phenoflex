@@ -38,24 +38,24 @@ sample_bud_population <- function(n = 100, yc = 40, zc = 190,
     }, add = TRUE)
     set.seed(seed)
   }
-  draw <- function(mean, sd, distribution, shape) {
-    if (sd == 0) return(rep(mean, n))
-    if (distribution == "normal") return(stats::rnorm(n, mean, sd))
-    if (!requireNamespace("sn", quietly = TRUE)) {
-      stop("Install 'sn' to sample skew-normal requirements.", call. = FALSE)
-    }
-    delta <- shape / sqrt(1 + shape^2)
-    omega <- sd / sqrt(1 - 2 * delta^2 / pi)
-    xi <- mean - omega * delta * sqrt(2 / pi)
-    as.vector(sn::rsn(n, xi = xi, omega = omega, alpha = shape))
-  }
-  out <- list(yc_pop = draw(yc, yc_sd, dist_chill, skew[1]),
-              zc_pop = draw(zc, zc_sd, dist_heat, skew[2]))
+  out <- list(yc_pop = .draw_population_requirement(n, yc, yc_sd, dist_chill, skew[1]),
+              zc_pop = .draw_population_requirement(n, zc, zc_sd, dist_heat, skew[2]))
   if (any(!is.finite(unlist(out))) || any(unlist(out) <= 0)) {
     stop("Sampled requirements must be positive; reduce dispersion or change the seed.",
          call. = FALSE)
   }
   out
+}
+
+.draw_population_requirement <- function(n, mean, sd, distribution, shape) {
+  if (sd == 0) return(rep(mean, n))
+  if (distribution == "normal") return(stats::rnorm(n, mean, sd))
+  if (!requireNamespace("sn", quietly = TRUE))
+    stop("Install 'sn' to sample skew-normal requirements.", call. = FALSE)
+  delta <- shape / sqrt(1 + shape^2)
+  omega <- sd / sqrt(1 - 2 * delta^2 / pi)
+  xi <- mean - omega * delta * sqrt(2 / pi)
+  as.vector(sn::rsn(n, xi = xi, omega = omega, alpha = shape))
 }
 
 .population_scalar <- function(x, name, positive = FALSE, nonnegative = FALSE,
