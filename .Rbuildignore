@@ -8,3 +8,6 @@
 ^.*\.(jpeg|jpg|png)$
 ^development$
 ^\.local-library$
+^download$
+^climate_data$
+^temp_data$
