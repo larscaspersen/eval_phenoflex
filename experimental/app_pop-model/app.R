@@ -5,6 +5,7 @@ options(shiny.sanitize.errors = FALSE)
 
 source('experimental/app_pop-model/helpers_phenoflex_pop.R')
 
+
 default_params <- list(
   yc = 75,
   yc_sd = 5,
@@ -19,7 +20,26 @@ default_params <- list(
   slope = 1.6,
   Tb = 4,
   Tu = 25,
-  Tc = 36
+  Tc = 36,
+  adjust_zc=1
+)
+
+default_par_optimized <- list(
+  yc = 61.1571429,
+  yc_sd = 10.8367347,
+  zc = 230,
+  zc_sd = 10,
+  s1 = 0.1662224,
+  theta_star = 280.04901-273.15,
+  theta_c = 286.05151-273.15,
+  tau = 27.88297,
+  pi_c = 30.41736,
+  Tf = 4,
+  slope = 1.6,
+  Tb = 4,
+  Tu = 25,
+  Tc = 36,
+  adjust_zc= 1
 )
 
 kob_study_par <- list(
@@ -36,8 +56,32 @@ kob_study_par <- list(
   slope = 1.9426370,
   Tb = 5.9122156,
   Tu = 21.0231964,
-  Tc = 36
+  Tc = 36,
+  adjust_zc=1
 )
+
+kob_study_optimized <- list(
+  yc = 32.9280536,
+  yc_sd = 4.5112081,
+  zc = 132.8402171,
+  zc_sd = 0.7966561,
+  s1 = 0.3195264,
+  theta_star = 279-273.15,
+  theta_c = 285.6807267-273.15,
+  tau = 34.2354385,
+  pi_c = 32.6464321,
+  Tf = 8.0650228,
+  slope = 1.9426370,
+  Tb = 5.9122156,
+  Tu = 21.0231964,
+  Tc = 36,
+  adjust_zc=1
+)
+
+par_list <- list(default_opt = default_par_optimized,
+                 default_default = default_params,
+                 kob_default = kob_study_par,
+                 kob_opt = kob_study_optimized)
 
 # Define UI for app that draws a histogram ----
 ui <- page_sidebar(
@@ -79,6 +123,11 @@ ui <- page_sidebar(
       value = FALSE
     ),
     checkboxInput(
+      inputId = "plot_budbreak_orchard",
+      label = "Show predicted budbreak in orchard",
+      value = FALSE
+    ),
+    checkboxInput(
       inputId = "plot_tempresponse",
       label = "Show Temperature Response Plot",
       value = FALSE
@@ -117,6 +166,21 @@ ui <- page_sidebar(
       min = 0.01,
       max = 1.5,
       value = 0.1473177
+    ),
+    numericInput(
+      inputId = "adjust_zc",
+      label = "conversion heat flowering to budbreak",
+      min = 0.1,
+      max = 1,
+      value = 1
+    ),
+    selectizeInput(
+      inputId = "dist_chill",
+      label = "Distribution type",
+      choices = c('normal' = 'normal',
+                  'normal skewed' = 'normal-skewerd'),
+      selected = 'normal',
+      multiple = FALSE
     ),
     numericInput(
       inputId = "theta_star",
@@ -181,20 +245,57 @@ ui <- page_sidebar(
       max = 40,
       value = 36
     ),
+    selectInput(
+      inputId = 'par_select',
+      label = 'Select parameters optimized for forcing experiment',
+      choices = c("Default par - optimized" = "default_opt",
+                  "Default par - non-optimized" = "default_default",
+                  "KOB study par - non-optimized" = "kob_default",
+                  "KOB study par - optimized" = "kob_opt"),
+      selected = 'default_default',
+      multiple = FALSE,
+      selectize = TRUE,
+      width = NULL,
+      size = NULL
+    ),
     actionButton(
       inputId = "default_params",
       label = "Default parameters",
       class = "btn-secondary"
     ),
-    actionButton(
-      inputId = "kob_params",
-      label = "KOB study parameters",
-      class = "btn-secondary"
+    # actionButton(
+    #   inputId = "kob_params",
+    #   label = "KOB study parameters",
+    #   class = "btn-secondary"
+    # ),
+    selectizeInput(
+      inputId = "forcing_exp",
+      label = "Choose which forcing experiment to plot",
+      choices = c('Kanzi, 2020' = 'K_2020_term+spur',
+                  'Kanzi, 2022' = 'K_2022_term+spur',
+                   'Topaz, 2020' = 'T_2020_term+spur',
+                   'Topaz, 2022' = 'T_2022_term+spur'),
+      selected = 'T_2022_term+spur',
+      multiple = FALSE
+    ),
+    numericInput(
+      inputId = "exp_start_yday",
+      label = "Julian Day of earliest cutting experiment",
+      min = 1,
+      max = 365,
+      value = 300
+    ),
+    numericInput(
+      inputId = "exp_end_yday",
+      label = "Julian Day of earliest cutting experiment",
+      min = 1,
+      max = 365,
+      value = 55
     ),
     selectizeInput(
       inputId = "years_bloom",
       label = "Choose years for bloom prediction",
-      choices = c('all', as.character(2004:2022)),
+      choices = c('all', 'calibration', 'validation', as.character(2004:2022)),
       selected = 'all',
       multiple = TRUE
     )
@@ -202,6 +303,45 @@ ui <- page_sidebar(
   # Output: Histogram ----
   plotOutput(outputId = "pop_plot")
 )
+
+######
+#debug
+# input <- default_params
+# input$adjust_zc <- 0.5
+# input$forcing_exp= 'T_2022_term+spur'
+# input$exp_start_yday = 300
+# input$exp_end_yday = 55
+# obs_list <-  helper_prepare_obs_data(sheet = input$forcing_exp,
+#                                      start_yday = input$exp_start_yday,
+#                                      end_yday = input$exp_end_yday)
+# 
+# par <- c(input$yc, input$zc, input$s1, input$Tu, input$theta_star + 273.15, input$theta_c + 273.15, input$tau, input$pi_c, input$Tf, input$Tc, input$Tb, input$slope) %>%
+#     LarsChill::convert_parameters()
+# 
+# par_bb <- c(input$yc, input$zc * input$adjust_zc, input$s1, input$Tu, input$theta_star + 273.15, input$theta_c + 273.15, input$tau, input$pi_c, input$Tf, input$Tc, input$Tb, input$slope) %>%
+#   LarsChill::convert_parameters()
+# 
+# pop_out <- helper_run_pop_model(par = par, yc_sd = input$yc_sd, zc_sd = input$zc_sd,
+#                        jday_cut = obs_list$jday_cut, temp_df = obs_list$temp_df,
+#                        n = 100, adjust_zc = input$adjust_zc)
+# 
+# bb_list <- purrr::map(kob_season, function(s1){
+#   bloom <- helper_run_pop_model(par = par_bb, yc_sd = input$yc_sd, zc_sd =  input$zc_sd, jday_cut = NULL, temp_df = s1, n = 100,
+#                                 basic_output = TRUE) %>% 
+#     purrr::pluck('bloomindex') %>% 
+#     purrr::map_dbl(helper_bloomint_to_jday, x = s1) %>% 
+#     return()
+# })
+# bb_out <- do.call(cbind, bb_list) %>% 
+#   as.data.frame() %>% 
+#   setNames(names(kob_season)) %>% 
+#   pivot_longer(cols = everything(), names_to = 'year')
+  
+
+
+#input$forcing_exp, input$exp_start_yday, input$exp_end_yday
+
+######
 
 # Define server logic required to draw a histogram ----
 server <- function(input, output, session) {
@@ -220,6 +360,7 @@ server <- function(input, output, session) {
   #   
   # })
   
+  #reset button
   observeEvent(input$default_params, {
     
     updateNumericInput(session, "yc", value = default_params$yc)
@@ -227,6 +368,7 @@ server <- function(input, output, session) {
     updateNumericInput(session, "zc", value = default_params$zc)
     updateNumericInput(session, "zc_sd", value = default_params$zc_sd)
     updateNumericInput(session, "s1", value = default_params$s1)
+    updateNumericInput(session, "adjust_zc", value = default_params$adjust_zc)
     updateNumericInput(session, "theta_star", value = default_params$theta_star)
     updateNumericInput(session, "theta_c", value = default_params$theta_c)
     updateNumericInput(session, "tau", value = default_params$tau)
@@ -239,22 +381,34 @@ server <- function(input, output, session) {
     
   })
   
-  observeEvent(input$kob_params, {
+  #select a set of pre-set parameters
+  observeEvent(input$par_select, {
     
-    updateNumericInput(session, "yc", value = kob_study_par$yc)
-    updateNumericInput(session, "yc_sd", value = kob_study_par$yc_sd)
-    updateNumericInput(session, "zc", value = kob_study_par$zc)
-    updateNumericInput(session, "zc_sd", value = kob_study_par$zc_sd)
-    updateNumericInput(session, "s1", value = kob_study_par$s1)
-    updateNumericInput(session, "theta_star", value = kob_study_par$theta_star)
-    updateNumericInput(session, "theta_c", value = kob_study_par$theta_c)
-    updateNumericInput(session, "tau", value = kob_study_par$tau)
-    updateNumericInput(session, "pi_c", value = kob_study_par$pi_c)
-    updateNumericInput(session, "Tf", value = kob_study_par$Tf)
-    updateNumericInput(session, "slope", value = kob_study_par$slope)
-    updateNumericInput(session, "Tb", value = kob_study_par$Tb)
-    updateNumericInput(session, "Tu", value = kob_study_par$Tu)
-    updateNumericInput(session, "Tc", value = kob_study_par$Tc)
+    updateNumericInput(session, "yc", value = par_list[[input$par_select]]$yc)
+    updateNumericInput(session, "yc_sd", value = par_list[[input$par_select]]$yc_sd)
+    updateNumericInput(session, "zc", value = par_list[[input$par_select]]$zc)
+    updateNumericInput(session, "zc_sd", value = par_list[[input$par_select]]$zc_sd)
+    updateNumericInput(session, "s1", value = par_list[[input$par_select]]$s1)
+    updateNumericInput(session, "adjust_zc", value = par_list[[input$par_select]]$adjust_zc)
+    updateNumericInput(session, "theta_star", value = par_list[[input$par_select]]$theta_star)
+    updateNumericInput(session, "theta_c", value = par_list[[input$par_select]]$theta_c)
+    updateNumericInput(session, "tau", value = par_list[[input$par_select]]$tau)
+    updateNumericInput(session, "pi_c", value = par_list[[input$par_select]]$pi_c)
+    updateNumericInput(session, "Tf", value = par_list[[input$par_select]]$Tf)
+    updateNumericInput(session, "slope", value = par_list[[input$par_select]]$slope)
+    updateNumericInput(session, "Tb", value = par_list[[input$par_select]]$Tb)
+    updateNumericInput(session, "Tu", value = par_list[[input$par_select]]$Tu)
+    updateNumericInput(session, "Tc", value = par_list[[input$par_select]]$Tc)
+    
+  })
+  
+  #read phenology data
+  obs_list <- reactive({
+    req(input$forcing_exp, input$exp_start_yday, input$exp_end_yday)
+    
+    helper_prepare_obs_data(sheet = input$forcing_exp, 
+                            start_yday = input$exp_start_yday, 
+                            end_yday = input$exp_end_yday)
     
   })
   
@@ -263,9 +417,16 @@ server <- function(input, output, session) {
       LarsChill::convert_parameters()
   })
   
+  par_bb <- reactive({
+    c(input$yc, input$zc *input$adjust_zc , input$s1, input$Tu, input$theta_star + 273.15, input$theta_c + 273.15, input$tau, input$pi_c, input$Tf, input$Tc, input$Tb, input$slope) %>% 
+      LarsChill::convert_parameters()
+  })
+  
   pop_out <- reactive({
     
-    helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd = input$zc_sd, jday_cut = jday_cut, temp_df = s, n = 100)
+    helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd = input$zc_sd, 
+                         jday_cut = obs_list()$jday_cut, temp_df = obs_list()$temp_df, 
+                         n = 100, adjust_zc = input$adjust_zc)
     
   })
   
@@ -279,13 +440,34 @@ server <- function(input, output, session) {
     
     #calculate population of bloom for kob each season
     bloom_list <- purrr::map(kob_season, function(s1){
-      bloom <- helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd =  input$zc_sd, jday_cut = jday_cut, temp_df = s1, n = 100,
+      bloom <- helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd =  input$zc_sd, jday_cut = NULL, temp_df = s1, n = 100,
                                    basic_output = TRUE) %>% 
         purrr::pluck('bloomindex') %>% 
-        purrr::map_dbl(helper_bloomint_to_jday, x = s) %>% 
+        purrr::map_dbl(helper_bloomint_to_jday, x = s1) %>% 
         return()
     })
     do.call(cbind, bloom_list) %>% 
+      as.data.frame() %>% 
+      setNames(names(kob_season)) %>% 
+      pivot_longer(cols = everything(), names_to = 'year')
+  })
+  
+  pop_bb <- reactive({
+    
+    req(input$plot_budbreak_orchard)
+    
+    # test <- helper_run_pop_model(par = par(), yc_sd = input$yc_sd, zc_sd = input$zc_sd, jday_cut = jday_cut, temp_df = s, n = 100,
+    #                      basic_output = TRUE)
+    
+    #calculate population of bloom for kob each season
+    bb_list <- purrr::map(kob_season, function(s1){
+      bloom <- helper_run_pop_model(par = par_bb(), yc_sd = input$yc_sd, zc_sd =  input$zc_sd, jday_cut = NULL, temp_df = s1, n = 100,
+                                    basic_output = TRUE) %>% 
+        purrr::pluck('bloomindex') %>% 
+        purrr::map_dbl(helper_bloomint_to_jday, x = s1) %>% 
+        return()
+    })
+    do.call(cbind, bb_list) %>% 
       as.data.frame() %>% 
       setNames(names(kob_season)) %>% 
       pivot_longer(cols = everything(), names_to = 'year')
@@ -297,13 +479,23 @@ server <- function(input, output, session) {
   output$pop_plot <- renderPlot({
     req(pop_out())
     
-    p_force <- p_flower <- p_tempresp <- NULL
+    p_force <- p_flower <- p_tempresp <- p_budbreak_orchard <- NULL
     
     if(input$plot_forcing){
-      p_force <- helper_plot_forcing_exp(model_res = pop_out(), obs = exp_obs, jday_cut = jday_cut, jday_name = jday_name)
+      p_force <- helper_plot_forcing_exp(model_res_list = pop_out(), 
+                                         obs = obs_list()$exp_obs, 
+                                         jday_cut = obs_list()$jday_cut, 
+                                         jday_name = obs_list()$jday_name)
     } 
     if(input$plot_flowering){
       p_flower <- helper_plot_flowering(bloom_df = pop_bloom(), obs_df = kob_bloom, year_select = input$years_bloom)
+    }
+    if(input$plot_budbreak_orchard){
+      #p_tempresp <- LarsChill::get_temp_response_plot(par = par(), temp_values = seq(from = -10, to = 40, by = 0.1))
+      
+      p_budbreak_orchard <- helper_plot_budbreak_orchard(bloom_df = pop_bb(), 
+                                                         obs_df =kob_bloom, 
+                                                         year_select = input$years_bloom)
     }
     if(input$plot_tempresponse){
       #p_tempresp <- LarsChill::get_temp_response_plot(par = par(), temp_values = seq(from = -10, to = 40, by = 0.1))
@@ -319,9 +511,9 @@ server <- function(input, output, session) {
     # plot_present <- c(TRUE, FALSE, FALSE)
     # plot_list <- list(p_force, p_flower, p_tempresp)
     
-    plot_list <- list(p_force, p_flower, p_tempresp)
-    plot_present <- c(input$plot_forcing, input$plot_flowering, input$plot_tempresponse)
-    n_plot <- input$plot_forcing + input$plot_flowering + input$plot_tempresponse
+    plot_list <- list(p_force, p_flower, p_budbreak_orchard, p_tempresp)
+    plot_present <- c(input$plot_forcing, input$plot_flowering, input$plot_budbreak_orchard,input$plot_tempresponse)
+    n_plot <- input$plot_forcing + input$plot_flowering + input$plot_budbreak_orchard + input$plot_tempresponse
     
     # width_p1 <- 1
     # if(input$plot_forcing) width_p1 <- 2.5
@@ -351,8 +543,14 @@ server <- function(input, output, session) {
                  AAABBB
                  CCCCCC"
       
-      plot_list[[1]] + plot_list[[2]] +  plot_list[[3]] +
-        plot_layout(design = design)
+      plot_list[[which(plot_present)[1]]] + plot_list[[which(plot_present)[2]]] +  plot_list[[which(plot_present)[3]]] +
+        plot_layout(design = design) 
+    } else if(n_plot == 4){
+      design <- "AB
+                 CD"
+      
+      plot_list[[1]] +  plot_list[[2]] +  plot_list[[3]] +  plot_list[[4]] +
+        plot_layout(design = design) 
     }
     
     

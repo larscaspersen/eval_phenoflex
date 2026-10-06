@@ -15,6 +15,14 @@ s <- read.csv('experimental/hohenheim_aug21-jul22.csv', sep = ';', dec = ',') %>
          Temp = AVG_TA200,
          ) %>% 
   select(Temp, JDay, Year)
+s2 <- read.csv('experimental/hohenheim_aug19-jul20.csv', sep = ';', dec = ',') %>% 
+  mutate(Date = lubridate::dmy(Tag),
+         Hour = lubridate::hm(Stunde) %>% hour(),
+         JDay = lubridate::yday(Date),
+         Year = lubridate::year(Date),
+         Temp = AVG_TA200,
+  ) %>% 
+  select(Temp, JDay, Year)
 
 #               yc          zc            s1      Tu          theta_star  theta_c
 par_topaz <- c(40.0336321, 181.2843981, 0.1473177, 21.0231964, 279, 285.6807267,
@@ -46,6 +54,7 @@ exp_obs <- exp_obs %>%
 exp_obs$Date <- lubridate::parse_date_time(exp_obs$Data, orders = 'dmy')
 exp_obs$yday <- lubridate::yday(exp_obs$Date)
 exp_obs$h_after_cut <- exp_obs$Days*24
+
 
 exp_obs <- exp_obs %>% 
   filter(yday >= 300 | yday < 55)
@@ -662,3 +671,36 @@ pop_out$exp %>%
   facet_wrap(~jday_fact)
 
 #LarsChill::convert_parameters_old_to_new(c(0,0,0,0, 0.4153e4, 0.1289e5, 0.1395e6, 0.2567e19, 0, 0,0,0))
+
+
+
+
+#-----------------------#
+#check second season
+exp_obs2 <- readxl::read_excel('experimental/Time to budbreak data for Sigma.xlsx', 
+                              sheet = 'T_2020_term+spur')
+
+exp_obs2 <- exp_obs2 %>% 
+  group_by(Data) %>% 
+  mutate(cumsum = cumsum(Bubble_size))
+
+exp_obs2$Date <- lubridate::parse_date_time(exp_obs2$Data, orders = 'dmy')
+exp_obs2$yday <- lubridate::yday(exp_obs2$Date)
+exp_obs2$h_after_cut <- exp_obs2$Days*24
+
+exp_obs2 <- exp_obs2 %>% 
+  filter(yday >= 300 | yday < 55)
+
+
+#the function expects to get already the position at which the forcing experiment should take place
+jday_cut2 <- unique(exp_obs2$yday)
+jday_name2 <- lubridate::stamp("Nov 03", orders = '%b %d')(unique(exp_obs2$Date))
+#jday_name <- c('Nov 03', 'Nov 17', 'Dec 01', 'Dec 15', 'Dec 29', 'Jan 12', 'Jan 26', 'Feb 09', 'Feb23')
+i_cut2 <-purrr::map_int(jday_cut2, function(x){
+  floor(median(which(x == s2$JDay)))
+})  
+#c++ starts counting at zero, correct for that
+i_cut2 <- i_cut2 -1
+
+
+
