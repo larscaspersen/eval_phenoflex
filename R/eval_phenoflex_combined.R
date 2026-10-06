@@ -72,8 +72,7 @@ eval_phenoflex_combined  <- function(x,
   params[2] <- x[5+((ncult -1) * 3)]    #theta_c
   params[3] <- x[6+((ncult -1) * 3)]    #Tau(thetha*)
   params[4] <- x[7+((ncult -1) * 3)]     #pi_c
-  output<-nleqslv::nleqslv(c(500, 15000), solve_nle, jac=NULL, params, xscalm="auto", method="Newton",
-                           control=list(trace=0,allowSingular=TRUE))
+  output <- .fit_chill_parameters(params)
   #This is a numerical method which can produce non-convergence. Check this
   if (output$termcd >= 3){
     #if the nle algorithm has stalled just discard this solution
@@ -86,8 +85,8 @@ eval_phenoflex_combined  <- function(x,
     E1 <- output$x[2]
     #A1 and A0 can be calculated through Equations 36 and 37
     q=1/params[1]-1/params[2]
-    A1 <- -exp(E1/params[1])/params[3]*log(1-exp((E0-E1)*q))
-    A0 <- A1*exp((E0-E1)/params[2])
+    A1 <- output$A1
+    A0 <- output$A0
   }
   #       yc, zc, s1, Tu                            Tf                    Tb                   slope
   par <- c(x[1:((ncult * 3)+1)], E0, E1, A0, A1, x[length(x) - 2], Tc,  x[length(x) - 1], x[length(x)])
