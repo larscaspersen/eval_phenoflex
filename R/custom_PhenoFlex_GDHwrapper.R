@@ -10,7 +10,7 @@
 #' @param x data.frame with at least the column "Temp" (hourly temperature data) and "JDay" (day of the year)
 #' @param par vector of length 12 with the PhenoFlex model parameters in the following order:
 #' yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope. If the set of parameters include 
-#' theta_star, theta_c, tau and pie_c instead of E0, E1, A0, and A1, then the function \code{\link[LarsChill]{convert_parameters}}
+#' theta_star, theta_c, tau and pie_c instead of E0, E1, A0, and A1, then the function \code{\link{convert_parameters}}
 #' should be run before inserting the parameters
 #' @param constraints boolean, set FALSE by default. If set TRUE, the function will perform
 #' some checks on the model parameter prior to the prediction of bloom day. For more information 
@@ -94,25 +94,5 @@ custom_PhenoFlex_GDHwrapper <- function (x, par, constraints = FALSE){
   
 
   #return values
-  if (bloomindex == 0){
-    return(NA)
-  } 
-  
-  JDay <- x$JDay[bloomindex]
-  JDaylist <- which(x$JDay == JDay)
-  
-  #if we are in the norhtern hemisphere and the year corresponding to the index is the smaller one, return negative numbers relative to Jan-1 being 1
-  if(length(unique(x$Year)) == 2 & x$Year[bloomindex] == min(x$Year)){
-
-    JDay <- JDay - 365
-    
-  } 
-  
-  n <- length(JDaylist)
-  if (n == 1){
-    return(JDay)
-  } 
-  return(JDay + which(JDaylist == bloomindex)/n - 1/(n/ceiling(n/2)))
-  
-  
+  return_JDay(bloomindex, x$JDay, x$Year)
 }
