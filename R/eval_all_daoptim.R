@@ -38,7 +38,7 @@ eval_all_daoptim <- function(x, modelfn, bloomJDays, SeasonList, na_penalty = 36
                      c_L = c(  0,   0,   0,     1.5, 1.5), 
                      c_U = c(Inf, Inf, Inf,     3.5, 3.5)){
   if(intermed_chill){
-    int <- LarsChill::convert_parameters(c(rep(0, 4), x[pos_int], rep(0,4)))
+    int <- convert_parameters(c(rep(0, 4), x[pos_int], rep(0,4)))
     
     if(is.list(int)) return(Inf)
     
@@ -48,11 +48,9 @@ eval_all_daoptim <- function(x, modelfn, bloomJDays, SeasonList, na_penalty = 36
   #wrapper_seq_model(x = SeasonList[[1]], par = par)
   
   par <- x
-  pred_bloom <- unlist(lapply(X = SeasonList, FUN = modelfn, 
-                              par = par))
-  pred_bloom <- ifelse(is.na(pred_bloom), yes = na_penalty, 
-                       no = pred_bloom)
-  F <- sum((pred_bloom - bloomJDays)^2)
+  if (!check_constrain) {
+    return(.phenology_rss(par, modelfn, bloomJDays, SeasonList, na_penalty))
+  }
   g <- rep(0, 5)
   g[1] <- par[pos_heat[2]] - par[pos_heat[1]]
   g[2] <- par[pos_heat[3]] - par[pos_heat[1]]
@@ -60,8 +58,8 @@ eval_all_daoptim <- function(x, modelfn, bloomJDays, SeasonList, na_penalty = 36
   g[4] <- exp((10 * par[pos_E0_E1[1]])/(297 * 279)) 
   g[5] <- exp((10 * par[pos_E0_E1[2]])/(297 * 279))
   
-  if((any(g <= c_L) | any(g >= c_U)) & check_constrain){
+  if(any(!is.finite(g)) || any(g <= c_L) || any(g >= c_U)){
     return(Inf)
   }
-  return(F)
+  .phenology_rss(par, modelfn, bloomJDays, SeasonList, na_penalty)
 }
