@@ -99,13 +99,54 @@ prediction <- predict_phenology(model, weather = season, parameters = parameters
 `model` is an S3 list describing the algorithms. The named numeric parameter
 vector is separate and may be reordered without changing the prediction.
 `season` must contain complete consecutive hourly days with Temp, Year and JDay;
-optional Hour must run from 0 to 23 each day. The result is the existing fractional
-Julian bloom day, or NA if bloom is not reached. The new adapter calls the existing
-sequential wrapper. Other structures/submodels are not supported by this new
-interface yet; their existing wrappers remain available.
+optional Hour must run from 0 to 23 each day. The result is a list with a one-based
+`bloomindex` (zero means no bloom); `basic_output = FALSE` also returns `chill`
+and `z`. Use `return_JDay(prediction$bloomindex, season$JDay, season$Year)`
+for the fractional calendar result. Sequential, linear parallel, partial overlap
+and PhenoFlex structures share Dynamic chill and scaled or unscaled GDH modules.
 
 `chill_dynamic("kinetic")` selects E0/E1/A0/A1 instead. Kinetic defaults use the
 original coefficients; characteristic defaults are a separate starting set and
 are not their conversion. See `development/sequential_model_example.R` for a
 runnable example with frozen station weather and equivalent parameter sets.
+
+## Modular populations and forcing
+
+```r
+model <- population_pheno_model(
+  structure = "phenoflex",
+  chill = chill_dynamic("characteristic"),
+  heat = heat_gdh("unscaled"),
+  n = 100,
+  sd = c(yc = 2, zc = 10),
+  seed = 17
+)
+parameters <- default_parameters(model)
+buds <- sample_population_parameters(model, parameters)
+prediction <- predict_population_phenology(
+  model, season, parameters,
+  population = buds,
+  cut_indices = c(240, 480),
+  forcing_temperature = 23,
+  max_hours_forcing = 1200
+)
+prediction$bloom_jday
+prediction$forcing$hours_to_bloom
+```
+
+Use a season with at least 480 hourly rows for these example cuts. The population
+specification holds its underlying single model in `model$model`. Named parameters
+are population means; structure traits can vary between buds while chill and
+potential heat are calculated once. For partial overlap, specify dispersion of
+`b1` and `b2` explicitly instead of `zc`. Convert heat standard deviations as
+well as means when changing GDH scaling. Zero dispersion reproduces a single bud.
+Reuse an explicit buds-by-structure-parameters matrix for deterministic fitting
+or correlated traits. Sampled parameters outside their model domains raise errors.
+
+Cut indices identify one-based weather rows. Forcing retains accumulated field
+heat and structure history while holding all chill pools at their cutting values.
+Results are elapsed hours: zero means already bloomed at cutting and NA means
+the requirement was not reached. Detailed output adds hours-by-buds heat matrices.
+These units differ from the legacy `phenoflex_population()` forcing step indices;
+that interface remains available with its original behavior.
 

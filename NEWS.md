@@ -1,5 +1,13 @@
 # evalpheno 0.0.2.0
 
+* Add population_pheno_model(), sample_population_parameters() and
+  predict_population_phenology() for modular bud populations with shared
+  Dynamic chill/GDH inputs and bud-specific structure parameters. Support
+  explicit populations, independent normal/skew-normal draws and local seeds.
+  Constant-temperature forcing holds chill at cutting and retains field heat
+  and structure history. Forcing reports elapsed hours (zero for already met,
+  NA for not reached), separately from the legacy population kernel conventions.
+
 * Add calculate_heat_gdh_unscaled() and apply_phenoflex_structure() for modular
   PhenoFlex coupling with interchangeable chill and heat inputs. The structure
   preserves PhenoFlex's start-of-interval chill timing and sigmoid limits.
