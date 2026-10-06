@@ -19,35 +19,34 @@
 #'  i <- 56
 #'  Jday_vec <- rep(1:30, each = 24)
 #'  year_vec <- rep(2024, length(Jday_vec))
-#'  return_JDay(i, return_JDay, year_vec)
+#'  return_JDay(i, Jday_vec, year_vec)
 #' }
 #' @export return_JDay
-return_JDay <- function(index, Jday_vec, year_vec){
-  
-  # index <- index_budburst
-  # Jday_vec <- chill_heat[,2]
-  # year_vec <- chill_heat[,1]
-  
-  if (index == 0){
-    JDay_out <- NA
-  } else {
-    JDay <- Jday_vec[index]
-    JDaylist <- which(Jday_vec == JDay)
-    
-    #if we are in the norhtern hemisphere and the year corresponding to the index is the smaller one, return negative numbers relative to Jan-1 being 1
-    if(length(unique(year_vec)) == 2 & year_vec[index] == min(year_vec)){
-      
-      JDay <- JDay - 365
-      
-    } 
-    
-    n <- length(JDaylist)
-    if (n == 1){
-      JDay_out <- JDay
-      return(JDay)
-    } else {
-      JDay_out <- JDay + which(JDaylist == index)/n - 1/(n/ceiling(n/2))
-    }
+return_JDay <- function(index, Jday_vec, year_vec = NULL){
+  if (!is.numeric(index) || length(index) != 1L ||
+      (!is.na(index) && (!is.finite(index) || index < 0 ||
+                        index != floor(index) || index > length(Jday_vec)))) {
+    stop("index must be a single valid row index, 0, or NA.", call. = FALSE)
   }
-  return(JDay_out)
+  if (is.na(index) || index == 0) return(NA_real_)
+  if (!is.numeric(Jday_vec) || any(!is.finite(Jday_vec))) {
+    stop("Jday_vec must contain finite day-of-year values.", call. = FALSE)
+  }
+  if (!is.null(year_vec) &&
+      (!is.numeric(year_vec) || length(year_vec) != length(Jday_vec) ||
+       any(!is.finite(year_vec)) || any(year_vec != floor(year_vec)))) {
+    stop("year_vec must contain one finite integer year per row.", call. = FALSE)
+  }
+  day <- Jday_vec[index]
+  same_day <- Jday_vec == day
+  if (!is.null(year_vec)) same_day <- same_day & year_vec == year_vec[index]
+  rows <- which(same_day)
+  if (!is.null(year_vec) && length(unique(year_vec)) == 2L &&
+      year_vec[index] == min(year_vec)) {
+    year <- year_vec[index]
+    leap <- year %% 4 == 0 & (year %% 100 != 0 | year %% 400 == 0)
+    day <- day - 365 - as.integer(leap)
+  }
+  if (length(rows) == 1L) return(day)
+  day + (match(index, rows) - ceiling(length(rows) / 2)) / length(rows)
 }
