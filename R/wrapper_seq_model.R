@@ -35,17 +35,5 @@ wrapper_seq_model <- function(x, par){
                           E0 = E0, E1 = E1, A0 = A0, A1 = A1, Tf = Tf, slope = slope,
                           Tb = Tb, Tu = Tu, Tc = Tc, 
                           basic_output = TRUE)$bloomindex
-  if (bloomindex == 0) {
-    return(NA)
-  }
-  JDay <- x$JDay[bloomindex]
-  JDaylist <- which(x$JDay == JDay)
-  if (length(unique(x$Year)) == 2 & x$Year[bloomindex] == min(x$Year)) {
-    JDay <- JDay - 365
-  }
-  n <- length(JDaylist)
-  if (n == 1) {
-    return(JDay)
-  }
-  return(JDay + which(JDaylist == bloomindex)/n - 1/(n/ceiling(n/2)))
+  return_JDay(bloomindex, x$JDay, x$Year)
 }
