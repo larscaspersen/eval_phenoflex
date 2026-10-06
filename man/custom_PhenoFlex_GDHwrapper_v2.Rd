@@ -11,7 +11,7 @@ custom_PhenoFlex_GDHwrapper_v2(x, par, constraints = FALSE)
 
 \item{par}{vector of length 12 with the PhenoFlex model parameters in the following order:
 yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope. If the set of parameters include 
-theta_star, theta_c, tau and pie_c instead of E0, E1, A0, and A1, then the function \code{\link[LarsChill]{convert_parameters}}
+theta_star, theta_c, tau and pie_c instead of E0, E1, A0, and A1, then the function \code{\link{convert_parameters}}
 should be run before inserting the parameters}
 
 \item{constraints}{boolean, set FALSE by default. If set TRUE, the function will perform

@@ -74,8 +74,7 @@ eval_phenoflex_three_stages  <- function(x,
   params[4] <- x[8+2]     #pi_c
   
   
-  output<-nleqslv::nleqslv(c(500, 15000), LarsChill::solve_nle, jac=NULL, params, xscalm="auto", method="Newton",
-                           control=list(trace=0,allowSingular=TRUE))
+  output <- .fit_chill_parameters(params)
   
   
   #This is a numerical method which can produce non-convergence. Check this
@@ -96,8 +95,8 @@ eval_phenoflex_three_stages  <- function(x,
     
     q=1/params[1]-1/params[2]
     
-    A1 <- -exp(E1/params[1])/params[3]*log(1-exp((E0-E1)*q))
-    A0 <- A1*exp((E0-E1)/params[2])
+    A1 <- output$A1
+    A0 <- output$A0
   }
   
   
@@ -141,15 +140,17 @@ eval_phenoflex_three_stages  <- function(x,
       budburst_index <- which(x[,'heat_accumulated'] >= zc1)
       
       if(length(budburst_index)){
-        JDay_budburst <- budburst_index %>% 
-          min() %>% 
+        budburst_index <- min(budburst_index)
+        JDay_budburst <- budburst_index %>%
           return_JDay(Jday_vec =  x[,'JDay'], year_vec = x[, 'Year'])
+        # Check chill at the hourly threshold crossing, not at the Julian day.
+        chill_met_at_budburst <- isTRUE(x[budburst_index, 'chill_accumulated'] >= yc)
       } else {
         JDay_budburst <- na_penalty
+        chill_met_at_budburst <- FALSE
       }
       
       
-      chill_met_at_budburst <- x[JDay_budburst, 3] >= yc
       
       return(list(JDay_fullbloom = JDay_fullbloom,
                   JDay_budburst = JDay_budburst,

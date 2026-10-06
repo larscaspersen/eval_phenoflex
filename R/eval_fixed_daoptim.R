@@ -34,12 +34,6 @@ eval_fixed_daoptim <- function(x, modelfn, bloomJDays, SeasonList, na_penalty = 
                        Tf=4, slope=1.6, Tb = 4, Tu = 25, Tc = 36){
   par <- c(x, E0, E1, A0, A1, Tf, slope, Tb, Tu, Tc)
   
-  pred_bloom <- unlist(lapply(X = SeasonList, FUN = modelfn, 
-                              par = par))
-  pred_bloom <- ifelse(is.na(pred_bloom), yes = na_penalty, 
-                       no = pred_bloom)
-  
-  F <- sum((pred_bloom - bloomJDays)^2)
-  return(F)
+  .phenology_rss(par, modelfn, bloomJDays, SeasonList, na_penalty)
   
 }

@@ -2,26 +2,26 @@
 % Please edit documentation in R/solve_nle.R
 \name{solve_nle}
 \alias{solve_nle}
-\title{Function used to calculate E0, E1, A0 and A1 of Phenoflex}
+\title{Stable residuals for the Dynamic Model parameter conversion}
 \usage{
 solve_nle(x, params)
 }
 \arguments{
-\item{x}{numeric vector, containing values of E0 and E1}
+\item{x}{Numeric vector c(E0, E1), with finite 0 < E0 < E1.}
 
-\item{params}{numeric vector, containing values of parameters theta_star, theta_c, tau and pie_c
-the 'custom_GDH_wrapper' function for that}
+\item{params}{Numeric vector c(theta_star, theta_c, tau, pie_c), with
+0 < theta_star < theta_c < 297, tau > 0 and pie_c > 0; all finite.}
 }
 \value{
-error, for the current set of E0 and E1, which gets minimized during the approximation
+Numeric vector of two logarithmic residuals, zero at a solution.
 }
 \description{
-This function is used with the nlseq packages to to convert
-the parameters theta_star, theta_c, tau and pie_c to E0, E1, A0 and A1.
-Parameters E0 and E1 need to be numerically approximated. The function returns the 
-error of the approximation for the given set of parameters.
+Evaluate the two logarithmic residuals used to convert characteristic chill
+parameters into E0 and E1. Uses expm1/log1p and log-scale rates to avoid
+cancellation and intermediate overflow. Reference temperatures are 297 and
+279 K, with eta = 1/3. Equation 38 requires theta_c < 297 K for a real log.
+These functions evaluate residuals; they do not themselves find a root.
 }
-\author{
-Lars Caspersen
+\seealso{
+\code{\link{solve_nle_transformed}}, \code{\link{convert_parameters}}
 }
-\keyword{utility}

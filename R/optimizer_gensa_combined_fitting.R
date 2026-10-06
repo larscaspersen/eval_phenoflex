@@ -114,6 +114,7 @@ chifull_combined_fitting <- function (par,
     #convert parameters new to old if needed
     if(convert_par){
       par_cult <- convert_parameters(par_cult)
+      if (is.list(par_cult)) return(Inf)
     }
     
     #check if parameters violate any 

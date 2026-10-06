@@ -4,7 +4,7 @@
 \alias{return_JDay}
 \title{Returns Julian Day (with fraction)}
 \usage{
-return_JDay(index, Jday_vec, year_vec)
+return_JDay(index, Jday_vec, year_vec = NULL)
 }
 \arguments{
 \item{index}{integer, when heat requirement is met}
@@ -27,7 +27,7 @@ Function needed to handle the calibration function for several phenology stages
  i <- 56
  Jday_vec <- rep(1:30, each = 24)
  year_vec <- rep(2024, length(Jday_vec))
- return_JDay(i, return_JDay, year_vec)
+ return_JDay(i, Jday_vec, year_vec)
 }
 }
 \author{

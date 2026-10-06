@@ -1,0 +1,13 @@
+"case_id","station","season","function_name","cultivar","stage","parameterization","output","element","status","value","expected","difference","passed"
+"partial_overlap","cka","2008","wrapper_po_model",NA,NA,"kinetic","bloom_jday",1,"finite",-58.0416666666667,-57.4166666666667,-0.624999999999964,FALSE
+"partial_overlap_evaluation","cka","2008","eval_all_daoptim",NA,NA,"kinetic","rss",1,"finite",28238.0017361111,28028.3402777778,209.66145833331,FALSE
+"partial_overlap","cka","2009","wrapper_po_model",NA,NA,"kinetic","bloom_jday",1,"finite",-55.75,-54.5833333333333,-1.1666666666667,FALSE
+"partial_overlap_evaluation","cka","2009","eval_all_daoptim",NA,NA,"kinetic","rss",1,"finite",29155.5625,28758.5069444444,397.055555555598,FALSE
+"partial_overlap","quillota","2008","wrapper_po_model",NA,NA,"kinetic","bloom_jday",1,"finite",178.125,179.083333333333,-0.958333333333002,FALSE
+"partial_overlap_evaluation","quillota","2008","eval_all_daoptim",NA,NA,"kinetic","rss",1,"finite",6703.515625,6547.50694444444,156.00868055556,FALSE
+"partial_overlap","quillota","2009","wrapper_po_model",NA,NA,"kinetic","bloom_jday",1,"finite",185.041666666667,185.333333333333,-0.291666666666345,FALSE
+"partial_overlap_evaluation","quillota","2009","eval_all_daoptim",NA,NA,"kinetic","rss",1,"finite",6393.33506944445,6346.77777777778,46.5572916666661,FALSE
+"partial_overlap","chillR_KA","2008","wrapper_po_model",NA,NA,"kinetic","bloom_jday",1,"finite",-58.0416666666667,-57.4166666666667,-0.624999999999964,FALSE
+"partial_overlap_evaluation","chillR_KA","2008","eval_all_daoptim",NA,NA,"kinetic","rss",1,"finite",28238.0017361111,28028.3402777778,209.66145833331,FALSE
+"partial_overlap","chillR_KA","2009","wrapper_po_model",NA,NA,"kinetic","bloom_jday",1,"finite",-55.75,-54.5833333333333,-1.1666666666667,FALSE
+"partial_overlap_evaluation","chillR_KA","2009","eval_all_daoptim",NA,NA,"kinetic","rss",1,"finite",29155.5625,28758.5069444444,397.055555555598,FALSE

@@ -28,7 +28,6 @@
 #' 
 #' @importFrom purrr map_dbl
 #' @importFrom chillR Dynamic_Model
-#' @importFrom LarsChill convert_parameters
 #' @importFrom utils tail
 #' @examples 
 #' \dontrun{
@@ -52,7 +51,7 @@
 eval_function_endodormancy_meigo <- function(x, SeasonList, dispersion_fun = 'calc_cv'){
   
   #convert the parameters from new to old
-  x_new <- LarsChill::convert_parameters(c(0,0,0,0, x[1:5], 0, 0, x[6]))
+  x_new <- convert_parameters(c(0,0,0,0, x[1:5], 0, 0, x[6]))
   
   #inequality constrains
   g <- rep(0,2)

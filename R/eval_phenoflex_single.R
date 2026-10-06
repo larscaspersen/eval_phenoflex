@@ -28,7 +28,7 @@
 #' If the flag for return_pred set TRUE, then it returns bloom dates
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' 
-#' @export eval_phenoflex_onlyreq
+#' @export eval_phenoflex_single
 eval_phenoflex_single  <- function(x, 
                                    modelfn,
                                    bloomJDays,
@@ -64,8 +64,7 @@ eval_phenoflex_single  <- function(x,
   params[4] <- x[8]     #pi_c
   
   
-  output<-nleqslv::nleqslv(c(500, 15000), LarsChill::solve_nle, jac=NULL, params, xscalm="auto", method="Newton",
-                           control=list(trace=0,allowSingular=TRUE))
+  output <- .fit_chill_parameters(params)
   
   
   #This is a numerical method which can produce non-convergence. Check this
@@ -86,8 +85,8 @@ eval_phenoflex_single  <- function(x,
     
     q=1/params[1]-1/params[2]
     
-    A1 <- -exp(E1/params[1])/params[3]*log(1-exp((E0-E1)*q))
-    A0 <- A1*exp((E0-E1)/params[2])
+    A1 <- output$A1
+    A0 <- output$A0
   }
   
   

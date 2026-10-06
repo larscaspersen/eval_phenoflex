@@ -26,11 +26,17 @@ parallel_model(
 )
 }
 \arguments{
-\item{yc}{numeric. Critical value defining end of chill accumulation}
+\item{temp}{At least two finite hourly temperatures, greater than -273 Celsius
+(or zero Kelvin), matching the legacy temperature conversion.}
+
+\item{times}{Finite time points in hours, matching temp in length. Consecutive
+values must be one hour apart (absolute tolerance 1e-8 hours).}
+
+\item{yc}{numeric. Chill threshold for full heat effectiveness}
 
 \item{zc}{numeric. Critical value of z determining the end of heat accumulation}
 
-\item{kmin}{numeric. Share of buds that can flower without receiving chill.}
+\item{kmin}{numeric. Minimum relative heat effectiveness at zero accumulated chill.}
 
 \item{A0}{numeric. Parameter \eqn{A_0}{A0} of the dynamic model}
 
@@ -42,7 +48,7 @@ parallel_model(
 
 \item{slope}{numeric. Slope parameter for sigmoidal function}
 
-\item{Tf}{numeric. Transition temperature (in degree Kelvin) for the sigmoidal function}
+\item{Tf}{numeric. Transition temperature in the same units as temp.}
 
 \item{Tu}{numeric. GDH optimal temperature}
 
@@ -50,9 +56,10 @@ parallel_model(
 
 \item{Tc}{numeric. GDH upper temperature (upper threshold)}
 
-\item{Delta}{numeric. Width of Gaussian heat accumulation model}
+\item{Delta}{numeric. Positive compatibility argument; unused by the GDH heat model.}
 
-\item{stopatzc}{boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.}
+\item{stopatzc}{boolean. If TRUE, stop when the bloom requirement is reached;
+otherwise process the complete series while preserving the first bloom index.}
 
 \item{deg_celsius}{boolean. If set `TRUE` function assumes degree celsius temperature parameters, otherwise kelvin.}
 
@@ -64,23 +71,15 @@ returned as named element of this list, which are numeric vectors of the same le
 }
 \description{
 Parallel model, combining dynamic model for chill accumulation and the GDH model
+Uses precomputed chill and heat modules. All chill pools continue updating.
 }
 \examples{
-data(KA_weather)
-hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
-iSeason <- genSeason(hourtemps, years=c(2009))
-zc <- 6000
-yc <- 40
-kmin <- 0.1
-x <- parallel_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
-               times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
-               zc=zc, stopatzc=TRUE, yc=yc, kmin = kmin, basic_output=FALSE)
-DBreakDay <- x$bloomindex
-ii <- c(1:DBreakDay)
-plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
-abline(h=zc, lty=2)
-plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
-abline(h=yc, lty=2)
+temperatures <- rep(15, 240)
+result <- parallel_model(temp = temperatures, times = seq_along(temperatures))
+result$bloomindex
+}
+\references{
+Hänninen, H. and Kramer, K. (2007). A framework for modelling the annual cycle of trees in boreal and temperate regions. Silva Fennica 41(1), 167-205. Equation B4b. doi:10.14214/sf.313.
 }
 \author{
 Lars Caspersen <lcaspers@uni-bonn.de>
