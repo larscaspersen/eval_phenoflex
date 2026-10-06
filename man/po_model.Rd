@@ -28,15 +28,21 @@ po_model(
 )
 }
 \arguments{
-\item{yc}{numeric, Critical value defining end of chill accumulation}
+\item{temp}{At least two finite hourly temperatures, greater than -273 Celsius
+(or zero Kelvin), matching the legacy temperature conversion.}
 
-\item{b1}{numeric. Heat requirement at minimum chilling}
+\item{times}{Finite time points in hours, matching temp in length. Consecutive
+values must be one hour apart (absolute tolerance 1e-8 hours).}
 
-\item{b2}{numeric. Heat requiement at maximum chilling}
+\item{yc}{numeric, Chill requirement for heat accumulation to begin}
 
-\item{b3}{numeric. Scales the compensation from heat and chill requirement. Low b3 leads to linear compensation, high b3 to much heat needed to compensate chill.}
+\item{b1}{Positive finite baseline in the heat requirement b1 + b2*exp(-b3*Ca), where Ca is additional chill after yc is first reached.}
 
-\item{ol}{numeric. Controls how much longer chill accumulates after reaching yc. Chill accumulation stops when share of heat requirement is surprassed.}
+\item{b2}{Non-negative finite additive heat requirement at zero additional chill.}
+
+\item{b3}{Non-negative finite decay coefficient for additional chill Ca.}
+
+\item{ol}{Non-negative overlap multiplier. Additional chill stops affecting the heat requirement when heat reaches b1*ol.}
 
 \item{A0}{numeric. Parameter \eqn{A_0}{A0} of the dynamic model}
 
@@ -46,7 +52,9 @@ po_model(
 
 \item{E1}{numeric. Parameter \eqn{E_1}{E1} of the dynamic model}
 
-\item{slope}{numeric. Slope parameter for sigmoidal function //' @param Tf numeric. Transition temperature (in degree Kelvin) for the sigmoidal function}
+\item{slope}{numeric. Slope parameter for sigmoidal function}
+
+\item{Tf}{numeric. Transition temperature in the same units as temp.}
 
 \item{Tu}{numeric. GDH optimal temperature}
 
@@ -54,9 +62,12 @@ po_model(
 
 \item{Tc}{numeric. GDH critical temperature}
 
-\item{Delta}{numeric. Width of Gaussian heat accumulation model}
+\item{Delta}{numeric. Positive compatibility argument; unused by the GDH heat model.}
 
-\item{stopatzc}{boolean. If `TRUE`, the PhenoFlex is applied until the end of the temperature series. Default is to stop once the value zc has been reached.}
+\item{stopatzc}{boolean. If TRUE, stop when the bloom requirement is reached;
+otherwise process the complete series while preserving the first bloom index.}
+
+\item{deg_celsius}{If TRUE, temperatures are supplied in Celsius; otherwise Kelvin.}
 
 \item{basic_output}{boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.}
 }
@@ -66,25 +77,16 @@ returned as named element of this list, which are numeric vectors of the same le
 }
 \description{
 Partial Overlap Model, combining the dynamic model for chill accumulation and the GDH model
+Uses precomputed chill and heat modules. Chill continues throughout. Once heat at
+the start of an interval reaches b1*ol, additional chill no longer changes the heat requirement.
+
+Additional chill is measured from the first row reaching yc, including any
+overshoot in the baseline. The Dynamic Model pools retain their total values.
 }
 \examples{
-data(KA_weather)
-hourtemps <- stack_hourly_temps(KA_weather, latitude=50.4)
-iSeason <- genSeason(hourtemps, years=c(2009))
-yc <- 40
-b1 <- 1119
-b2 <- 8677
-b3 <- 0.01119
-ol <- 0.75
-x <- po_model(temp=hourtemps$hourtemps$Temp[iSeason[[1]]],
-               times=c(1: length(hourtemps$hourtemps$Temp[iSeason[[1]]])),
-               yc=yc, b1 = b1, b2=b2, b3=b3, ol = ol, stopatzc=TRUE, basic_output=FALSE)
-DBreakDay <- x$bloomindex
-ii <- c(1:DBreakDay)
-plot(x=ii, y=x$z[ii], xlab="Hour Index", ylab="z", col="red", type="l")
-abline(h=zc, lty=2)
-plot(x=ii, y=x$y[ii], xlab="Hour Index", ylab="y", col="red", type="l")
-abline(h=yc, lty=2)
+temperatures <- rep(15, 240)
+result <- po_model(temp = temperatures, times = seq_along(temperatures))
+result$bloomindex
 }
 \author{
 Lars Caspersen <lcaspers@uni-bonn.de>

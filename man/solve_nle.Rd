@@ -16,7 +16,7 @@ solve_nle(x, params)
 Numeric vector of two logarithmic residuals, zero at a solution.
 }
 \description{
-Evaluate the two logarithmic residuals used to convert intermediate chill
+Evaluate the two logarithmic residuals used to convert characteristic chill
 parameters into E0 and E1. Uses expm1/log1p and log-scale rates to avoid
 cancellation and intermediate overflow. Reference temperatures are 297 and
 279 K, with eta = 1/3. Equation 38 requires theta_c < 297 K for a real log.
