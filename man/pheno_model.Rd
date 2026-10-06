@@ -8,25 +8,29 @@
 \title{Specify a phenology model}
 \usage{
 pheno_model(
-  structure = "sequential",
+  structure = "phenoflex",
   chill = chill_dynamic(),
   heat = heat_gdh()
 )
 
 chill_dynamic(parameterization = c("characteristic", "kinetic"))
 
-heat_gdh()
+heat_gdh(scaling = c("unscaled", "scaled"))
 
 validate_model_spec(model)
 }
 \arguments{
-\item{structure}{Model structure; currently only "sequential".}
+\item{structure}{One of "sequential", "parallel", "partial_overlap" or "phenoflex".}
 
 \item{chill}{Chill specification returned by chill_dynamic().}
 
 \item{heat}{Heat specification returned by heat_gdh().}
 
 \item{parameterization}{Dynamic Model representation: "characteristic" or "kinetic".}
+
+\item{scaling}{"unscaled" returns Growing Degree Hour (GDH) units without scaling via (Tu-Tb).
+"scaled" returns units multiplied by (Tu-Tb). Standard implementation of PhenoFlex
+uses unscaled GDH, while most other studies use scaled GDH.}
 
 \item{model}{Model specification.}
 }
@@ -36,8 +40,8 @@ lists; validate_model_spec() invisibly returns TRUE or raises an error.
 }
 \description{
 A model specification is an immutable-by-convention S3 list describing the
-algorithms, not their parameter values. This first implementation supports
-sequential coupling with the Dynamic Model and GDH on hourly temperatures.
+algorithms, not their parameter values. Supports sequential, linear parallel,
+partial-overlap and PhenoFlex coupling with the Dynamic Model and GDH.
 Other combinations are rejected as unsupported, not judged scientifically.
 }
 \examples{
