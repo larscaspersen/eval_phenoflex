@@ -47,3 +47,12 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Compiled code and local validation artifacts
+*.o
+*.dll
+/.local-library/
+/development/check*/
+/development/larschill-migration/
+/development/larschill-baseline.rds
+/development/regression-results/

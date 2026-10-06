@@ -4,3 +4,7 @@
 ^fig$
 ^CITATION\.cff$
 ^README\.Rmd$
+^experimental$
+^.*\.(jpeg|jpg|png)$
+^development$
+^\.local-library$
