@@ -1,5 +1,5 @@
 test_that("sequential specifications expose exact, validated parameter names", {
-  model <- pheno_model()
+  model <- pheno_model("sequential", heat = heat_gdh("scaled"))
   expect_s3_class(model, "pheno_model")
   expect_true(validate_model_spec(model))
   p <- default_parameters(model)
@@ -49,7 +49,8 @@ test_that("named sequential predictions reproduce every frozen sequential case",
   fixtures <- readRDS(file.path(path, "inputs.rds"))
   baseline <- read.csv(file.path(path, "baseline.csv"))
   for (representation in c("characteristic", "kinetic")) {
-    model <- pheno_model(chill = chill_dynamic(representation))
+    model <- pheno_model("sequential", chill = chill_dynamic(representation),
+                         heat = heat_gdh("scaled"))
     p <- default_parameters(model)
     p[c("yc", "zc")] <- c(20, 100)
     if (representation == "kinetic")
@@ -59,19 +60,21 @@ test_that("named sequential predictions reproduce every frozen sequential case",
       expected <- baseline$value[baseline$case_id == "sequential" &
                                    baseline$station == station & baseline$season == year]
       expect_length(expected, 1)
-      expect_equal(predict_phenology(model, weather, p), expected, tolerance = 1e-10)
+      result <- predict_phenology(model, weather, p)
+      expect_equal(return_JDay(result$bloomindex, weather$JDay, weather$Year),
+                   expected, tolerance = 1e-10)
       expect_identical(predict_phenology(model, weather, rev(p)), predict_phenology(model, weather, p))
       no_bloom <- p; no_bloom[c("yc", "zc")] <- 1e12
-      expect_true(is.na(predict_phenology(model, weather, no_bloom)))
+      expect_equal(predict_phenology(model, weather, no_bloom)$bloomindex, 0)
     }
   }
 })
 
 test_that("sequential adapter rejects invalid hourly weather", {
-  model <- pheno_model()
+  model <- pheno_model("sequential", heat = heat_gdh("scaled"))
   weather <- data.frame(Temp = rep(10, 48), Year = 2008,
                         JDay = rep(59:60, each = 24), Hour = rep(0:23, 2))
-  expect_type(predict_phenology(model, weather), "double")
+  expect_named(predict_phenology(model, weather), "bloomindex")
   expect_error(predict_phenology(model, weather[-1, ]), "complete hourly")
   bad <- weather; bad$Temp[1] <- NA
   expect_error(predict_phenology(model, bad), "finite numeric")
