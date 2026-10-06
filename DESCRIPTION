@@ -1,7 +1,7 @@
 Package: evalpheno
 Type: Package
 Title: Custom Evaluation functions for PhenoFlex
-Version: 0.0.2.0
+Version: 0.0.3.0
 Encoding: UTF-8
 License: GPL (>= 3)
 Authors@R: 
