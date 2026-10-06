@@ -4,7 +4,13 @@
 \alias{predict_phenology}
 \title{Predict one season with a model specification}
 \usage{
-predict_phenology(model, weather, parameters = default_parameters(model))
+predict_phenology(
+  model,
+  weather,
+  parameters = default_parameters(model),
+  stopatzc = TRUE,
+  basic_output = TRUE
+)
 }
 \arguments{
 \item{model}{Model specification from pheno_model().}
@@ -14,14 +20,22 @@ consecutive days, each with 24 hourly rows in chronological order. If Hour is
 present it must be 0:23 for each day. Without Hour, within-day order is assumed.}
 
 \item{parameters}{Named numeric vector; defaults to default_parameters(model).}
+
+\item{stopatzc}{Stop at the first bloom if TRUE. FALSE completes trajectories
+while retaining the first bloom index.}
+
+\item{basic_output}{boolean. If 'TRUE', only the bloomindex is returned as 
+a named element of the return list.}
 }
 \value{
-One numeric fractional Julian bloom day, or NA if bloom is not reached.
-Dates in the preceding year retain the legacy negative-day convention.
+For a single model, a list with `bloomindex` (one-based weather row;
+zero for no bloom). Detailed output adds `chill` and `z`. Use [return_JDay()]
+to convert the index to a fractional Julian day. Population specifications
+return the result described in [predict_population_phenology()].
 }
 \description{
-Adapts named parameters to the existing sequential wrapper without changing
-its calculations. Characteristic parameters are converted with the shared
-conversion implementation. Conversion failure raises an error; failure to
-reach bloom returns NA. No calibration penalty is applied here.
+Calculates shared chill and potential heat and applies the selected C++
+structure. Characteristic parameters use the shared conversion implementation.
+Conversion failure raises an error; no bloom is represented by index zero.
+Population specifications dispatch to [predict_population_phenology()].
 }
