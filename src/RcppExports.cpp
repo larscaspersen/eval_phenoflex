@@ -10,6 +10,57 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// calculate_chill_dynamic
+Rcpp::NumericMatrix calculate_chill_dynamic(Rcpp::NumericVector temp, Rcpp::NumericVector times, double A0, double A1, double E0, double E1, double slope, double Tf, bool deg_celsius);
+RcppExport SEXP _evalpheno_calculate_chill_dynamic(SEXP tempSEXP, SEXP timesSEXP, SEXP A0SEXP, SEXP A1SEXP, SEXP E0SEXP, SEXP E1SEXP, SEXP slopeSEXP, SEXP TfSEXP, SEXP deg_celsiusSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< double >::type A0(A0SEXP);
+    Rcpp::traits::input_parameter< double >::type A1(A1SEXP);
+    Rcpp::traits::input_parameter< double >::type E0(E0SEXP);
+    Rcpp::traits::input_parameter< double >::type E1(E1SEXP);
+    Rcpp::traits::input_parameter< double >::type slope(slopeSEXP);
+    Rcpp::traits::input_parameter< double >::type Tf(TfSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_chill_dynamic(temp, times, A0, A1, E0, E1, slope, Tf, deg_celsius));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_heat_gdh
+Rcpp::NumericVector calculate_heat_gdh(Rcpp::NumericVector temp, Rcpp::NumericVector times, double Tu, double Tb, double Tc, bool deg_celsius);
+RcppExport SEXP _evalpheno_calculate_heat_gdh(SEXP tempSEXP, SEXP timesSEXP, SEXP TuSEXP, SEXP TbSEXP, SEXP TcSEXP, SEXP deg_celsiusSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< double >::type Tu(TuSEXP);
+    Rcpp::traits::input_parameter< double >::type Tb(TbSEXP);
+    Rcpp::traits::input_parameter< double >::type Tc(TcSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_heat_gdh(temp, times, Tu, Tb, Tc, deg_celsius));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_heat_gdh_unscaled
+Rcpp::NumericVector calculate_heat_gdh_unscaled(Rcpp::NumericVector temp, Rcpp::NumericVector times, double Tu, double Tb, double Tc, bool deg_celsius);
+RcppExport SEXP _evalpheno_calculate_heat_gdh_unscaled(SEXP tempSEXP, SEXP timesSEXP, SEXP TuSEXP, SEXP TbSEXP, SEXP TcSEXP, SEXP deg_celsiusSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< double >::type Tu(TuSEXP);
+    Rcpp::traits::input_parameter< double >::type Tb(TbSEXP);
+    Rcpp::traits::input_parameter< double >::type Tc(TcSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_heat_gdh_unscaled(temp, times, Tu, Tb, Tc, deg_celsius));
+    return rcpp_result_gen;
+END_RCPP
+}
 // parallel_model
 List parallel_model(NumericVector temp, NumericVector times, const double yc, const double zc, const double kmin, const double A0, const double A1, const double E0, const double E1, const double slope, const double Tf, const double Tu, const double Tb, const double Tc, const double Delta, bool stopatzc, bool deg_celsius, bool basic_output);
 RcppExport SEXP _evalpheno_parallel_model(SEXP tempSEXP, SEXP timesSEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP kminSEXP, SEXP A0SEXP, SEXP A1SEXP, SEXP E0SEXP, SEXP E1SEXP, SEXP slopeSEXP, SEXP TfSEXP, SEXP TuSEXP, SEXP TbSEXP, SEXP TcSEXP, SEXP DeltaSEXP, SEXP stopatzcSEXP, SEXP deg_celsiusSEXP, SEXP basic_outputSEXP) {
@@ -68,6 +119,75 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// PhenoFlex_pop
+List PhenoFlex_pop(NumericVector temp, NumericVector times, const Rcpp::NumericVector yc, const Rcpp::NumericVector zc, const int max_days_forcing, Nullable<NumericVector> i_cut, const int forcing_temperature, const double s1, const double E0, const double E1, const double A0, const double A1, const double Tf, const double slope, const double Tb, const double Tu, const double Tc, const double Delta, const int Imodel, const int placeholder_fail, const double adjust_zc_forcing_exp, const int seed, bool stopatzc, bool deg_celsius, bool basic_output);
+RcppExport SEXP _evalpheno_PhenoFlex_pop(SEXP tempSEXP, SEXP timesSEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP max_days_forcingSEXP, SEXP i_cutSEXP, SEXP forcing_temperatureSEXP, SEXP s1SEXP, SEXP E0SEXP, SEXP E1SEXP, SEXP A0SEXP, SEXP A1SEXP, SEXP TfSEXP, SEXP slopeSEXP, SEXP TbSEXP, SEXP TuSEXP, SEXP TcSEXP, SEXP DeltaSEXP, SEXP ImodelSEXP, SEXP placeholder_failSEXP, SEXP adjust_zc_forcing_expSEXP, SEXP seedSEXP, SEXP stopatzcSEXP, SEXP deg_celsiusSEXP, SEXP basic_outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector >::type yc(ycSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::NumericVector >::type zc(zcSEXP);
+    Rcpp::traits::input_parameter< const int >::type max_days_forcing(max_days_forcingSEXP);
+    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type i_cut(i_cutSEXP);
+    Rcpp::traits::input_parameter< const int >::type forcing_temperature(forcing_temperatureSEXP);
+    Rcpp::traits::input_parameter< const double >::type s1(s1SEXP);
+    Rcpp::traits::input_parameter< const double >::type E0(E0SEXP);
+    Rcpp::traits::input_parameter< const double >::type E1(E1SEXP);
+    Rcpp::traits::input_parameter< const double >::type A0(A0SEXP);
+    Rcpp::traits::input_parameter< const double >::type A1(A1SEXP);
+    Rcpp::traits::input_parameter< const double >::type Tf(TfSEXP);
+    Rcpp::traits::input_parameter< const double >::type slope(slopeSEXP);
+    Rcpp::traits::input_parameter< const double >::type Tb(TbSEXP);
+    Rcpp::traits::input_parameter< const double >::type Tu(TuSEXP);
+    Rcpp::traits::input_parameter< const double >::type Tc(TcSEXP);
+    Rcpp::traits::input_parameter< const double >::type Delta(DeltaSEXP);
+    Rcpp::traits::input_parameter< const int >::type Imodel(ImodelSEXP);
+    Rcpp::traits::input_parameter< const int >::type placeholder_fail(placeholder_failSEXP);
+    Rcpp::traits::input_parameter< const double >::type adjust_zc_forcing_exp(adjust_zc_forcing_expSEXP);
+    Rcpp::traits::input_parameter< const int >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< bool >::type stopatzc(stopatzcSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    Rcpp::traits::input_parameter< bool >::type basic_output(basic_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(PhenoFlex_pop(temp, times, yc, zc, max_days_forcing, i_cut, forcing_temperature, s1, E0, E1, A0, A1, Tf, slope, Tb, Tu, Tc, Delta, Imodel, placeholder_fail, adjust_zc_forcing_exp, seed, stopatzc, deg_celsius, basic_output));
+    return rcpp_result_gen;
+END_RCPP
+}
+// PhenoFlex_pop_slim
+List PhenoFlex_pop_slim(NumericVector temp, NumericVector times, const NumericVector yc, const NumericVector zc, const int max_days_forcing, Nullable<NumericVector> i_cut, const double forcing_temperature, const double s1, const double E0, const double E1, const double A0, const double A1, const double Tf, const double slope, const double Tb, const double Tu, const double Tc, const double Delta, const int Imodel, const int placeholder_fail, const double adjust_zc_forcing_exp, bool stopatzc, bool deg_celsius, bool basic_output);
+RcppExport SEXP _evalpheno_PhenoFlex_pop_slim(SEXP tempSEXP, SEXP timesSEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP max_days_forcingSEXP, SEXP i_cutSEXP, SEXP forcing_temperatureSEXP, SEXP s1SEXP, SEXP E0SEXP, SEXP E1SEXP, SEXP A0SEXP, SEXP A1SEXP, SEXP TfSEXP, SEXP slopeSEXP, SEXP TbSEXP, SEXP TuSEXP, SEXP TcSEXP, SEXP DeltaSEXP, SEXP ImodelSEXP, SEXP placeholder_failSEXP, SEXP adjust_zc_forcing_expSEXP, SEXP stopatzcSEXP, SEXP deg_celsiusSEXP, SEXP basic_outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type yc(ycSEXP);
+    Rcpp::traits::input_parameter< const NumericVector >::type zc(zcSEXP);
+    Rcpp::traits::input_parameter< const int >::type max_days_forcing(max_days_forcingSEXP);
+    Rcpp::traits::input_parameter< Nullable<NumericVector> >::type i_cut(i_cutSEXP);
+    Rcpp::traits::input_parameter< const double >::type forcing_temperature(forcing_temperatureSEXP);
+    Rcpp::traits::input_parameter< const double >::type s1(s1SEXP);
+    Rcpp::traits::input_parameter< const double >::type E0(E0SEXP);
+    Rcpp::traits::input_parameter< const double >::type E1(E1SEXP);
+    Rcpp::traits::input_parameter< const double >::type A0(A0SEXP);
+    Rcpp::traits::input_parameter< const double >::type A1(A1SEXP);
+    Rcpp::traits::input_parameter< const double >::type Tf(TfSEXP);
+    Rcpp::traits::input_parameter< const double >::type slope(slopeSEXP);
+    Rcpp::traits::input_parameter< const double >::type Tb(TbSEXP);
+    Rcpp::traits::input_parameter< const double >::type Tu(TuSEXP);
+    Rcpp::traits::input_parameter< const double >::type Tc(TcSEXP);
+    Rcpp::traits::input_parameter< const double >::type Delta(DeltaSEXP);
+    Rcpp::traits::input_parameter< const int >::type Imodel(ImodelSEXP);
+    Rcpp::traits::input_parameter< const int >::type placeholder_fail(placeholder_failSEXP);
+    Rcpp::traits::input_parameter< const double >::type adjust_zc_forcing_exp(adjust_zc_forcing_expSEXP);
+    Rcpp::traits::input_parameter< bool >::type stopatzc(stopatzcSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    Rcpp::traits::input_parameter< bool >::type basic_output(basic_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(PhenoFlex_pop_slim(temp, times, yc, zc, max_days_forcing, i_cut, forcing_temperature, s1, E0, E1, A0, A1, Tf, slope, Tb, Tu, Tc, Delta, Imodel, placeholder_fail, adjust_zc_forcing_exp, stopatzc, deg_celsius, basic_output));
+    return rcpp_result_gen;
+END_RCPP
+}
 // seq_model
 List seq_model(NumericVector temp, NumericVector times, const double yc, const double zc, const double A0, const double A1, const double E0, const double E1, const double slope, const double Tf, const double Tu, const double Tb, const double Tc, const double Delta, bool stopatzc, bool deg_celsius, bool basic_output);
 RcppExport SEXP _evalpheno_seq_model(SEXP tempSEXP, SEXP timesSEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP A0SEXP, SEXP A1SEXP, SEXP E0SEXP, SEXP E1SEXP, SEXP slopeSEXP, SEXP TfSEXP, SEXP TuSEXP, SEXP TbSEXP, SEXP TcSEXP, SEXP DeltaSEXP, SEXP stopatzcSEXP, SEXP deg_celsiusSEXP, SEXP basic_outputSEXP) {
@@ -95,11 +215,107 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// apply_parallel_structure
+Rcpp::List apply_parallel_structure(Rcpp::NumericMatrix chill, Rcpp::NumericVector heat, double yc, double zc, double kmin, bool stopatzc, bool basic_output);
+RcppExport SEXP _evalpheno_apply_parallel_structure(SEXP chillSEXP, SEXP heatSEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP kminSEXP, SEXP stopatzcSEXP, SEXP basic_outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type chill(chillSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type heat(heatSEXP);
+    Rcpp::traits::input_parameter< double >::type yc(ycSEXP);
+    Rcpp::traits::input_parameter< double >::type zc(zcSEXP);
+    Rcpp::traits::input_parameter< double >::type kmin(kminSEXP);
+    Rcpp::traits::input_parameter< bool >::type stopatzc(stopatzcSEXP);
+    Rcpp::traits::input_parameter< bool >::type basic_output(basic_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(apply_parallel_structure(chill, heat, yc, zc, kmin, stopatzc, basic_output));
+    return rcpp_result_gen;
+END_RCPP
+}
+// apply_parallel_landsberg_structure
+Rcpp::List apply_parallel_landsberg_structure(Rcpp::NumericMatrix chill, Rcpp::NumericVector heat, double y0, double yc, double zc, bool stopatzc, bool basic_output);
+RcppExport SEXP _evalpheno_apply_parallel_landsberg_structure(SEXP chillSEXP, SEXP heatSEXP, SEXP y0SEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP stopatzcSEXP, SEXP basic_outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type chill(chillSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type heat(heatSEXP);
+    Rcpp::traits::input_parameter< double >::type y0(y0SEXP);
+    Rcpp::traits::input_parameter< double >::type yc(ycSEXP);
+    Rcpp::traits::input_parameter< double >::type zc(zcSEXP);
+    Rcpp::traits::input_parameter< bool >::type stopatzc(stopatzcSEXP);
+    Rcpp::traits::input_parameter< bool >::type basic_output(basic_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(apply_parallel_landsberg_structure(chill, heat, y0, yc, zc, stopatzc, basic_output));
+    return rcpp_result_gen;
+END_RCPP
+}
+// apply_partial_overlap_structure
+Rcpp::List apply_partial_overlap_structure(Rcpp::NumericMatrix chill, Rcpp::NumericVector heat, double yc, double b1, double b2, double b3, double ol, bool stopatzc, bool basic_output);
+RcppExport SEXP _evalpheno_apply_partial_overlap_structure(SEXP chillSEXP, SEXP heatSEXP, SEXP ycSEXP, SEXP b1SEXP, SEXP b2SEXP, SEXP b3SEXP, SEXP olSEXP, SEXP stopatzcSEXP, SEXP basic_outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type chill(chillSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type heat(heatSEXP);
+    Rcpp::traits::input_parameter< double >::type yc(ycSEXP);
+    Rcpp::traits::input_parameter< double >::type b1(b1SEXP);
+    Rcpp::traits::input_parameter< double >::type b2(b2SEXP);
+    Rcpp::traits::input_parameter< double >::type b3(b3SEXP);
+    Rcpp::traits::input_parameter< double >::type ol(olSEXP);
+    Rcpp::traits::input_parameter< bool >::type stopatzc(stopatzcSEXP);
+    Rcpp::traits::input_parameter< bool >::type basic_output(basic_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(apply_partial_overlap_structure(chill, heat, yc, b1, b2, b3, ol, stopatzc, basic_output));
+    return rcpp_result_gen;
+END_RCPP
+}
+// apply_phenoflex_structure
+Rcpp::List apply_phenoflex_structure(Rcpp::NumericMatrix chill, Rcpp::NumericVector heat, double yc, double zc, double s1, bool stopatzc, bool basic_output);
+RcppExport SEXP _evalpheno_apply_phenoflex_structure(SEXP chillSEXP, SEXP heatSEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP s1SEXP, SEXP stopatzcSEXP, SEXP basic_outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type chill(chillSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type heat(heatSEXP);
+    Rcpp::traits::input_parameter< double >::type yc(ycSEXP);
+    Rcpp::traits::input_parameter< double >::type zc(zcSEXP);
+    Rcpp::traits::input_parameter< double >::type s1(s1SEXP);
+    Rcpp::traits::input_parameter< bool >::type stopatzc(stopatzcSEXP);
+    Rcpp::traits::input_parameter< bool >::type basic_output(basic_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(apply_phenoflex_structure(chill, heat, yc, zc, s1, stopatzc, basic_output));
+    return rcpp_result_gen;
+END_RCPP
+}
+// apply_sequential_structure
+Rcpp::List apply_sequential_structure(Rcpp::NumericMatrix chill, Rcpp::NumericVector heat, double yc, double zc, bool stopatzc, bool basic_output);
+RcppExport SEXP _evalpheno_apply_sequential_structure(SEXP chillSEXP, SEXP heatSEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP stopatzcSEXP, SEXP basic_outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type chill(chillSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type heat(heatSEXP);
+    Rcpp::traits::input_parameter< double >::type yc(ycSEXP);
+    Rcpp::traits::input_parameter< double >::type zc(zcSEXP);
+    Rcpp::traits::input_parameter< bool >::type stopatzc(stopatzcSEXP);
+    Rcpp::traits::input_parameter< bool >::type basic_output(basic_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(apply_sequential_structure(chill, heat, yc, zc, stopatzc, basic_output));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_evalpheno_calculate_chill_dynamic", (DL_FUNC) &_evalpheno_calculate_chill_dynamic, 9},
+    {"_evalpheno_calculate_heat_gdh", (DL_FUNC) &_evalpheno_calculate_heat_gdh, 6},
+    {"_evalpheno_calculate_heat_gdh_unscaled", (DL_FUNC) &_evalpheno_calculate_heat_gdh_unscaled, 6},
     {"_evalpheno_parallel_model", (DL_FUNC) &_evalpheno_parallel_model, 18},
     {"_evalpheno_po_model", (DL_FUNC) &_evalpheno_po_model, 20},
+    {"_evalpheno_PhenoFlex_pop", (DL_FUNC) &_evalpheno_PhenoFlex_pop, 25},
+    {"_evalpheno_PhenoFlex_pop_slim", (DL_FUNC) &_evalpheno_PhenoFlex_pop_slim, 24},
     {"_evalpheno_seq_model", (DL_FUNC) &_evalpheno_seq_model, 17},
+    {"_evalpheno_apply_parallel_structure", (DL_FUNC) &_evalpheno_apply_parallel_structure, 7},
+    {"_evalpheno_apply_parallel_landsberg_structure", (DL_FUNC) &_evalpheno_apply_parallel_landsberg_structure, 7},
+    {"_evalpheno_apply_partial_overlap_structure", (DL_FUNC) &_evalpheno_apply_partial_overlap_structure, 9},
+    {"_evalpheno_apply_phenoflex_structure", (DL_FUNC) &_evalpheno_apply_phenoflex_structure, 7},
+    {"_evalpheno_apply_sequential_structure", (DL_FUNC) &_evalpheno_apply_sequential_structure, 6},
     {NULL, NULL, 0}
 };
 
