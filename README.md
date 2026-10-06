@@ -36,4 +36,76 @@ install.packages('devtools')
 devtools::install_github('https://github.com/larscaspersen/eval_phenoflex')
 ```
 
-## 
+## Population model
+
+The population model is available directly from the installed package:
+
+``` r
+library(evalpheno)
+weather <- data.frame(Temp = rep(15, 240), JDay = rep(1:10, each = 24))
+par <- c(yc = 40, zc = 190, s1 = 0.5, Tu = 25,
+         E0 = 3372.8, E1 = 9900.3, A0 = 6319.5, A1 = 5.939917e13,
+         Tf = 4, Tc = 36, Tb = 4, slope = 1.6)
+result <- phenoflex_population(weather, par, n = 100,
+                              yc_sd = 2, zc_sd = 10, seed = 12345)
+```
+
+Use `jday_cut` to simulate forcing experiments and `population` to reuse an
+explicit set of bud requirements across runs. The existing experimental call
+`helper_run_pop_model(...)` is also available after `library(evalpheno)`.
+`sourceCpp()` and sourcing files from `experimental/` are unnecessary for these
+package functions. Normal sampling uses base R; skew-normal sampling requires `sn`.
+
+Read `?phenoflex_population` for parameter order, hourly input requirements,
+matrix dimensions, and the retained index conventions. `bloomindex = 0`
+indicates no bloom; forcing output `exp` retains zero-based step indices and
+the failure sentinel 9999. See `NEWS.md` for intentional behavior changes.
+
+The `experimental/` directory remains a research workspace and is excluded
+from package builds. Study-specific plots, data readers, and stage classifiers
+are not yet part of the public package API.
+
+### Parameter terminology
+
+Use `phenoflex_parnames_characteristic` for theta_star, theta_c, tau and pie_c,
+and `phenoflex_parnames_kinetic` for E0, E1, A0 and A1 (positions 5:8).
+These are two parameterizations of the same chill model. Both vectors contain
+all 12 names in model input order; conversions preserve the other eight values.
+
+```r
+kinetic <- characteristic_to_kinetic(characteristic)
+characteristic <- kinetic_to_characteristic(kinetic)
+```
+
+The old/new name vectors and `convert_parameters()` /
+`convert_parameters_old_to_new()` remain available as compatibility aliases.
+The inverse conversion retains its existing numerical algorithm and can fail
+for parameter sets outside its supported domain.
+
+### Named sequential model interface
+
+```r
+model <- pheno_model(
+  structure = "sequential",
+  chill = chill_dynamic("characteristic"),
+  heat = heat_gdh()
+)
+parameter_schema(model)
+parameters <- default_parameters(model)
+parameters["yc"] <- 45
+prediction <- predict_phenology(model, weather = season, parameters = parameters)
+```
+
+`model` is an S3 list describing the algorithms. The named numeric parameter
+vector is separate and may be reordered without changing the prediction.
+`season` must contain complete consecutive hourly days with Temp, Year and JDay;
+optional Hour must run from 0 to 23 each day. The result is the existing fractional
+Julian bloom day, or NA if bloom is not reached. The new adapter calls the existing
+sequential wrapper. Other structures/submodels are not supported by this new
+interface yet; their existing wrappers remain available.
+
+`chill_dynamic("kinetic")` selects E0/E1/A0/A1 instead. Kinetic defaults use the
+original coefficients; characteristic defaults are a separate starting set and
+are not their conversion. See `development/sequential_model_example.R` for a
+runnable example with frozen station weather and equivalent parameter sets.
+
