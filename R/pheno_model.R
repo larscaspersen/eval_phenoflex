@@ -1,10 +1,10 @@
 #' Specify a phenology model
 #'
 #' A model specification is an immutable-by-convention S3 list describing the
-#' algorithms, not their parameter values. This first implementation supports
-#' sequential coupling with the Dynamic Model and GDH on hourly temperatures.
+#' algorithms, not their parameter values. Supports sequential, linear parallel,
+#' partial-overlap and PhenoFlex coupling with the Dynamic Model and GDH.
 #' Other combinations are rejected as unsupported, not judged scientifically.
-#' @param structure Model structure; currently only "sequential".
+#' @param structure One of "sequential", "parallel", "partial_overlap" or "phenoflex".
 #' @param chill Chill specification returned by chill_dynamic().
 #' @param heat Heat specification returned by heat_gdh().
 #' @return pheno_model() returns a pheno_model list. Component constructors return
@@ -15,7 +15,7 @@
 #' parameters["yc"] <- 45
 #' validate_parameters(model, parameters)
 #' @export
-pheno_model <- function(structure = "sequential", chill = chill_dynamic(), heat = heat_gdh()) {
+pheno_model <- function(structure = "phenoflex", chill = chill_dynamic(), heat = heat_gdh()) {
   model <- list(structure = structure, chill = chill, heat = heat)
   validate_model_spec(model)
   class(model) <- "pheno_model"
@@ -30,20 +30,26 @@ chill_dynamic <- function(parameterization = c("characteristic", "kinetic")) {
 }
 
 #' @rdname pheno_model
+#' @param scaling "unscaled" returns Growing Degree Hour (GDH) units without scaling via (Tu-Tb).
+#' "scaled" returns units multiplied by (Tu-Tb). Standard implementation of PhenoFlex
+#' uses unscaled GDH, while most other studies use scaled GDH.
 #' @export
-heat_gdh <- function() list(name = "gdh")
+heat_gdh <- function(scaling = c("unscaled", "scaled")) list(name = "gdh",
+                            scaling = match.arg(scaling))
 
 #' @rdname pheno_model
 #' @param model Model specification.
 #' @export
 validate_model_spec <- function(model) {
+  if (inherits(model, "population_pheno_model"))
+    return(validate_model_spec(model$model))
   if (!is.list(model) || !identical(sort(names(model)), sort(c("structure", "chill", "heat"))))
     stop("model must contain exactly structure, chill and heat.", call. = FALSE)
   if (!is.character(model$structure) ||
       length(model$structure) != 1L ||
       is.na(model$structure) ||
-      !model$structure %in% c("sequential", "parallel")) {
-    stop("Supported structures are sequential and parallel.")
+      !model$structure %in% c("sequential", "parallel", "partial_overlap", "phenoflex")) {
+    stop("Supported structures are sequential, parallel, partial_overlap and phenoflex.")
   }
   if (!is.list(model$chill) ||
       !identical(sort(names(model$chill)), sort(c("name", "parameterization"))) ||
@@ -51,10 +57,32 @@ validate_model_spec <- function(model) {
       !(identical(model$chill$parameterization, "characteristic") ||
         identical(model$chill$parameterization, "kinetic")))
     stop("Use chill_dynamic() with characteristic or kinetic parameterization.", call. = FALSE)
-  if (!identical(model$heat, heat_gdh()))
-    stop("Only heat_gdh() is currently supported.", call. = FALSE)
+
+  # Check the heat specification's structure
+  if (!is.list(model$heat) ||
+      !identical(sort(names(model$heat)), c("name", "scaling"))) {
+    stop(
+      "heat must contain exactly name and scaling; use heat_gdh().",
+      call. = FALSE
+    )
+  }
+  
+  # Check the supported heat model
+  if (!identical(model$heat$name, "gdh")) {
+    stop("Only the GDH heat model is currently supported.", call. = FALSE)
+  }
+  
+  # Check scaling
+  if (!identical(model$heat$scaling, "scaled") &&
+      !identical(model$heat$scaling, "unscaled")) {
+    stop(
+      "GDH scaling must be 'scaled' or 'unscaled'.",
+      call. = FALSE
+    )
+  }
   invisible(TRUE)
 }
+
 
 #' Named parameters for a model specification
 #'
@@ -72,19 +100,18 @@ validate_model_spec <- function(model) {
 #' validate_parameters() invisibly returns TRUE or raises an error.
 #' @export
 parameter_schema <- function(model) {
+  if (inherits(model, "population_pheno_model"))
+    return(parameter_schema(model$model))
   #check model
   validate_model_spec(model)
   
-  # 1. Parameters belonging to the model structure
-  structure_parameters <- switch(
-    model$structure,
-    sequential = c(yc = 40, zc = 190),
-    parallel   = c(yc = 40, zc = 190, kmin = 0.1),
-    stop("Unknown model structure.")
-  )
-  
+
   #check the chill submodel
   if(model$chill$name == 'dynamic'){
+    
+    #typical chill requirement 
+    yc = 40
+    
     representation <- model$chill$parameterization
     chill <- if (representation == "characteristic")
       c(theta_star = 279, theta_c = 286.1, tau = 47.7, pie_c = 28, Tf = 4, slope = 1.6)
@@ -100,9 +127,25 @@ parameter_schema <- function(model) {
   #check heat
   if(model$heat$name == 'gdh'){
     heat <- c(Tb = 4, Tu = 25, Tc = 36)
+    heat_requirements <- c(zc = 6000, b1 = 1119, b2 = 8677)
+    if(model$heat$scaling == 'unscaled'){
+      heat_requirements <- heat_requirements /
+        (heat[["Tu"]] - heat[["Tb"]])
+    }
   } else {
     stop("Unknown heat submodel.")
   }
+  
+  # 1. Parameters belonging to the model structure
+  structure_parameters <- switch(
+    model$structure,
+    sequential = c(yc = yc, zc = heat_requirements[["zc"]]),
+    parallel   = c(yc = yc, zc = heat_requirements[["zc"]], kmin = 0.1),
+    partial_overlap = c(yc = yc, b1 = heat_requirements[["b1"]], b2 = heat_requirements[["b2"]], b3 = 0.01119,
+                        ol = 0.75),
+    phenoflex = c(yc = yc, zc = heat_requirements[["zc"]], s1 = 0.5),
+    stop("Unknown model structure.")
+  )
   
   values <- c(structure_parameters, chill, heat)
   
@@ -140,6 +183,8 @@ default_parameters <- function(model) {
 #' @rdname parameter_schema
 #' @export
 validate_parameters <- function(model, parameters) {
+  if (inherits(model, "population_pheno_model"))
+    return(validate_parameters(model$model, parameters))
   schema <- parameter_schema(model)
   if (!is.numeric(parameters) || !is.null(dim(parameters)) || is.null(names(parameters)) ||
       anyNA(names(parameters)) || anyDuplicated(names(parameters)) ||
@@ -147,14 +192,50 @@ validate_parameters <- function(model, parameters) {
     stop("parameters must be a named numeric vector with exactly the schema names, without duplicates.", call. = FALSE)
   if (any(!is.finite(parameters))) stop("All parameter values must be finite.", call. = FALSE)
   p <- parameters
-  if (p[["yc"]] <= 0 || p[["zc"]] <= 0)
-    stop("yc and zc must be positive.", call. = FALSE)
-  
-  if (model$structure == "parallel") {
-    if (p[["kmin"]] < 0 || p[["kmin"]] > 1) {
-      stop("kmin must be between 0 and 1.")
-    }
-  }
+  switch(
+    model$structure,
+    
+    sequential = {
+      if (p[["yc"]] <= 0 || p[["zc"]] <= 0)
+        stop("yc and zc must be positive.", call. = FALSE)
+    },
+    
+    parallel = {
+      if (p[["yc"]] <= 0 || p[["zc"]] <= 0)
+        stop("yc and zc must be positive.", call. = FALSE)
+      
+      if (p[["kmin"]] < 0 || p[["kmin"]] > 1)
+        stop("kmin must be between 0 and 1.", call. = FALSE)
+    },
+    
+    partial_overlap = {
+      if (p[["yc"]] <= 0 || p[["b1"]] <= 0)
+        stop("yc and b1 must be positive.", call. = FALSE)
+      
+      if (p[["b2"]] < 0 || p[["b3"]] < 0)
+        stop("b2 and b3 must be non-negative.", call. = FALSE)
+      
+      if (p[["ol"]] < 0)
+        stop("ol must be non-negative.", call. = FALSE)
+      
+      if (!is.finite(p[["b1"]] * p[["ol"]]))
+        stop("b1 * ol must be finite.", call. = FALSE)
+    },
+    
+    phenoflex = {
+      if (p[["yc"]] <= 0 || p[["zc"]] <= 0 ||
+          p[["s1"]] <= 0)
+        stop("yc, zc and s1 must be positive.", call. = FALSE)
+    },
+    
+    parallel_landsberg = {
+      # Assumes your schema uses the proposed name chill_scale
+      if (p[["chill_scale"]] <= 0 || p[["zc"]] <= 0)
+        stop("chill_scale and zc must be positive.", call. = FALSE)
+    },
+    
+    stop("Unknown model structure.", call. = FALSE)
+  )
   
   if(model$chill$name == 'dynamic'){
     if (p[["slope"]] <= 0 || p[["Tf"]] <= -273)
@@ -171,6 +252,9 @@ validate_parameters <- function(model, parameters) {
   if(model$heat$name == 'gdh'){
     if (!(p[["Tb"]] < p[["Tu"]] && p[["Tu"]] < p[["Tc"]]))
       stop("Heat parameters must satisfy Tb < Tu < Tc.", call. = FALSE)
+    
+    if (p[["Tb"]] <= -273)
+      stop("Tb must exceed -273 degrees C.", call. = FALSE)
   }
 
   invisible(TRUE)
@@ -178,22 +262,39 @@ validate_parameters <- function(model, parameters) {
 
 #' Predict one season with a model specification
 #'
-#' Adapts named parameters to the existing sequential wrapper without changing
-#' its calculations. Characteristic parameters are converted with the shared
-#' conversion implementation. Conversion failure raises an error; failure to
-#' reach bloom returns NA. No calibration penalty is applied here.
+#' Calculates shared chill and potential heat and applies the selected C++
+#' structure. Characteristic parameters use the shared conversion implementation.
+#' Conversion failure raises an error; no bloom is represented by index zero.
+#' Population specifications dispatch to [predict_population_phenology()].
 #' @param model Model specification from pheno_model().
 #' @param weather Data frame with Temp (degrees C), Year and JDay. Supply complete,
 #' consecutive days, each with 24 hourly rows in chronological order. If Hour is
 #' present it must be 0:23 for each day. Without Hour, within-day order is assumed.
 #' @param parameters Named numeric vector; defaults to default_parameters(model).
-#' @return One numeric fractional Julian bloom day, or NA if bloom is not reached.
-#' Dates in the preceding year retain the legacy negative-day convention.
+#' @param stopatzc Stop at the first bloom if TRUE. FALSE completes trajectories
+#' while retaining the first bloom index.
+#' @param basic_output boolean. If 'TRUE', only the bloomindex is returned as 
+#' a named element of the return list.
+#' @return For a single model, a list with `bloomindex` (one-based weather row;
+#' zero for no bloom). Detailed output adds `chill` and `z`. Use [return_JDay()]
+#' to convert the index to a fractional Julian day. Population specifications
+#' return the result described in [predict_population_phenology()].
 #' @export
-predict_phenology <- function(model, weather, parameters = default_parameters(model)) {
+predict_phenology <- function(model, weather, 
+                              parameters = default_parameters(model),
+                              stopatzc = TRUE, 
+                              basic_output = TRUE) {
+  if (inherits(model, "population_pheno_model"))
+    return(predict_population_phenology(model, weather, parameters,
+      stopatzc = stopatzc, basic_output = basic_output))
   validate_parameters(model, parameters)
   .validate_sequential_weather(weather)
-  p <- parameters
+  inputs <- .calculate_pheno_inputs(model, weather, parameters)
+  .apply_pheno_structure(model, inputs$chill, inputs$heat, parameters,
+                         stopatzc, basic_output)
+}
+
+.calculate_pheno_inputs <- function(model, weather, p) {
   
   if(model$chill$name == 'dynamic'){
     if (model$chill$parameterization == "characteristic") {
@@ -204,24 +305,74 @@ predict_phenology <- function(model, weather, parameters = default_parameters(mo
       p <- c(p, stats::setNames(converted[5:8], c("E0", "E1", "A0", "A1")))
     }
     
-    chill_order <- c("E0", "E1", "A0", "A1", "Tf", "slope")
+    chill_vec <- calculate_chill_dynamic(temp = weather$Temp, 
+                                     times = seq_along(weather$Temp),
+                                     E0 = p[["E0"]], E1 = p[["E1"]], 
+                                     A0 = p[["A0"]], A1 = p[["A1"]],
+                                     Tf = p[["Tf"]], slope = p[["slope"]])
   }
   
   if(model$heat$name == 'gdh'){
-    heat_order <- c( "Tb", "Tu", "Tc")
+
+    if(model$heat$scaling == "scaled"){
+      heat_vec <- calculate_heat_gdh(temp = weather$Temp, 
+                                     times = seq_along(weather$Temp), 
+                                     Tb = p[["Tb"]],
+                                     Tu = p[["Tu"]],
+                                     Tc = p[["Tc"]])
+    } else if(model$heat$scaling == "unscaled"){
+      heat_vec <- calculate_heat_gdh_unscaled(temp = weather$Temp, 
+                                              times = seq_along(weather$Temp), 
+                                              Tb = p[["Tb"]],
+                                              Tu = p[["Tu"]],
+                                              Tc = p[["Tc"]])
+    }
   }
   
-  order_chill_heat <- c(chill_order, heat_order)
-  
+  list(chill = chill_vec, heat = heat_vec)
+}
+
+.apply_pheno_structure <- function(model, chill_vec, heat_vec, p,
+                                   stopatzc, basic_output) {
+  #process the chill and heat with the model structure
   switch(
     model$structure,
     sequential = {
-      order <- c("yc", "zc", order_chill_heat)
-      wrapper_seq_model(weather, unname(p[order]))
+      apply_sequential_structure(chill = chill_vec, 
+                                 heat = heat_vec, 
+                                 yc = p[["yc"]], 
+                                 zc = p[["zc"]], 
+                                 stopatzc = stopatzc, 
+                                 basic_output = basic_output)
     },
     parallel = {
-      order <- c("yc", "zc", "kmin", order_chill_heat)
-      wrapper_parallel_model(weather, unname(p[order]))
+      apply_parallel_structure(chill = chill_vec, 
+                               heat = heat_vec, 
+                               yc = p[["yc"]], 
+                               zc = p[["zc"]], 
+                               kmin = p[["kmin"]],
+                               stopatzc = stopatzc, 
+                               basic_output = basic_output)
+    },
+    partial_overlap = {
+      apply_partial_overlap_structure(chill = chill_vec, 
+                                      heat = heat_vec, 
+                                      yc = p[["yc"]], 
+                                      b1 = p[["b1"]], 
+                                      b2 = p[["b2"]],
+                                      b3 = p[["b3"]],
+                                      ol = p[["ol"]],
+                                      stopatzc = stopatzc, 
+                                      basic_output = basic_output)
+    },
+    phenoflex = {
+      apply_phenoflex_structure(chill = chill_vec, 
+                                heat = heat_vec, 
+                                yc = p[["yc"]], 
+                                zc = p[["zc"]], 
+                                s1 = p[["s1"]],
+                                stopatzc = stopatzc, 
+                                basic_output = basic_output)
     }
   )
 }
