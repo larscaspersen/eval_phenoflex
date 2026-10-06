@@ -56,3 +56,7 @@ rsconnect/
 /development/larschill-migration/
 /development/larschill-baseline.rds
 /development/regression-results/
+/climate_data/
+/temp_data/
+/data/
+/experimental/
