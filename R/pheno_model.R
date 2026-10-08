@@ -1,24 +1,54 @@
 #' Specify a phenology model
 #'
-#' A model specification is an immutable-by-convention S3 list describing the
-#' algorithms, not their parameter values. Supports sequential, linear parallel,
+#' A model specification is an S3 list storing the algorithms and named parameter
+#' values. Supports sequential, linear parallel,
 #' partial-overlap and PhenoFlex coupling with the Dynamic Model and GDH.
 #' Other combinations are rejected as unsupported, not judged scientifically.
 #' @param structure One of "sequential", "parallel", "partial_overlap" or "phenoflex".
 #' @param chill Chill specification returned by chill_dynamic().
 #' @param heat Heat specification returned by heat_gdh().
+#' @param parameters Named numeric vector specifying any subset of the model's
+#' parameter names. Omitted parameters use default_parameters() for the selected
+#' structure, chill and heat specifications. NULL uses all defaults. The complete
+#' vector is validated after filling defaults.
+#' For theta_star and theta_c, each value in 0--20 is interpreted as Celsius
+#' and converted using the native kernels' legacy offset K = Celsius + 273.
+#' Other values are interpreted as Kelvin. Stored values are always Kelvin;
+#' all other temperature parameters remain Celsius.
 #' @return pheno_model() returns a pheno_model list. Component constructors return
 #' lists; validate_model_spec() invisibly returns TRUE or raises an error.
 #' @examples
 #' model <- pheno_model()
 #' parameters <- default_parameters(model)
 #' parameters["yc"] <- 45
-#' validate_parameters(model, parameters)
+#' model <- pheno_model(parameters = parameters)
+#' model$parameters
+#' parallel <- pheno_model("parallel", parameters = c(yc = 50, zc = 180))
+#' model <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
 #' @export
-pheno_model <- function(structure = "phenoflex", chill = chill_dynamic(), heat = heat_gdh()) {
+pheno_model <- function(structure = "phenoflex", chill = chill_dynamic(), heat = heat_gdh(),
+                        parameters = NULL) {
   model <- list(structure = structure, chill = chill, heat = heat)
   validate_model_spec(model)
   class(model) <- "pheno_model"
+  defaults <- default_parameters(model)
+  if (is.null(parameters)) {
+    parameters <- defaults
+  } else {
+    if (!is.numeric(parameters) || !is.null(dim(parameters)) ||
+        (length(parameters) > 0L && is.null(names(parameters))) ||
+        anyNA(names(parameters)) || anyDuplicated(names(parameters)) ||
+        !all(names(parameters) %in% names(defaults)))
+      stop("parameters must be a named numeric vector using schema names, without duplicates.",
+           call. = FALSE)
+    if (length(parameters) < length(defaults)) {
+      defaults[names(parameters)] <- parameters
+      parameters <- defaults
+    }
+  }
+  parameters <- .normalize_characteristic_temperatures(parameters)
+  validate_parameters(model, parameters)
+  model$parameters <- parameters
   model
 }
 
@@ -41,10 +71,16 @@ heat_gdh <- function(scaling = c("unscaled", "scaled")) list(name = "gdh",
 #' @param model Model specification.
 #' @export
 validate_model_spec <- function(model) {
+  if (inherits(model, "pheno_model_list"))
+    return(.validate_pheno_model_list(model))
+  if (inherits(model, "combined_pheno_model"))
+    return(.validate_combined_model_spec(model))
   if (inherits(model, "population_pheno_model"))
     return(validate_model_spec(model$model))
-  if (!is.list(model) || !identical(sort(names(model)), sort(c("structure", "chill", "heat"))))
-    stop("model must contain exactly structure, chill and heat.", call. = FALSE)
+  if (!is.list(model) ||
+      !(identical(sort(names(model)), sort(c("structure", "chill", "heat"))) ||
+        identical(sort(names(model)), sort(c("structure", "chill", "heat", "parameters")))))
+    stop("model must contain structure, chill and heat, with optional parameters.", call. = FALSE)
   if (!is.character(model$structure) ||
       length(model$structure) != 1L ||
       is.na(model$structure) ||
@@ -92,14 +128,26 @@ validate_model_spec <- function(model) {
 #' use the original Dynamic Model coefficients; characteristic defaults are a
 #' separate starting set, not an equivalent representation of those defaults.
 #' Validation checks model domains, not experiment-specific calibration bounds.
-#' @param model Model specification from pheno_model().
+#' @param model Model specification from pheno_model(), [population_pheno_model()]
+#' or [combined_pheno_model()]. Combined specifications expand selected structure
+#' parameters by cultivar while leaving other parameters shared.
+#' A pheno_model_list() stores ordinary simple models and their parameter sharing.
 #' @param parameters Named numeric vector with exactly the names in the schema;
 #' order is arbitrary. Matrices and arrays are not parameter vectors.
+#' Named theta_star and theta_c values in 0--20 are interpreted as Celsius
+#' using the legacy +273 offset; Kelvin values remain supported. Validation
+#' checks the converted values without modifying the supplied vector.
 #' @return parameter_schema() returns a data frame of names, components, defaults
-#' and representations. default_parameters() returns a named numeric vector.
+#' and representations. Combined models also include base_name and cultivar
+#' (NA for shared parameters); model lists use member instead of cultivar.
+#' default_parameters() returns a named numeric vector.
 #' validate_parameters() invisibly returns TRUE or raises an error.
 #' @export
 parameter_schema <- function(model) {
+  if (inherits(model, "pheno_model_list"))
+    return(.pheno_model_list_schema(model))
+  if (inherits(model, "combined_pheno_model"))
+    return(.combined_parameter_schema(model))
   if (inherits(model, "population_pheno_model"))
     return(parameter_schema(model$model))
   #check model
@@ -183,6 +231,10 @@ default_parameters <- function(model) {
 #' @rdname parameter_schema
 #' @export
 validate_parameters <- function(model, parameters) {
+  if (inherits(model, "pheno_model_list"))
+    return(.validate_model_list_parameters(model, parameters))
+  if (inherits(model, "combined_pheno_model"))
+    return(.validate_combined_parameters(model, parameters))
   if (inherits(model, "population_pheno_model"))
     return(validate_parameters(model$model, parameters))
   schema <- parameter_schema(model)
@@ -191,7 +243,7 @@ validate_parameters <- function(model, parameters) {
       length(parameters) != nrow(schema) || !setequal(names(parameters), schema$name))
     stop("parameters must be a named numeric vector with exactly the schema names, without duplicates.", call. = FALSE)
   if (any(!is.finite(parameters))) stop("All parameter values must be finite.", call. = FALSE)
-  p <- parameters
+  p <- .normalize_characteristic_temperatures(parameters)
   switch(
     model$structure,
     
@@ -260,48 +312,121 @@ validate_parameters <- function(model, parameters) {
   invisible(TRUE)
 }
 
-#' Predict one season with a model specification
+#' Predict phenology for one or more models and seasons
 #'
 #' Calculates shared chill and potential heat and applies the selected C++
 #' structure. Characteristic parameters use the shared conversion implementation.
 #' Conversion failure raises an error; no bloom is represented by index zero.
 #' Population specifications dispatch to [predict_population_phenology()].
-#' @param model Model specification from pheno_model().
+#' Combined specifications use their cultivar-specific single models, with the
+#' same weather formats as model lists.
+#' Model lists accept one common seasonlist for all models, or nested seasonlists
+#' matched by position to the models, and return results grouped by model.
+#' Ordinary lists may contain models with different specifications and values;
+#' prediction does not impose parameter sharing between them.
+#' Ensemble specifications from [pheno_ensemble()] aggregate independent fits.
+#' With basic_output = FALSE they return date/spread summaries and individual
+#' member dates, rather than chill/heat trajectories.
+#' @param model Model specification from pheno_model(), a non-empty ordinary list
+#' of these models, or a pheno_model_list() calibration collection.
+#' Also accepts population_pheno_model() and combined_pheno_model() specifications.
+#' A pheno_ensemble() uses its stored member parameters and aggregation policy;
+#' explicit parameter overrides are unsupported for ensembles.
+#' Fitted results from fit_phenology() and fit_phenology_cv() are accepted directly.
+#' A CV result predicts with its stored fold-model ensemble, even when a separate
+#' full-data refit is present in calibration$refit.
 #' @param weather Data frame with Temp (degrees C), Year and JDay. Supply complete,
 #' consecutive days, each with 24 hourly rows in chronological order. If Hour is
 #' present it must be 0:23 for each day. Without Hour, within-day order is assumed.
-#' @param parameters Named numeric vector; defaults to default_parameters(model).
+#' A non-empty list of these data frames supplies multiple seasons. With a list
+#' of models, a single data frame or flat seasonlist is evaluated by every model;
+#' a nested list supplies one non-empty seasonlist per model, matched by position.
+#' Combined models also accept these formats, with nested lists matched to cultivars.
+#' @param parameters Named numeric vector; defaults to the model's stored parameters.
+#' An explicit vector overrides stored values for this prediction only.
+#' Named theta_star and theta_c values in 0--20 are interpreted as Celsius
+#' using the same +273 convention as pheno_model(); other values are Kelvin.
+#' For an ordinary model list, supply a list of complete parameter vectors in
+#' model order, or one complete vector to use for every model. For calibration
+#' collections, supply the complete indexed calibration vector.
 #' @param stopatzc Stop at the first bloom if TRUE. FALSE completes trajectories
 #' while retaining the first bloom index.
-#' @param basic_output boolean. If 'TRUE', only the bloomindex is returned as 
-#' a named element of the return list.
-#' @return For a single model, a list with `bloomindex` (one-based weather row;
-#' zero for no bloom). Detailed output adds `chill` and `z`. Use [return_JDay()]
-#' to convert the index to a fractional Julian day. Population specifications
+#' @param basic_output If TRUE, return a numeric fractional bloom Julian day
+#' (NA for no bloom). FALSE returns the index and trajectories.
+#' @return For a single model, a numeric fractional Julian day, or NA for no bloom.
+#' With basic_output = FALSE, a list with bloomindex (one-based row; zero for no
+#' bloom), chill and z. Conversion uses [return_JDay()]. Population specifications
 #' return the result described in [predict_population_phenology()].
+#' A single model with a seasonlist returns a numeric vector (or a list of
+#' detailed results). A model list returns a list in model order, containing a
+#' scalar per model for one data frame, or a prediction vector per model for
+#' seasonlists. With basic_output = FALSE these contain detailed results instead.
+#' Combined specifications use the same result shapes as model lists.
+#' Model names label common-weather results; nested weather names label the outer
+#' results when supplied. Season names are retained. Population seasonlists
+#' return a list of population results.
 #' @export
 predict_phenology <- function(model, weather, 
-                              parameters = default_parameters(model),
+                              parameters = model_parameters(model),
                               stopatzc = TRUE, 
                               basic_output = TRUE) {
+  for (flag in list(stopatzc, basic_output)) {
+    if (!is.logical(flag) || length(flag) != 1L || is.na(flag))
+      stop("Output flags must be single non-missing logical values.", call. = FALSE)
+  }
+  if (inherits(model, "phenology_fit") || inherits(model, "phenology_cv")) {
+    if (missing(parameters))
+      return(predict_phenology(model$model, weather,
+                              stopatzc = stopatzc, basic_output = basic_output))
+    return(predict_phenology(model$model, weather, parameters,
+                            stopatzc = stopatzc, basic_output = basic_output))
+  }
+  if (inherits(model, "pheno_ensemble")) {
+    if (!missing(parameters))
+      stop("Ensembles use their stored member parameters; parameter overrides are unsupported.", call. = FALSE)
+    return(.predict_pheno_ensemble(model, weather, stopatzc, basic_output))
+  }
+  if (inherits(model, "pheno_model_list"))
+    return(.predict_pheno_model_list(model, weather, parameters, stopatzc, basic_output))
+  if (inherits(model, "combined_pheno_model"))
+    return(.predict_pheno_model_list(model, weather, parameters, stopatzc, basic_output))
+  if (is.list(model) && !is.data.frame(model) &&
+      !inherits(model, "pheno_model") && !inherits(model, "population_pheno_model")) {
+    if (!length(model) || !all(vapply(model, inherits, logical(1), what = "pheno_model")))
+      stop("model must be a specification or a non-empty list of pheno_model objects.",
+           call. = FALSE)
+    p <- if (missing(parameters)) lapply(model, model_parameters) else parameters
+    if (is.numeric(p)) p <- rep(list(p), length(model))
+    return(.predict_pheno_models(model, weather, p, stopatzc, basic_output))
+  }
+  if (is.list(weather) && !is.data.frame(weather)) {
+    validate_parameters(model, parameters)
+    return(.predict_pheno_seasons(model, weather, parameters, stopatzc, basic_output))
+  }
   if (inherits(model, "population_pheno_model"))
     return(predict_population_phenology(model, weather, parameters,
       stopatzc = stopatzc, basic_output = basic_output))
   validate_parameters(model, parameters)
   .validate_sequential_weather(weather)
   inputs <- .calculate_pheno_inputs(model, weather, parameters)
-  .apply_pheno_structure(model, inputs$chill, inputs$heat, parameters,
-                         stopatzc, basic_output)
+  result <- .apply_pheno_structure(model, inputs$chill, inputs$heat, parameters,
+                                  stopatzc, basic_output)
+  if (basic_output)
+    return(return_JDay(result$bloomindex, weather$JDay, weather$Year))
+  result
 }
 
 .calculate_pheno_inputs <- function(model, weather, p) {
+  p <- .normalize_characteristic_temperatures(p)
   
   if(model$chill$name == 'dynamic'){
     if (model$chill$parameterization == "characteristic") {
       chill <- p[c("theta_star", "theta_c", "tau", "pie_c")]
       converted <- characteristic_to_kinetic(c(rep(0, 4), unname(chill), rep(0, 4)), failure_return = "NA")
-      if (any(!is.finite(converted[5:8])))
-        stop("Characteristic-to-kinetic conversion failed for these parameters.", call. = FALSE)
+    if (any(!is.finite(converted[5:8])))
+      stop(structure(list(message = "Characteristic-to-kinetic conversion failed for these parameters.",
+                           call = NULL),
+                      class = c("phenology_conversion_error", "error", "condition")))
       p <- c(p, stats::setNames(converted[5:8], c("E0", "E1", "A0", "A1")))
     }
     
