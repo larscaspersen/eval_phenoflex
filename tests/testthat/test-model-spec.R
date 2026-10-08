@@ -61,11 +61,11 @@ test_that("named sequential predictions reproduce every frozen sequential case",
                                    baseline$station == station & baseline$season == year]
       expect_length(expected, 1)
       result <- predict_phenology(model, weather, p)
-      expect_equal(return_JDay(result$bloomindex, weather$JDay, weather$Year),
+      expect_equal(result,
                    expected, tolerance = 1e-10)
       expect_identical(predict_phenology(model, weather, rev(p)), predict_phenology(model, weather, p))
       no_bloom <- p; no_bloom[c("yc", "zc")] <- 1e12
-      expect_equal(predict_phenology(model, weather, no_bloom)$bloomindex, 0)
+      expect_true(is.na(predict_phenology(model, weather, no_bloom)))
     }
   }
 })
@@ -74,7 +74,7 @@ test_that("sequential adapter rejects invalid hourly weather", {
   model <- pheno_model("sequential", heat = heat_gdh("scaled"))
   weather <- data.frame(Temp = rep(10, 48), Year = 2008,
                         JDay = rep(59:60, each = 24), Hour = rep(0:23, 2))
-  expect_named(predict_phenology(model, weather), "bloomindex")
+  expect_type(predict_phenology(model, weather), "double")
   expect_error(predict_phenology(model, weather[-1, ]), "complete hourly")
   bad <- weather; bad$Temp[1] <- NA
   expect_error(predict_phenology(model, bad), "finite numeric")
@@ -86,3 +86,70 @@ test_that("sequential adapter rejects invalid hourly weather", {
   expect_error(predict_phenology(model, bad), "invalid calendar")
 })
 
+
+
+test_that("model parameters default, validate and drive predictions", {
+  for (structure in c("sequential", "parallel", "partial_overlap", "phenoflex")) {
+    for (representation in c("characteristic", "kinetic")) {
+      for (scaling in c("scaled", "unscaled")) {
+        model <- pheno_model(structure, chill_dynamic(representation), heat_gdh(scaling))
+        expect_identical(model$parameters, default_parameters(model))
+        p <- model$parameters
+        p["yc"] <- 45
+        custom <- pheno_model(structure, chill_dynamic(representation), heat_gdh(scaling),
+                              parameters = rev(p))
+        expect_identical(custom$parameters, rev(p))
+        expect_identical(default_parameters(custom), default_parameters(model))
+        partial <- pheno_model(structure, chill_dynamic(representation), heat_gdh(scaling),
+                                parameters = p[-1])
+        expect_identical(partial$parameters, default_parameters(model))
+        partial <- pheno_model(structure, chill_dynamic(representation), heat_gdh(scaling),
+                                parameters = c(Tf = 5, yc = 50))
+        expected <- default_parameters(model)
+        expected[c("Tf", "yc")] <- c(5, 50)
+        expect_identical(partial$parameters, expected)
+      }
+    }
+  }
+  model <- pheno_model("sequential", chill_dynamic("kinetic"))
+  p <- model$parameters
+  p[c("yc", "zc")] <- c(1, 1)
+  model <- pheno_model("sequential", chill_dynamic("kinetic"), parameters = p)
+  weather <- data.frame(Temp = rep(10, 24 * 60), Year = 2008,
+                        JDay = rep(1:60, each = 24))
+  expect_true(is.finite(predict_phenology(model, weather)))
+  expect_identical(predict_phenology(model, weather),
+                   predict_phenology(model, weather, parameters = p))
+  override <- p
+  override[c("yc", "zc")] <- 1e12
+  expect_true(is.na(predict_phenology(model, weather, parameters = override)))
+  expect_identical(model$parameters, p)
+  bad <- p; bad["yc"] <- -1
+  expect_error(pheno_model("sequential", chill_dynamic("kinetic"), parameters = bad), "positive")
+})
+
+test_that("partial constructor parameters fill defaults and validate the completed model", {
+  model <- pheno_model("parallel", parameters = c(yc = 50, zc = 180))
+  expected <- default_parameters(model)
+  expected[c("yc", "zc")] <- c(50, 180)
+  expect_identical(model$parameters, expected)
+  expect_identical(pheno_model(parameters = numeric())$parameters,
+                   default_parameters(pheno_model()))
+  expect_error(pheno_model(parameters = c(50, 180)), "named numeric")
+  expect_error(pheno_model(parameters = c(yc = 50, unknown = 1)), "schema names")
+  expect_error(pheno_model(parameters = c(yc = 50, yc = 60)), "duplicates")
+  expect_error(pheno_model(parameters = setNames(50, NA_character_)), "schema names")
+  expect_error(pheno_model(parameters = setNames(50, "")), "schema names")
+  expect_error(pheno_model(parameters = c(yc = "50")), "named numeric")
+  expect_error(pheno_model(parameters = matrix(50, dimnames = list("yc", NULL))),
+                "named numeric")
+  for (value in c(NA_real_, NaN, Inf, -Inf))
+    expect_error(pheno_model(parameters = c(yc = value)), "finite")
+  expect_error(pheno_model(parameters = c(yc = 0)), "positive")
+  expect_error(pheno_model(parameters = c(Tb = 30)), "Tb < Tu < Tc")
+  expect_error(pheno_model(chill = chill_dynamic("kinetic"), parameters = c(E0 = 20000)),
+                "E0 < E1")
+  expect_error(pheno_model("parallel", parameters = c(kmin = 2)), "between 0 and 1")
+  # Explicit prediction overrides still require a complete vector.
+  expect_error(validate_parameters(model, c(yc = 50, zc = 180)), "schema names")
+})
