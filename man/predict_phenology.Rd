@@ -2,40 +2,74 @@
 % Please edit documentation in R/pheno_model.R
 \name{predict_phenology}
 \alias{predict_phenology}
-\title{Predict one season with a model specification}
+\title{Predict phenology for one or more models and seasons}
 \usage{
 predict_phenology(
   model,
   weather,
-  parameters = default_parameters(model),
+  parameters = model_parameters(model),
   stopatzc = TRUE,
   basic_output = TRUE
 )
 }
 \arguments{
-\item{model}{Model specification from pheno_model().}
+\item{model}{Model specification from pheno_model(), a non-empty ordinary list
+of these models, or a pheno_model_list() calibration collection.
+Also accepts population_pheno_model() and combined_pheno_model() specifications.
+A pheno_ensemble() uses its stored member parameters and aggregation policy;
+explicit parameter overrides are unsupported for ensembles.
+Fitted results from fit_phenology() and fit_phenology_cv() are accepted directly.
+A CV result predicts with its stored fold-model ensemble, even when a separate
+full-data refit is present in calibration$refit.}
 
 \item{weather}{Data frame with Temp (degrees C), Year and JDay. Supply complete,
 consecutive days, each with 24 hourly rows in chronological order. If Hour is
-present it must be 0:23 for each day. Without Hour, within-day order is assumed.}
+present it must be 0:23 for each day. Without Hour, within-day order is assumed.
+A non-empty list of these data frames supplies multiple seasons. With a list
+of models, a single data frame or flat seasonlist is evaluated by every model;
+a nested list supplies one non-empty seasonlist per model, matched by position.
+Combined models also accept these formats, with nested lists matched to cultivars.}
 
-\item{parameters}{Named numeric vector; defaults to default_parameters(model).}
+\item{parameters}{Named numeric vector; defaults to the model's stored parameters.
+An explicit vector overrides stored values for this prediction only.
+Named theta_star and theta_c values in 0--20 are interpreted as Celsius
+using the same +273 convention as pheno_model(); other values are Kelvin.
+For an ordinary model list, supply a list of complete parameter vectors in
+model order, or one complete vector to use for every model. For calibration
+collections, supply the complete indexed calibration vector.}
 
 \item{stopatzc}{Stop at the first bloom if TRUE. FALSE completes trajectories
 while retaining the first bloom index.}
 
-\item{basic_output}{boolean. If 'TRUE', only the bloomindex is returned as 
-a named element of the return list.}
+\item{basic_output}{If TRUE, return a numeric fractional bloom Julian day
+(NA for no bloom). FALSE returns the index and trajectories.}
 }
 \value{
-For a single model, a list with `bloomindex` (one-based weather row;
-zero for no bloom). Detailed output adds `chill` and `z`. Use [return_JDay()]
-to convert the index to a fractional Julian day. Population specifications
+For a single model, a numeric fractional Julian day, or NA for no bloom.
+With basic_output = FALSE, a list with bloomindex (one-based row; zero for no
+bloom), chill and z. Conversion uses [return_JDay()]. Population specifications
 return the result described in [predict_population_phenology()].
+A single model with a seasonlist returns a numeric vector (or a list of
+detailed results). A model list returns a list in model order, containing a
+scalar per model for one data frame, or a prediction vector per model for
+seasonlists. With basic_output = FALSE these contain detailed results instead.
+Combined specifications use the same result shapes as model lists.
+Model names label common-weather results; nested weather names label the outer
+results when supplied. Season names are retained. Population seasonlists
+return a list of population results.
 }
 \description{
 Calculates shared chill and potential heat and applies the selected C++
 structure. Characteristic parameters use the shared conversion implementation.
 Conversion failure raises an error; no bloom is represented by index zero.
 Population specifications dispatch to [predict_population_phenology()].
+Combined specifications use their cultivar-specific single models, with the
+same weather formats as model lists.
+Model lists accept one common seasonlist for all models, or nested seasonlists
+matched by position to the models, and return results grouped by model.
+Ordinary lists may contain models with different specifications and values;
+prediction does not impose parameter sharing between them.
+Ensemble specifications from [pheno_ensemble()] aggregate independent fits.
+With basic_output = FALSE they return date/spread summaries and individual
+member dates, rather than chill/heat trajectories.
 }

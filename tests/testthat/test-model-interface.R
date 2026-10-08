@@ -139,15 +139,14 @@ test_that("named predictions dispatch all modules, representations and output fl
           expect_equal(dim(actual$chill), c(nrow(weather), 3L))
           expect_length(actual$z, nrow(weather))
           basic <- predict_phenology(model, weather, p, stopatzc = stop)
-          expect_named(basic, "bloomindex")
-          expect_equal(basic$bloomindex, actual$bloomindex)
+          expect_type(basic, "double")
+          expect_equal(basic, return_JDay(actual$bloomindex, weather$JDay, weather$Year))
           expect_identical(predict_phenology(model, weather, rev(p), stopatzc = stop), basic)
         }
         no_bloom <- p
         no_bloom[intersect(c("zc", "b1", "b2"), names(p))] <- 1e12
         result <- predict_phenology(model, weather, no_bloom)
-        expect_equal(result$bloomindex, 0)
-        expect_true(is.na(return_JDay(result$bloomindex, weather$JDay, weather$Year)))
+        expect_true(is.na(result))
       }
     }
   }
@@ -195,7 +194,7 @@ test_that("named predictions retain legacy station predictions in their native s
       expected <- baseline$value[baseline$case_id == case &
                                   baseline$station == station & baseline$season == year]
       expect_length(expected, 1)
-      actual <- predict_phenology(model, weather, p)$bloomindex
+      actual <- predict_phenology(model, weather, p, basic_output = FALSE)$bloomindex
       expect_equal(return_JDay(actual, weather$JDay, weather$Year), expected, tolerance = 1e-10)
     }
   }

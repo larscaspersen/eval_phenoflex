@@ -1,5 +1,95 @@
 # evalpheno 0.0.2.0
 
+* Support parallel DEoptim fitting through native parallel controls and supplied
+  clusters. Use the optimizer's returned optimum and evaluation count, preserving
+  a better initial baseline. Load worker packages and stop fitter-owned clusters
+  on both success and errors.
+
+* Compact CV preparation to data, assignments and settings, deriving split
+  indices from the inspected assignments. Compact fitted CV results to model,
+  predictions and calibration, storing fold models once and retaining only
+  independent validation weather. Add brief print/summary methods and optional
+  keep_diagnostics and keep_training_predictions; scores and the optional refit
+  now live under calibration.
+
+* Accept single and CV fitter results directly in predict_phenology(). CV results
+  contain a configured fold-model ensemble; an optional full-data refit remains
+  separately selectable. Single fits group options under calibration_settings and
+  run statistics under diagnostics. Store paired predicted/observed calibration
+  dates for supplied RSS losses, with a prediction callback for custom losses.
+  CV results retain held-out pairs and optionally training pairs.
+  validate_phenology(cv) uses retained validation data without automatic holdout scoring.
+
+* Add prepare_phenology_cv() with inspectable season-entry fold assignments,
+  repeated CV and independent validation selected by original entry indices
+  or a proportion of observed entries. Years are inspection metadata, allowing
+  the same year at different locations to be withheld separately. Optional
+  groups keeps related entries together within CV folds; stage seasons stay
+  together automatically. fit_phenology_cv()
+  consumes prepared splits unchanged, selects optimizer restarts by training loss,
+  retains fold models and out-of-fold dates, and optionally refits all CV entries.
+  Support single, combined cultivar and stage layouts, preserving NULL observations.
+  Evaluate reserved entries separately with validate_phenology().
+
+* Add pheno_ensemble(), predict_phenology_ensemble() and
+  summarise_ensemble_predictions(). Aggregate independent fits with equal,
+  explicit or inverse assessment-MSE weights, count/weight no-bloom votes,
+  weighted descriptive spread and iterative weight caps. Keep cultivar/stage
+  outputs separate. predict_phenology() accepts ensembles with stored parameters.
+
+* Expose observed as an explicit named argument of fit_phenology(). Pass supplied
+  observations unchanged to each evaluation, retaining modular RSS/custom losses
+  and evaluators that capture observations when the argument is omitted.
+
+* Accept named theta_star and theta_c values in 0--20 as Celsius using the
+  native kernels' legacy +273 convention; retain Kelvin inputs. Normalize model
+  construction, prediction overrides, calibration starts and bounds, including
+  indexed collection parameters. Evaluators and fitted results use Kelvin.
+  Add temperature_unit = "C" to default_bounds() for Celsius display.
+
+* Add default_bounds() with model-specific suggested calibration ranges,
+  reference conversion for scaled GDH and indexed bounds for cultivar/stage
+  collections. fit_phenology() uses these when bounds are NULL; a single omitted
+  bound fills only the explicitly selected parameters. Explicit partial bounds
+  still fix all remaining values. Exclude numerical characteristic conversion
+  failures with infinite loss while continuing to propagate other evaluator errors.
+
+* Extend predict_phenology() to accept seasonlists for a single model and
+  ordinary lists of independent models, including differing specifications.
+  Model collections accept one common weather data frame, a common seasonlist,
+  or nested seasonlists matched by model position. Preserve model and season
+  labels and support detailed output and per-model parameter overrides.
+
+* Allow named parameter subsets in pheno_model(). Omitted values use defaults
+  for the selected model specifications; validate the complete resulting vector.
+
+* Add pheno_model_list() to calibrate collections of ordinary simple models,
+  stage_pheno_models() for cumulative ordered heat thresholds of one cultivar,
+  and the explicitly supplied phenology_rss_stages() evaluator. NULL observation
+  slots skip only their own stage/season pair. Only observed pairs are predicted.
+  Add model_parameters() and as_pheno_models() to inspect stored calibration
+  values and extract independent single models from collections, combined
+  specifications and fitted results. The combined wrapper is now optional.
+
+* Add combined_pheno_model() for cultivar-specific subsets of structure
+  parameters and shared remaining parameters. Add cultivar_parameters(),
+  predict_combined_phenology() and the explicitly supplied phenology_rss_combined()
+  evaluator for nested cultivar seasonlists and observation vectors. Both
+  optimizers support indexed bounds and preserve omitted parameters.
+
+* Allow partial named bounds in fit_phenology(): parameters omitted from both
+  bounds remain constant at their initial model values. Evaluators receive
+  complete parameter vectors; lower and upper must name the same subset.
+
+* Add phenology_rss() as a standalone example evaluation function: predict each
+  season with candidate parameters and return RSS against observed dates. Pass
+  the evaluator explicitly to fit_phenology().
+
+* Add fit_phenology() for calibration with DEoptim or GenSA, a shared evaluation
+  interface, named bounds (including fixed parameters), local seeds, iteration
+  limits, a native GenSA time limit, and a fitted model specification. DEoptim
+  time limits are unsupported; elapsed time is measured for reporting only.
+
 * Add population_pheno_model(), sample_population_parameters() and
   predict_population_phenology() for modular bud populations with shared
   Dynamic chill/GDH inputs and bud-specific structure parameters. Support
