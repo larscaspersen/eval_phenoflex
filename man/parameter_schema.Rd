@@ -13,14 +13,22 @@ default_parameters(model)
 validate_parameters(model, parameters)
 }
 \arguments{
-\item{model}{Model specification from pheno_model().}
+\item{model}{Model specification from pheno_model(), [population_pheno_model()]
+or [combined_pheno_model()]. Combined specifications expand selected structure
+parameters by cultivar while leaving other parameters shared.
+A pheno_model_list() stores ordinary simple models and their parameter sharing.}
 
 \item{parameters}{Named numeric vector with exactly the names in the schema;
-order is arbitrary. Matrices and arrays are not parameter vectors.}
+order is arbitrary. Matrices and arrays are not parameter vectors.
+Named theta_star and theta_c values in 0--20 are interpreted as Celsius
+using the legacy +273 offset; Kelvin values remain supported. Validation
+checks the converted values without modifying the supplied vector.}
 }
 \value{
 parameter_schema() returns a data frame of names, components, defaults
-and representations. default_parameters() returns a named numeric vector.
+and representations. Combined models also include base_name and cultivar
+(NA for shared parameters); model lists use member instead of cultivar.
+default_parameters() returns a named numeric vector.
 validate_parameters() invisibly returns TRUE or raises an error.
 }
 \description{

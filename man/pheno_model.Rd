@@ -10,7 +10,8 @@
 pheno_model(
   structure = "phenoflex",
   chill = chill_dynamic(),
-  heat = heat_gdh()
+  heat = heat_gdh(),
+  parameters = NULL
 )
 
 chill_dynamic(parameterization = c("characteristic", "kinetic"))
@@ -26,6 +27,15 @@ validate_model_spec(model)
 
 \item{heat}{Heat specification returned by heat_gdh().}
 
+\item{parameters}{Named numeric vector specifying any subset of the model's
+parameter names. Omitted parameters use default_parameters() for the selected
+structure, chill and heat specifications. NULL uses all defaults. The complete
+vector is validated after filling defaults.
+For theta_star and theta_c, each value in 0--20 is interpreted as Celsius
+and converted using the native kernels' legacy offset K = Celsius + 273.
+Other values are interpreted as Kelvin. Stored values are always Kelvin;
+all other temperature parameters remain Celsius.}
+
 \item{parameterization}{Dynamic Model representation: "characteristic" or "kinetic".}
 
 \item{scaling}{"unscaled" returns Growing Degree Hour (GDH) units without scaling via (Tu-Tb).
@@ -39,8 +49,8 @@ pheno_model() returns a pheno_model list. Component constructors return
 lists; validate_model_spec() invisibly returns TRUE or raises an error.
 }
 \description{
-A model specification is an immutable-by-convention S3 list describing the
-algorithms, not their parameter values. Supports sequential, linear parallel,
+A model specification is an S3 list storing the algorithms and named parameter
+values. Supports sequential, linear parallel,
 partial-overlap and PhenoFlex coupling with the Dynamic Model and GDH.
 Other combinations are rejected as unsupported, not judged scientifically.
 }
@@ -48,5 +58,8 @@ Other combinations are rejected as unsupported, not judged scientifically.
 model <- pheno_model()
 parameters <- default_parameters(model)
 parameters["yc"] <- 45
-validate_parameters(model, parameters)
+model <- pheno_model(parameters = parameters)
+model$parameters
+parallel <- pheno_model("parallel", parameters = c(yc = 50, zc = 180))
+model <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
 }
