@@ -50,41 +50,44 @@ result <- phenoflex_population(weather, par, n = 100,
                               yc_sd = 2, zc_sd = 10, seed = 12345)
 ```
 
-Use `jday_cut` to simulate forcing experiments and `population` to reuse an
-explicit set of bud requirements across runs. The existing experimental call
-`helper_run_pop_model(...)` is also available after `library(evalpheno)`.
-`sourceCpp()` and sourcing files from `experimental/` are unnecessary for these
-package functions. Normal sampling uses base R; skew-normal sampling requires `sn`.
+Use `jday_cut` to simulate forcing experiments and `population` to reuse
+an explicit set of bud requirements across runs. The existing
+experimental call `helper_run_pop_model(...)` is also available after
+`library(evalpheno)`. `sourceCpp()` and sourcing files from
+`experimental/` are unnecessary for these package functions. Normal
+sampling uses base R; skew-normal sampling requires `sn`.
 
-Read `?phenoflex_population` for parameter order, hourly input requirements,
-matrix dimensions, and the retained index conventions. `bloomindex = 0`
-indicates no bloom; forcing output `exp` retains zero-based step indices and
-the failure sentinel 9999. See `NEWS.md` for intentional behavior changes.
+Read `?phenoflex_population` for parameter order, hourly input
+requirements, matrix dimensions, and the retained index conventions.
+`bloomindex = 0` indicates no bloom; forcing output `exp` retains
+zero-based step indices and the failure sentinel 9999. See `NEWS.md` for
+intentional behavior changes.
 
-The `experimental/` directory remains a research workspace and is excluded
-from package builds. Study-specific plots, data readers, and stage classifiers
-are not yet part of the public package API.
+The `experimental/` directory remains a research workspace and is
+excluded from package builds. Study-specific plots, data readers, and
+stage classifiers are not yet part of the public package API.
 
 ### Parameter terminology
 
-Use `phenoflex_parnames_characteristic` for theta_star, theta_c, tau and pie_c,
-and `phenoflex_parnames_kinetic` for E0, E1, A0 and A1 (positions 5:8).
-These are two parameterizations of the same chill model. Both vectors contain
-all 12 names in model input order; conversions preserve the other eight values.
+Use `phenoflex_parnames_characteristic` for theta_star, theta_c, tau and
+pie_c, and `phenoflex_parnames_kinetic` for E0, E1, A0 and A1 (positions
+5:8). These are two parameterizations of the same chill model. Both
+vectors contain all 12 names in model input order; conversions preserve
+the other eight values.
 
-```r
+``` r
 kinetic <- characteristic_to_kinetic(characteristic)
 characteristic <- kinetic_to_characteristic(kinetic)
 ```
 
 The old/new name vectors and `convert_parameters()` /
-`convert_parameters_old_to_new()` remain available as compatibility aliases.
-The inverse conversion retains its existing numerical algorithm and can fail
-for parameter sets outside its supported domain.
+`convert_parameters_old_to_new()` remain available as compatibility
+aliases. The inverse conversion retains its existing numerical algorithm
+and can fail for parameter sets outside its supported domain.
 
 ### Named sequential model interface
 
-```r
+``` r
 model <- pheno_model(
   structure = "sequential",
   chill = chill_dynamic("characteristic"),
@@ -96,23 +99,530 @@ parameters["yc"] <- 45
 prediction <- predict_phenology(model, weather = season, parameters = parameters)
 ```
 
-`model` is an S3 list describing the algorithms. The named numeric parameter
-vector is separate and may be reordered without changing the prediction.
-`season` must contain complete consecutive hourly days with Temp, Year and JDay;
-optional Hour must run from 0 to 23 each day. The result is a list with a one-based
-`bloomindex` (zero means no bloom); `basic_output = FALSE` also returns `chill`
-and `z`. Use `return_JDay(prediction$bloomindex, season$JDay, season$Year)`
-for the fractional calendar result. Sequential, linear parallel, partial overlap
-and PhenoFlex structures share Dynamic chill and scaled or unscaled GDH modules.
+`model` is an S3 list storing the algorithms and `model$parameters`.
+`pheno_model(parameters = ...)` accepts a named subset of parameters,
+such as `pheno_model("parallel", parameters = c(yc = 50, zc = 180))`.
+Omitted parameters use defaults for the selected structure, chill and
+heat specifications. Predictions use the stored parameters unless a
+complete explicit `parameters` override is supplied. Parameter order is
+arbitrary. `season` must contain complete consecutive hourly days with
+Temp, Year and JDay; optional Hour must run from 0 to 23 each day. The
+default result is the fractional bloom Julian day (`NA` for no bloom),
+matching the earlier wrappers. `basic_output = FALSE` returns
+`bloomindex` (one-based row; zero for no bloom), `chill` and `z`.
+Sequential, linear parallel, partial overlap and PhenoFlex structures
+share Dynamic chill and scaled or unscaled GDH modules.
 
-`chill_dynamic("kinetic")` selects E0/E1/A0/A1 instead. Kinetic defaults use the
-original coefficients; characteristic defaults are a separate starting set and
-are not their conversion. See `development/sequential_model_example.R` for a
-runnable example with frozen station weather and equivalent parameter sets.
+`chill_dynamic("kinetic")` selects E0/E1/A0/A1 instead. Kinetic defaults
+use the original coefficients; characteristic defaults are a separate
+starting set and are not their conversion. See
+`development/sequential_model_example.R` for a runnable example with
+frozen station weather and equivalent parameter sets.
+
+For characteristic chill parameters, Celsius inputs are also supported:
+
+``` r
+model <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
+bounds <- default_bounds(model, temperature_unit = "C")
+```
+
+Each named `theta_star` or `theta_c` value in 0–20 (inclusive) is
+interpreted as Celsius; other values are interpreted as Kelvin. This
+applies independently to each value, including mixed-unit input,
+prediction overrides, calibration starts, bounds and indexed collection
+parameters. The conversion uses the native kernels’ existing convention
+`K = degrees C + 273`, so 6 becomes 279. Other temperature parameters
+retain their existing Celsius units. Constructed models, optimizer
+inputs, evaluator parameters and fitted results use Kelvin.
+`default_parameters()` and the default schema remain in Kelvin;
+`default_bounds(..., temperature_unit = "C")` displays the
+characteristic bounds in Celsius without changing the units of any other
+parameter. Ordering and domain checks apply after conversion.
+
+`predict_phenology()` accepts a single model or a list of ordinary
+models, and a single weather data frame or a seasonlist:
+
+``` r
+predict_phenology(model, seasonlist)         # one vector, in season order
+models <- list(a = model, b = pheno_model("parallel", parameters = c(yc = 50, zc = 180)))
+predict_phenology(models, season)            # one scalar per model
+predict_phenology(models, seasonlist)        # every model predicts every season
+predict_phenology(models, list(a = seasons_a, b = seasons_b)) # separate seasonlists
+```
+
+Flat seasonlists are common to every model. Nested seasonlists match
+models by position and may contain different numbers of seasons. Results
+are grouped by model and retain season names. `basic_output = FALSE`
+returns detailed results in the same order. Ordinary model lists may
+differ in structure and parameters; each uses its own stored values. For
+overrides, pass a list of complete parameter vectors in model order, or
+a common complete vector valid for every model. Calibration collections
+and combined models use their indexed parameter vector.
+
+## Calibration
+
+`fit_phenology()` requires an evaluation function supplied by the
+caller. The standalone example `phenology_rss()` predicts each season
+with the candidate parameters and returns RSS against the observed dates
+to DEoptim or GenSA. `observed` is an explicit named argument of
+`fit_phenology()`. It is passed unchanged to the supplied evaluation
+function, which predicts dates and computes the loss. Its shape is
+determined by the evaluator: a vector for one model, or nested lists for
+cultivars or stages. If omitted, it is not forwarded, allowing custom
+evaluators that capture observations in a closure.
+
+For example, given `seasons` (a list of hourly weather data frames) and
+`observed` bloom Julian days:
+
+``` r
+model <- pheno_model()
+lower <- c(yc = 10, zc = 50)
+upper <- c(yc = 80, zc = 500)
+
+fit <- fit_phenology(
+  model, evaluation = phenology_rss, lower = lower, upper = upper,
+  optimizer = "DEoptim",
+  seed = 17, max_iterations = 1000,
+  control = list(NP = 30, trace = FALSE),
+  seasons = seasons, observed = observed
+)
+fit$par
+fit$value
+predict_phenology(fit, seasons[[1]])
+fit$predictions$predicted
+fit$predictions$observed
+fit$calibration_settings
+```
+
+Observations must contain one finite date per season, in matching order
+and in the same Julian-day units as the predictions. A missing
+prediction returns `Inf` to exclude the candidate. You may instead
+supply a list of dates and NULL entries to skip individual seasons; only
+observed pairs are predicted. Supply `evaluation = your_function` to use
+another loss; it is called as
+`your_function(parameters, model, observed = observed, ...)` when
+observations are supplied. The evaluator defines which predictions and
+observations contribute to the loss, so you can write separate
+evaluators for combined fitting or multiple phenological stages.
+Population models require an evaluator defining how bud predictions
+match observations.
+
+Parameters omitted from the bounds keep their stored model values
+automatically. Here only `yc` and `zc` are calibrated. Both bounds must
+name the same subset of model parameters; order is arbitrary. Equal
+bounds also fix a parameter. An explicit `parameters` vector overrides
+the initial and omitted parameter values. The evaluator always receives
+the complete parameter vector. Install `DEoptim` to use that backend.
+Select `optimizer = "GenSA"` and, for example,
+`control = list(max.call = 10000, verbose = FALSE)` to use GenSA. The
+common iteration argument overrides the corresponding native control.
+For GenSA, `max_seconds = 60` passes `control$max.time = 60` directly to
+the optimizer. DEoptim has no native time limit; use its iteration or
+convergence controls. The fitter measures elapsed time for reporting
+only. Iteration units differ (DEoptim generations versus GenSA annealing
+steps). Time limits allow a running evaluation to finish.
+
+DEoptim can evaluate candidates in parallel. Supply a cluster to choose the
+number of workers (PSOCK works on Windows, macOS and Linux):
+
+```r
+parallel_fit <- function(model, seasons, observed) {
+  cl <- parallel::makePSOCKcluster(4)
+  on.exit(parallel::stopCluster(cl))
+  fit_phenology(
+    model, evaluation = phenology_rss, seasons = seasons, observed = observed,
+    lower = c(yc = 10, zc = 100), upper = c(yc = 80, zc = 400),
+    control = list(cluster = cl, NP = 100, trace = FALSE),
+    max_iterations = 200, seed = 17
+  )
+}
+```
+
+The fitter loads `evalpheno` and any `control$packages` on the workers using
+your R library paths. It leaves supplied clusters open for reuse. For custom
+evaluators, export global data/functions using `control$parVar` or
+`parallel::clusterExport()`; data supplied through `...`, `observed`, or a
+self-contained evaluator closure travels with the objective automatically.
+Install `parallelly` and use `control = list(parallelType = "parallel")` to
+create a cluster with the available worker count; the fitter closes that
+cluster on completion or error. `parallelType = "foreach"` uses a backend
+you register and manage, with `foreachArgs$.packages` and `foreachArgs$.export`
+for custom dependencies. Its workers must have access to the package libraries.
+Seeded runs with deterministic evaluators reproduce serial results; stochastic
+evaluators can depend on the backend and number of workers. Parallelism is most
+useful when candidate evaluations are expensive.
+
+`fit$model` stores the fitted parameters, including for population
+specifications. The fit itself is accepted by `predict_phenology()`.
+`fit$calibration_settings` stores optimizer choices, complete bounds,
+initial parameters, seed, effective controls and evaluation function.
+`fit$diagnostics` stores evaluation counts, elapsed optimization time,
+termination and the native `optimizer_result` (NULL when all parameters
+are fixed). `fit$par` and `fit$value` retain the best evaluated
+candidate. `fit$predictions` stores both predicted calibration dates and
+the original observations. The supplied RSS evaluators populate dates
+automatically, keeping NA slots for missing observations without
+predicting their weather. For another evaluator, provide a callback such
+as `prediction = function(model) predict_phenology(model, seasons)` to
+store dates; otherwise predicted dates remain NULL. `prediction = FALSE`
+disables caching. Characteristic conversion failures, invalid parameter
+domains and an `Inf` loss exclude a candidate; other evaluation errors
+propagate. Seeded runs preserve the caller’s RNG state, but time limits
+can change how much of a search finishes. For population calibration,
+use a fixed population seed or deterministic draws in your evaluation
+function.
+
+## Prepare cross-validation before fitting
+
+Prepare the entry assignments separately so you can inspect them before
+running an optimizer. Each complete season stays intact. `v` is the
+number of folds; `repeats` reassigns entries to folds. `restarts` below
+repeats optimization on the same training data and selects the smallest
+training loss.
+
+``` r
+# seasons: one hourly weather data frame per phenological season
+# observed: one date per season (or a list using NULL for missing dates)
+# years: the phenological year corresponding to each season
+prepared <- prepare_phenology_cv(
+  seasons, observed, years = years,
+  v = 5, repeats = 2,
+  validation_indices = c(3, 8), # seasons[[3]] and seasons[[8]]
+  seed = 42
+)
+prepared                   # counts and six assignment preview rows
+prepared$assignments       # case_id, member, season, year, set, repeat_id, fold
+prepared$data$cases        # entry names, original positions and CV groups
+prepared$settings          # preparation options
+
+cv <- fit_phenology_cv(
+  model = pheno_model(), data = prepared,
+  evaluation = phenology_rss,
+  lower = c(yc = 10, zc = 50), upper = c(yc = 80, zc = 500),
+  optimizer = "DEoptim", restarts = 2, seed = 17,
+  max_iterations = 100, control = list(NP = 30, trace = FALSE),
+  refit = TRUE, weighting = "equal", failure_threshold = 0.5
+)
+summary(cv)                # pooled assessment score and six fold score rows
+cv$calibration$scores      # held-out MSE/RMSE and failure counts per split
+cv$predictions             # held-out predicted AND observed dates with case IDs
+cv$calibration$settings    # preparation and fitting options
+cv$calibration$refit       # optional model fitted to all CV entries
+
+predict_phenology(cv, new_seasons)  # uses the stored fold-model ensemble
+predict_phenology(cv, new_seasons, basic_output = FALSE) # summary + member dates
+predict_phenology(cv$model$models[[1]], new_seasons) # use one fold model
+predict_phenology(cv$calibration$refit, new_seasons) # use the full-data refit
+
+# Evaluate only after choosing the model and ensemble policy using CV:
+validation <- validate_phenology(cv) # uses only retained validation weather
+validation$metrics
+validation$predictions
+```
+
+Alternatively, `validation_prop = 0.2` reserves a random 20% of observed
+season entries (rounded up) once, before assigning CV folds. Entries
+with only NULL observations are not sampled. Use either that proportion
+or explicit `validation_indices`, never both. Withholding an entry does
+not also withhold other locations from the same year. Reserved entries
+never enter CV fitting, assessment, restart selection, or the optional
+full refit. Without either argument all entries enter CV, and
+`validate_phenology()` requires reserved entries. Years are metadata for
+inspection, rather than unique record IDs. The default year identifier
+is the maximum weather `Year` in each season; supply `years` explicitly
+if your phenological-year convention differs. Seeded preparation and
+fitting preserve the caller’s RNG state.
+
+For combined cultivar fitting use `layout = "combined"`, nested
+seasonlists, nested observations and optional nested year vectors. For
+stage fitting use `layout = "stages"`, one common seasonlist and
+observations ordered by stage. Use `phenology_rss_combined` or
+`phenology_rss_stages` when fitting. Combined `validation_indices` is a
+list in member order, for example
+`list(cultivar_a = c(2, 4), cultivar_b = integer())`. The indices refer
+to each member’s original seasonlist. Proportions sample entries across
+all members. Stage indices refer to the common seasonlist, and all
+stages of a selected season are withheld together; that common season
+counts once when sampling a proportion. Stages of a common season also
+stay together in CV folds.
+
+By default, other season entries enter CV independently. Optional
+`groups` keeps entries with the same label together in CV folds: use a
+vector for single/stage data or nested vectors for combined data. For
+example, `groups = interaction(location, years)` groups location/year
+observations, and `groups = years` gives whole-year CV. These groups
+control CV fold assignments only; validation selection remains
+entry-based. Names do not replace positional matching; named model
+collections must agree with named data members in order. All members
+need training seasons, and the training observations must identify the
+parameters you choose to fit. Population calibration needs a separate
+observation/scoring adapter and is not supported by this CV wrapper.
+
+Preparation returns just `data`, `assignments` and `settings`. Training
+and assessment indices are derived from the assignment table when
+fitting. A fitted CV result contains just `model`, `predictions` and
+`calibration`. Its fold models are stored once in `cv$model$models`,
+ready for `predict_phenology(cv, weather)`. The optional
+`cv$calibration$refit` is separately selectable. Assessment dates and
+observed dates stay together in `cv$predictions`, with
+`set = "assessment"`. Only reserved validation weather is retained in
+`cv$calibration$validation`; independent validation dates are predicted
+when you call `validate_phenology()`.
+
+To retain more details, pass `keep_diagnostics = TRUE` to store restart
+statistics, selected run settings and native optimizer results in
+`cv$calibration$diagnostics`. Pass `keep_training_predictions = TRUE` to
+append training dates to the same predictions table, marked
+`set = "training"`. Printing and `summary(cv)` still report assessment
+scores only. The pooled score includes one held-out prediction per
+observed case per repeat; it is not an independent ensemble validation
+score.
+
+Ensembles hold independent fold fits; they preserve parameter sharing
+within each fit and keep cultivar/stage predictions separate. Optional
+`weighting = "inverse_mse"` uses `1 / (assessment MSE + epsilon)` with
+zero weight for failed assessment predictions. Explicit named `weights`
+override that choice. These ensemble options can be supplied to
+`fit_phenology_cv()`. Use `pheno_ensemble(cv, ...)` to construct an
+alternative ensemble later. Missing predictions at observed
+assessment/validation cases yield infinite MSE rather than disappearing
+from the score. Fold scores describe individual held-out models;
+evaluating an ensemble on training years using all members would mix
+held-out and training predictions. Assessment-derived weights also use
+the assessment outcomes, so use independent validation to assess the
+complete weighted ensemble. Selecting settings repeatedly on the
+reserved years removes their independence.
+
+`summarise_ensemble_predictions()` provides the same aggregation for an
+existing numeric matrix (cases by ensemble members) or a long data frame
+with `case_id`, `member_id` and `predicted`. No bloom within the
+supplied weather is `NA`. A count-based failure fraction of at least 0.5
+suppresses the ensemble date by default; `failure_vote = "weight"` uses
+base weight mass instead. Otherwise, successful positive weights are
+renormalized. No successful weight always returns `NA`. `ensemble_sd` is
+descriptive weighted spread around the conditional date, not a standard
+error or prediction interval. Optional `max_weight` uses iterative
+redistribution; an infeasible cap after failures is explicitly reported
+by `cap_relaxed = TRUE`. Summary output includes dates, spread, failure
+fractions and counts; member output retains each independent prediction.
+
+## Suggested calibration bounds
+
+`default_bounds()` returns editable named `lower` and `upper` vectors
+for the selected structure, chill representation and heat scaling:
+
+``` r
+bounds <- default_bounds(model, c("yc", "zc"))
+fit <- fit_phenology(
+  model, evaluation = phenology_rss,
+  lower = bounds$lower, upper = bounds$upper,
+  seasons = seasonlist, observed = observed, max_iterations = 1000
+)
+```
+
+Select base names such as `"zc"` to include every indexed requirement in
+a cultivar or stage collection, or `"zc2"` for an individual member.
+Omit `parameter_names` to get the full schema. If both bounds are
+omitted from `fit_phenology()`, it uses this full suggested box. If only
+one side is omitted, the defaults fill only the names on the supplied
+side. Explicit partial bounds continue to fix all omitted parameters.
+
+| Parameter | Lower | Upper | Applies to |
+|----|---:|---:|----|
+| yc | 10 | 80 | All structures with Dynamic chill |
+| zc | 150 | 400 | Sequential, parallel, PhenoFlex; unscaled heat |
+| s1 | 0.1 | 1.5 | PhenoFlex |
+| kmin | 0 | 1 | Linear parallel; minimum heat effectiveness |
+| b1 | 20 | 200 | Partial overlap; unscaled minimum heat requirement |
+| b2 | 0 | 800 | Partial overlap; unscaled additional heat requirement |
+| b3 | 0 | 0.1 | Partial overlap; decay per additional chill unit |
+| ol | 0 | 1 | Partial overlap; heat threshold multiplier |
+| Tb | 0 | 10 | GDH base temperature, degrees C |
+| Tu | 10 | 30 | GDH optimum temperature, degrees C |
+| Tc | 20 | 40 | GDH upper temperature, degrees C |
+| Tf | 0 | 10 | Dynamic chill transition temperature, degrees C |
+| slope | 0.1 | 5 | Dynamic chill conversion slope |
+| theta_star | 279 | 281 | Characteristic chill, K |
+| theta_c | 286 | 287 | Characteristic chill, K |
+| tau | 16 | 48 | Characteristic chill, hours |
+| pie_c | 24 | 50 | Characteristic chill, hours |
+| E0 | 2500 | 5500 | Kinetic chill |
+| E1 | 8000 | 16000 | Kinetic chill |
+| A0 | 1e3 | 1e6 | Kinetic chill |
+| A1 | 1e13 | 1e19 | Kinetic chill |
+
+These are starting search ranges for temperate fruit phenology. The
+theta_star, theta_c and tau intervals follow the physiological ranges in
+[Egea et al. (2021), Table 1](https://doi.org/10.1093/treephys/tpaa054).
+Their pie_c range is 24–28 hours; the default here extends it to 50
+hours to accommodate broader exploratory fitting. The remaining added
+ranges are exploratory suggestions rather than biological limits
+established by publications. The [chillR
+vignette](https://cran.r-project.org/web/packages/chillR/vignettes/PhenoFlex.html)
+uses a narrow example box around its own starting values. The kinetic
+ranges here also include this package’s different defaults; they are not
+a converted characteristic box. Prefer characteristic parameters, or fix
+the kinetic submodel, when a broad amplitude search would be difficult
+to interpret.
+
+Scaled GDH multiplies the `zc`, `b1` and `b2` bounds by a fixed
+reference `Tu - Tb = 21`: for example, `zc = 3150–8400`. Supply another
+reference through `default_bounds(model, heat_scale = ...)`. If Tb and
+Tu are optimized, this fixed box conversion does not define exactly the
+same feasible region as unscaled fitting. `b3` and `ol` are unchanged.
+In partial overlap the heat requirement is
+`b1 + b2 * exp(-b3 * additional_chill)`, so b2 is an additive term. The
+proposed b3 range includes no compensation at zero and approximately a
+7-chill-unit halving at 0.1. The [Pope and DeJong overlap
+study](https://doi.org/10.17660/ActaHortic.2017.1160.26) used 0.01 as a
+starting decay coefficient and estimated heat coefficients from the
+observed record; site-specific heat bounds are preferable when
+available.
+
+Constraints such as `Tb < Tu < Tc` and non-decreasing stage requirements
+still apply. The fitter rejects characteristic conversion failures with
+infinite loss, while other evaluation errors propagate. Bounds do not
+ensure plausible chill response curves; inspect the fitted submodels.
+For routine calibration, `theta_star` can be held at 279 K by omitting
+it from explicit partial bounds. The supplied combined-fitting example
+uses this approach and additionally constrains the temperature response:
+[calibration
+notebook](https://larscaspersen.github.io/combined-fitting-bloom/notebooks/02-calibrate-almond-preview.html).
+These extra temperature-response constraints are not imposed by the
+default box.
+
+Initial values must lie inside selected bounds; defaults never widen
+them automatically. Adjust the stage ranges for early or late events.
+For example, a stored heat requirement of 404.55 is outside the unscaled
+upper bound 400.
+
+## Successive stages as simple models
+
+`stage_pheno_models()` creates a list of ordinary `pheno_model` objects,
+each with its own cumulative heat requirement. All other parameters are
+shared for the single cultivar. The collection only records sharing and
+stage order for calibration; each `models[[i]]` can be predicted
+independently.
+
+For a seasonlist containing three seasons:
+
+``` r
+models <- stage_pheno_models(
+  pheno_model(), c(budbreak = 50, first_bloom = 100, full_bloom = 180)
+)
+observed <- list(
+  budbreak = list(95, NULL, 99),
+  first_bloom = list(NULL, 106, 108),
+  full_bloom = c(109, 112, 115)
+)
+
+fit <- fit_phenology(
+  models, evaluation = phenology_rss_stages,
+  lower = c(zc = c(20, 80, 150)),
+  upper = c(zc = c(80, 150, 250)),
+  seasons = seasonlist, observed = observed,
+  max_iterations = 1000, control = list(NP = 30, trace = FALSE)
+)
+fit$par
+fit$model[[2]]
+predict_phenology(fit$model, seasonlist)
+```
+
+Outer observations follow the heat-requirement order. Each inner vector
+or list must have exactly one slot per season. `NULL` is allowed in an
+inner list and skips only that stage/year; the same year can still be
+evaluated for other stages. Preserve empty slots with
+`list(date1, NULL, date3)` or `observed[[stage]][year] <- list(NULL)`;
+assigning `[[year]] <- NULL` removes the slot in R. A stage with no
+observations may use `rep(list(NULL), length(seasonlist))`, but at least
+one date is required overall.
+
+Heat requirements are cumulative thresholds from the common season
+start, not increments with heat reset after every stage. Fitting
+enforces `zc1 <= zc2 <= zc3`. The stage factory supports models
+containing `zc` (sequential, parallel and PhenoFlex).
+`model_parameters(models)` returns the flat calibration vector; omitted
+bounds retain stored values as usual.
+
+## Combined fitting of cultivars
+
+Wrap a single model in `combined_pheno_model()` and select which
+structure parameters vary between cultivars. All remaining parameters
+are shared. For three cultivars, `yc` and `zc` become `yc1:yc3` and
+`zc1:zc3`; `s1` and the chill and heat submodel parameters stay shared
+in this example:
+
+``` r
+base <- pheno_model()
+base$parameters[c("yc", "zc")] <- c(20, 100)
+model <- combined_pheno_model(
+  base, n_cultivars = 3, cultivar_specific = c("yc", "zc")
+)
+
+seasons <- list(cultivar_a_seasons, cultivar_b_seasons, cultivar_c_seasons)
+observed <- list(cultivar_a_dates, cultivar_b_dates, cultivar_c_dates)
+
+fit <- fit_phenology(
+  model, evaluation = phenology_rss_combined,
+  lower = c(yc = rep(10, 3), zc = rep(50, 3)),
+  upper = c(yc = rep(40, 3), zc = rep(180, 3)),
+  seasons = seasons, observed = observed,
+  optimizer = "DEoptim", seed = 17, max_iterations = 1000,
+  control = list(NP = 60, trace = FALSE)
+)
+fit$par
+predict_combined_phenology(fit$model, seasons)
+cultivar_parameters(fit$model, cultivar = 2)
+```
+
+Each outer `seasons` element is a seasonlist of hourly weather data
+frames; each `observed` element is a vector with one date per matching
+season. Cultivars may have different numbers of seasons. Matching uses
+list positions, including when lists have names. The evaluator returns
+the sum of all squared residuals, without averaging cultivar totals. A
+missing bloom prediction returns `Inf`.
+
+R creates the indexed names in `c(yc = rep(40, 3))` automatically.
+Always use indexed names for expanded parameters, even for a
+one-cultivar combined model (for example `yc1`). Bounds can select
+individual cultivar parameters such as `c(yc2 = 10, zc3 = 50)`; omitted
+expanded and shared parameters retain their initial values. Shared
+parameters may also be calibrated by adding their plain names to both
+bounds. Initial bounded values must lie inside the bounds.
+
+Omit `cultivar_specific` to expand every structure parameter, including
+`s1` for PhenoFlex or `b1`, `b2`, `b3` and `ol` for partial overlap. Set
+it to `character()` to share all parameters. `model$parameters`
+initializes from the stored base values; `parameter_schema(model)`
+exposes the expanded names, original `base_name`, component and cultivar
+index (NA for shared values).
+`predict_phenology(fit$model, weather = seasons)` also dispatches to
+combined prediction. Use `phenology_rss_combined` explicitly or supply
+another evaluator.
+
+The combined wrapper is optional. You can work with ordinary models
+directly:
+
+``` r
+simple <- as_pheno_models(fit) # one independent pheno_model per cultivar
+models <- pheno_model_list(
+  simple, shared = setdiff(names(simple[[1]]$parameters), c("yc", "zc"))
+)
+# Pass models to fit_phenology() with phenology_rss_combined and nested data.
+predict_phenology(simple[[2]], seasons[[2]][[1]])
+```
+
+`as_pheno_models()` accepts a combined specification, a model collection
+or a fitted result and materializes shared values in every simple model.
+You can also create `pheno_model_list()` from a hand-built list of
+simple models, or pass a plain list to the fitter to use the default
+sharing of chill/heat submodel parameters. Combined observations also
+support inner lists with NULL entries to skip individual cultivar/season
+pairs.
 
 ## Modular populations and forcing
 
-```r
+``` r
 model <- population_pheno_model(
   structure = "phenoflex",
   chill = chill_dynamic("characteristic"),
@@ -134,19 +644,21 @@ prediction$bloom_jday
 prediction$forcing$hours_to_bloom
 ```
 
-Use a season with at least 480 hourly rows for these example cuts. The population
-specification holds its underlying single model in `model$model`. Named parameters
-are population means; structure traits can vary between buds while chill and
-potential heat are calculated once. For partial overlap, specify dispersion of
-`b1` and `b2` explicitly instead of `zc`. Convert heat standard deviations as
-well as means when changing GDH scaling. Zero dispersion reproduces a single bud.
-Reuse an explicit buds-by-structure-parameters matrix for deterministic fitting
-or correlated traits. Sampled parameters outside their model domains raise errors.
+Use a season with at least 480 hourly rows for these example cuts. The
+population specification holds its underlying single model in
+`model$model`. Named parameters are population means; structure traits
+can vary between buds while chill and potential heat are calculated
+once. For partial overlap, specify dispersion of `b1` and `b2`
+explicitly instead of `zc`. Convert heat standard deviations as well as
+means when changing GDH scaling. Zero dispersion reproduces a single
+bud. Reuse an explicit buds-by-structure-parameters matrix for
+deterministic fitting or correlated traits. Sampled parameters outside
+their model domains raise errors.
 
-Cut indices identify one-based weather rows. Forcing retains accumulated field
-heat and structure history while holding all chill pools at their cutting values.
-Results are elapsed hours: zero means already bloomed at cutting and NA means
-the requirement was not reached. Detailed output adds hours-by-buds heat matrices.
-These units differ from the legacy `phenoflex_population()` forcing step indices;
-that interface remains available with its original behavior.
-
+Cut indices identify one-based weather rows. Forcing retains accumulated
+field heat and structure history while holding all chill pools at their
+cutting values. Results are elapsed hours: zero means already bloomed at
+cutting and NA means the requirement was not reached. Detailed output
+adds hours-by-buds heat matrices. These units differ from the legacy
+`phenoflex_population()` forcing step indices; that interface remains
+available with its original behavior.

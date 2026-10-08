@@ -19,12 +19,17 @@ Imports:
     purrr,
     GenSA,
     magrittr,
+    parallel,
     Rcpp,
     tidyr
 LinkingTo:
     Rcpp
 Suggests:
+    DEoptim,
+    doParallel,
+    foreach,
     jsonlite,
+    parallelly,
     sn,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
