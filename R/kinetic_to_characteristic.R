@@ -156,7 +156,14 @@ kinetic_to_characteristic <- function(par){
 
 
 #' @rdname kinetic_to_characteristic
+#' @section Deprecated:
+#' \code{convert_parameters_old_to_new()} is deprecated since evalpheno 0.3.1.
+#' Use kinetic_to_characteristic().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export
 convert_parameters_old_to_new <- function(par) {
+  .Deprecated(new = "kinetic_to_characteristic", package = "evalpheno",
+              msg = "convert_parameters_old_to_new() is deprecated. Use kinetic_to_characteristic(). See help('evalpheno-deprecated') for migration differences.")
   kinetic_to_characteristic(par)
 }

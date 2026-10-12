@@ -17,9 +17,16 @@
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @references Ashcroft, G. L., Richardson, E. A., & Seeley, S. D. (1977). A statistical method of determining chill unit and growing degree hour requirements for deciduous fruit Trees1. HortScience, 12(4), 347-348.
 #' @import chillR
+#' @section Deprecated:
+#' \code{wrapper_seq_model()} is deprecated since evalpheno 0.3.1.
+#' Use predict_phenology() with pheno_model('sequential', chill_dynamic('kinetic'), heat_gdh('scaled')).
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export wrapper_seq_model
 
 wrapper_seq_model <- function(x, par){
+  .Deprecated(new = "predict_phenology", package = "evalpheno",
+              msg = "wrapper_seq_model() is deprecated. Use predict_phenology() with pheno_model('sequential', chill_dynamic('kinetic'), heat_gdh('scaled')). See help('evalpheno-deprecated') for migration differences.")
   yc = par[1]
   zc = par[2]
   E0 = par[3]

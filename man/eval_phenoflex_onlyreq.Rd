@@ -51,6 +51,14 @@ parameter (s1) while keeping all chill and heat submodel parameters fixed.
 The function returns an objective value and parameter constraint values
 for use during calibration.
 }
+\section{Deprecated}{
+
+\code{eval_phenoflex_onlyreq()} is deprecated since evalpheno 0.3.1.
+Use pheno_model() and phenology_rss(); bound only the structure parameters in fit_phenology().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}
 }

@@ -67,7 +67,7 @@ eval_function_endodormancy_meigo <- function(x, SeasonList, dispersion_fun = 'ca
   }
 
   #convert the parameters from new to old
-  x_new <- convert_parameters(c(0,0,0,0, x[1:5], 0, 0, x[6]))
+  x_new <- characteristic_to_kinetic(c(0,0,0,0, x[1:5], 0, 0, x[6]))
   
   #inequality constrains
   g <- rep(0,2)

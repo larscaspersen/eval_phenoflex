@@ -35,10 +35,17 @@
 #'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #'
+#' @section Deprecated:
+#' \code{eval_fixed_daoptim()} is deprecated since evalpheno 0.3.1.
+#' Use fit_phenology() with phenology_rss(); choose fixed parameters through named bounds.
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export eval_fixed_daoptim
 eval_fixed_daoptim <- function(x, modelfn, bloomJDays, SeasonList, na_penalty = 365,
                        E0 = 4153.5, E1 = 12888.8, A0 = 139500, A1 = 2567000000000000000, 
                        Tf=4, slope=1.6, Tb = 4, Tu = 25, Tc = 36){
+  .Deprecated(new = "phenology_rss", package = "evalpheno",
+              msg = "eval_fixed_daoptim() is deprecated. Use fit_phenology() with phenology_rss(); choose fixed parameters through named bounds. See help('evalpheno-deprecated') for migration differences.")
   par <- c(x, E0, E1, A0, A1, Tf, slope, Tb, Tu, Tc)
   
   .phenology_rss(par, modelfn, bloomJDays, SeasonList, na_penalty)

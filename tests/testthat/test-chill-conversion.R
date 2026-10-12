@@ -17,7 +17,7 @@ test_that("ordinary residuals and converted parameters retain legacy results", {
     par <- c(40, 190, .5, 25, p, 4, 36, 4, 1.6)
     old <- suppressWarnings(legacy$convert_parameters(par))
     expect_false(is.list(old))
-    new <- convert_parameters(par)
+    new <- suppressWarnings(convert_parameters(par), classes = "deprecatedWarning")
     expect_false(is.list(new))
     # Relative checks per coefficient (A1 is many orders larger than E0).
     expect_equal(new[5:8] / old[5:8], rep(1, 4), tolerance = 1e-6)
@@ -48,34 +48,34 @@ test_that("domain errors are explicit and calibration failure policies are prese
                    c(279, 300, 20, 20), c(279, 286, 0, 20), c(279, 286, 20, NA))) {
     expect_error(solve_nle(c(500, 15000), bad), "params")
     par <- c(40, 190, .5, 25, bad, 4, 36, 4, 1.6)
-    expect_identical(convert_parameters(par), list(F = 1e6, g = rep(1e6, 5)))
-    expect_true(all(is.na(convert_parameters(par, "NA")[5:8])))
+    expect_identical(suppressWarnings(convert_parameters(par), classes = "deprecatedWarning"), list(F = 1e6, g = rep(1e6, 5)))
+    expect_true(all(is.na(suppressWarnings(convert_parameters(par, "NA"), classes = "deprecatedWarning")[5:8])))
   }
   expect_error(solve_nle_transformed(c(NA, 1), p), "z must")
-  expect_error(convert_parameters(1:4), "length 12")
+  expect_error(suppressWarnings(convert_parameters(1:4), classes = "deprecatedWarning"), "length 12")
 })
 
 test_that("calibration adapters receive physical parameters and preserve penalties", {
   par <- c(40, 190, .5, 25, 279, 286.1, 47.7, 28, 4, 36, 4, 1.6)
-  expected <- convert_parameters(par)
+  expected <- suppressWarnings(convert_parameters(par), classes = "deprecatedWarning")
   callback <- function(x, par) {
     expect_equal(par, expected, tolerance = 1e-10)
     100
   }
-  result <- evaluation_function_meigo_nonlinear(par, callback, 102, list(NULL))
+  result <- suppressWarnings(evaluation_function_meigo_nonlinear(par, callback, 102, list(NULL)), classes = "deprecatedWarning")
   expect_equal(result$F, 4)
-  expect_equal(eval_all_daoptim(par, callback, 102, list(NULL), intermed_chill = TRUE), 4)
+  expect_equal(suppressWarnings(eval_all_daoptim(par, callback, 102, list(NULL), intermed_chill = TRUE), classes = "deprecatedWarning"), 4)
   reduced <- par[-c(5, 10)]
-  expect_equal(eval_phenoflex_single(reduced, callback, 102, list(NULL))$F, 4)
-  expect_equal(eval_phenoflex_single_twofixed(reduced, callback, 102, list(NULL))$F, 4)
-  expect_equal(evaluation_function_gensa(par, callback, 102, list(NULL)), 4)
-  expect_equal(eval_phenoflex_combined(reduced, callback, list(102),
-                                      list(list(NULL)), ncult = 1)$F, 4)
-  expect_equal(evaluation_function_meigo_nonlinear_combined(par, callback,
-    list(data.frame(pheno = 102)), list(list(NULL)), n_cult = 1)$F, 4)
-  expect_equal(evaluation_function_meigo_nonlinear_fixed(par[c(1:4, 6, 7, 9)], callback,
+  expect_equal(suppressWarnings(eval_phenoflex_single(reduced, callback, 102, list(NULL)), classes = "deprecatedWarning")$F, 4)
+  expect_equal(suppressWarnings(eval_phenoflex_single_twofixed(reduced, callback, 102, list(NULL)), classes = "deprecatedWarning")$F, 4)
+  expect_equal(suppressWarnings(evaluation_function_gensa(par, callback, 102, list(NULL)), classes = "deprecatedWarning"), 4)
+  expect_equal(suppressWarnings(eval_phenoflex_combined(reduced, callback, list(102),
+                                      list(list(NULL)), ncult = 1), classes = "deprecatedWarning")$F, 4)
+  expect_equal(suppressWarnings(evaluation_function_meigo_nonlinear_combined(par, callback,
+    list(data.frame(pheno = 102)), list(list(NULL)), n_cult = 1), classes = "deprecatedWarning")$F, 4)
+  expect_equal(suppressWarnings(evaluation_function_meigo_nonlinear_fixed(par[c(1:4, 6, 7, 9)], callback,
     list(data.frame(pheno = 102)), list(list(NULL)), n_cult = 1,
-    theta_star = 279, pie_c = 28, Tc = 36, Tb = 4, slope = 1.6)$F, 4)
+    theta_star = 279, pie_c = 28, Tc = 36, Tb = 4, slope = 1.6), classes = "deprecatedWarning")$F, 4)
   stage_x <- c(40, 100, 190, 300, .5, 25, 286.1, 47.7, 28, 4, 4, 1.6)
   expect_error(eval_phenoflex_three_stages(stage_x, function(x, par) {
     expect_equal(par, expected, tolerance = 1e-10)
@@ -83,9 +83,9 @@ test_that("calibration adapters receive physical parameters and preserve penalti
   }, data.frame(), list(NULL)), "conversion reached")
   par[6] <- 300
   never <- function(...) stop("Model should not run for invalid conversion")
-  expect_equal(evaluation_function_gensa(par, never, 102, list(NULL)), 1e10)
-  expect_equal(eval_all_daoptim(par, never, 102, list(NULL), intermed_chill = TRUE), Inf)
-  expect_equal(evaluation_function_meigo_nonlinear(par, never, 102, list(NULL))$F, 1e6)
+  expect_equal(suppressWarnings(evaluation_function_gensa(par, never, 102, list(NULL)), classes = "deprecatedWarning"), 1e10)
+  expect_equal(suppressWarnings(eval_all_daoptim(par, never, 102, list(NULL), intermed_chill = TRUE), classes = "deprecatedWarning"), Inf)
+  expect_equal(suppressWarnings(evaluation_function_meigo_nonlinear(par, never, 102, list(NULL)), classes = "deprecatedWarning")$F, 1e6)
 })
 
 test_that("step stagnation is not mistaken for a root", {

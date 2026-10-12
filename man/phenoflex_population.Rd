@@ -86,6 +86,14 @@ The original C++ `exp` output uses zero-based forcing step indices (9999 for
 failure), whereas `bloomindex` is a one-based input row (0 for no bloom).
 These conventions are retained for compatibility with experimental analyses.
 }
+\section{Deprecated}{
+
+\code{helper_run_pop_model()} is deprecated since evalpheno 0.3.1.
+Use phenoflex_population() directly.
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \examples{
 weather <- data.frame(Temp = rep(15, 240), JDay = rep(1:10, each = 24))
 par <- c(40, 190, 0.5, 25, 3372.8, 9900.3, 6319.5, 5.939917e13,

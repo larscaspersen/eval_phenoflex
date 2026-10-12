@@ -29,6 +29,11 @@
 #' @keywords utility
 #' @importFrom nleqslv nleqslv
 #'
+#' @section Deprecated:
+#' \code{evaluation_function_meigo_nonlinear()} is deprecated since evalpheno 0.3.1.
+#' Use pheno_model(chill = chill_dynamic('characteristic')), phenology_rss() and fit_phenology().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export evaluation_function_meigo_nonlinear
 
 evaluation_function_meigo_nonlinear <- function(x, 
@@ -36,6 +41,8 @@ evaluation_function_meigo_nonlinear <- function(x,
                                                 bloomJDays,
                                                 SeasonList,
                                                 na_penalty = 365){
+  .Deprecated(new = "phenology_rss", package = "evalpheno",
+              msg = "evaluation_function_meigo_nonlinear() is deprecated. Use pheno_model(chill = chill_dynamic('characteristic')), phenology_rss() and fit_phenology(). See help('evalpheno-deprecated') for migration differences.")
   
   #innput:
   #         x is the parameters in meigo

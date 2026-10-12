@@ -24,6 +24,14 @@ Predict the day of the year of bloom from hourly weather and sequential
 model parameters. This wrapper is used by objective functions during
 model calibration.
 }
+\section{Deprecated}{
+
+\code{wrapper_seq_model()} is deprecated since evalpheno 0.3.1.
+Use predict_phenology() with pheno_model('sequential', chill_dynamic('kinetic'), heat_gdh('scaled')).
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \references{
 Ashcroft, G. L., Richardson, E. A., & Seeley, S. D. (1977). A statistical method of determining chill unit and growing degree hour requirements for deciduous fruit Trees1. HortScience, 12(4), 347-348.
 }

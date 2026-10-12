@@ -29,6 +29,14 @@ Predict the day of the year of bloom from hourly weather and partial overlap
 model parameters. This wrapper is used by objective functions during
 model calibration.
 }
+\section{Deprecated}{
+
+\code{wrapper_po_model()} is deprecated since evalpheno 0.3.1.
+Use predict_phenology() with pheno_model('partial_overlap', chill_dynamic('kinetic'), heat_gdh('scaled')).
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \references{
 Pope, K.S., Da Silva, D., Brown, P.H., DeJong, T.M. (2014). A biologically based approach to modeling spring phenology in temperate deciduous trees. Agricultural and Forest Meteorology, 198, 15-23. https://doi.org/10.1016/j.agrformet.2014.07.009
 }

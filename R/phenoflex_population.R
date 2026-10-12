@@ -114,11 +114,18 @@ phenoflex_population <- function(temp_df, par, yc_sd = 0, zc_sd = 0,
 }
 
 #' @rdname phenoflex_population
+#' @section Deprecated:
+#' \code{helper_run_pop_model()} is deprecated since evalpheno 0.3.1.
+#' Use phenoflex_population() directly.
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export
 helper_run_pop_model <- function(par, yc_sd, zc_sd, jday_cut, temp_df, n = 100,
                                  adjust_zc = 1, basic_output = FALSE, stop_at_zc = TRUE,
                                  dist_chill = "normal", dist_heat = "normal",
                                  add_distpar = NULL) {
+  .Deprecated(new = "phenoflex_population", package = "evalpheno",
+              msg = "helper_run_pop_model() is deprecated. Use phenoflex_population() directly. See help('evalpheno-deprecated') for migration differences.")
   phenoflex_population(temp_df, par, yc_sd, zc_sd, jday_cut, n, adjust_zc,
                         basic_output, stop_at_zc, dist_chill, dist_heat, add_distpar)
 }

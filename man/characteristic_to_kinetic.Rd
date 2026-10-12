@@ -24,6 +24,14 @@ list(F = 1e6, g = rep(1e6, 5)) on failure with policy "MEIGO".
 Uses stable residuals and the log-transformed energy solver. Positions outside
 5:8 are preserved. Failure policies retain the LarsChill calling convention.
 }
+\section{Deprecated}{
+
+\code{convert_parameters()} is deprecated since evalpheno 0.3.1.
+Use characteristic_to_kinetic().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \seealso{
 \code{\link{solve_nle_transformed}}
 }

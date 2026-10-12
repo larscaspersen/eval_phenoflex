@@ -38,13 +38,16 @@ test_that("three-stage station objectives match independently evaluated stage da
       p[1] <- requirements[1]
       predictions <- sapply(requirements[2:4], function(zc) {
         p[2] <- zc
-        vapply(seasons, custom_PhenoFlex_GDHwrapper, numeric(1), par = p)
+        suppressWarnings(vapply(seasons, custom_PhenoFlex_GDHwrapper, numeric(1), par = p), classes = "deprecatedWarning")
       })
       observed <- data.frame(budbreak = predictions[, 1], firstbloom = predictions[, 2],
                              fullbloom = predictions[, 3])
       cp <- fixtures$parameters$characteristic
       x <- c(requirements, .5, 25, cp[6:9], cp[11:12])
-      result <- eval_phenoflex_three_stages(x, custom_PhenoFlex_GDHwrapper_v2, observed, seasons)
+      result <- suppressWarnings(
+        eval_phenoflex_three_stages(x, custom_PhenoFlex_GDHwrapper_v2, observed, seasons),
+        classes = "deprecatedWarning"
+      )
       expect_equal(result$F, 0, info = station)
     }
   }

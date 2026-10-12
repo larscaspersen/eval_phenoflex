@@ -36,6 +36,14 @@ Like \code{\link{evaluation_function_meigo}}, this function evaluates
 PhenoFlex predictions during calibration. It returns the objective
 value as a numeric scalar for the MEIGO VNS optimizer.
 }
+\section{Deprecated}{
+
+\code{evaluation_function_meigo_vns()} is deprecated since evalpheno 0.3.1.
+Use pheno_model(), phenology_rss() and fit_phenology().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen
 }

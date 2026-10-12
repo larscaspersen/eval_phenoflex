@@ -26,7 +26,14 @@ characteristic_to_kinetic <- function(par, failure_return = "MEIGO") {
 }
 
 #' @rdname characteristic_to_kinetic
+#' @section Deprecated:
+#' \code{convert_parameters()} is deprecated since evalpheno 0.3.1.
+#' Use characteristic_to_kinetic().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export
 convert_parameters <- function(par, failure_return = "MEIGO") {
+  .Deprecated(new = "characteristic_to_kinetic", package = "evalpheno",
+              msg = "convert_parameters() is deprecated. Use characteristic_to_kinetic(). See help('evalpheno-deprecated') for migration differences.")
   characteristic_to_kinetic(par, failure_return = failure_return)
 }

@@ -42,6 +42,14 @@ parameters (theta_star, theta_c, tau and pie_c) in place of kinetic parameters
 Following Egea et al. (2021), a nonlinear system of equations is solved to
 derive the kinetic parameters before predicting bloom dates.
 }
+\section{Deprecated}{
+
+\code{evaluation_function_meigo_nonlinear()} is deprecated since evalpheno 0.3.1.
+Use pheno_model(chill = chill_dynamic('characteristic')), phenology_rss() and fit_phenology().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen
 }

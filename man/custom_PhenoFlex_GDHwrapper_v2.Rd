@@ -44,6 +44,14 @@ increases with a 10-degree Celsius temperature increase. Biological reactions
 typically have Q10 values between 2 and 3. These wrappers check both
 limits, 1.5 and 3.5, for both E0 and E1.
 }
+\section{Deprecated}{
+
+\code{custom_PhenoFlex_GDHwrapper_v2()} is deprecated since evalpheno 0.3.1.
+Use predict_phenology() with a PhenoFlex model and basic_output = FALSE for trajectories.
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}
 }

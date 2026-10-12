@@ -59,6 +59,14 @@ Parameters may use the kinetic chill representation (E0, E1, A0 and A1)
 or the characteristic representation (theta_star, theta_c, tau and pie_c).
 Characteristic parameters are converted before bloom dates are predicted.
 }
+\section{Deprecated}{
+
+\code{evaluation_function_gensa()} is deprecated since evalpheno 0.3.1.
+Use fit_phenology(optimizer = 'GenSA') with phenology_rss().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen
 }

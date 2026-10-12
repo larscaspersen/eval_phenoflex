@@ -24,6 +24,14 @@ Predict the day of the year of bloom from hourly weather and parallel
 model parameters. This wrapper is used by objective functions during
 model calibration.
 }
+\section{Deprecated}{
+
+\code{wrapper_parallel_model()} is deprecated since evalpheno 0.3.1.
+Use predict_phenology() with pheno_model('parallel', chill_dynamic('kinetic'), heat_gdh('scaled')).
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \references{
 Hänninen, H. and Kramer, K. (2007). A framework for modelling the annual cycle of trees in boreal and temperate regions. Silva Fennica 41(1), 167-205. Equation B4b. doi:10.14214/sf.313.
 }

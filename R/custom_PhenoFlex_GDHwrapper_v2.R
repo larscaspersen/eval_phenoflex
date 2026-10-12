@@ -36,9 +36,16 @@
 #'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @import chillR
+#' @section Deprecated:
+#' \code{custom_PhenoFlex_GDHwrapper_v2()} is deprecated since evalpheno 0.3.1.
+#' Use predict_phenology() with a PhenoFlex model and basic_output = FALSE for trajectories.
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export custom_PhenoFlex_GDHwrapper_v2
 
 custom_PhenoFlex_GDHwrapper_v2 <- function (x, par, constraints = FALSE){
+  .Deprecated(new = "predict_phenology", package = "evalpheno",
+              msg = "custom_PhenoFlex_GDHwrapper_v2() is deprecated. Use predict_phenology() with a PhenoFlex model and basic_output = FALSE for trajectories. See help('evalpheno-deprecated') for migration differences.")
   #x is one of the elements in season List
   #par are the parameters of the model
   

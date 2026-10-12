@@ -65,6 +65,14 @@ partial overlap model while keeping chill and heat submodel parameters fixed.
 Return the residual sum of squares in a format compatible with GenSA and
 DEoptim.
 }
+\section{Deprecated}{
+
+\code{eval_fixed_daoptim()} is deprecated since evalpheno 0.3.1.
+Use fit_phenology() with phenology_rss(); choose fixed parameters through named bounds.
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}
 }

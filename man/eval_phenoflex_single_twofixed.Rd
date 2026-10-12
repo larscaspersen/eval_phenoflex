@@ -58,6 +58,14 @@ Tc and theta_star are supplied separately and held fixed during calibration.
 Following Egea et al. (2021), a nonlinear system of equations is solved to
 derive the kinetic parameters before predicting bloom dates.
 }
+\section{Deprecated}{
+
+\code{eval_phenoflex_single_twofixed()} is deprecated since evalpheno 0.3.1.
+Use pheno_model() and phenology_rss(); choose fixed parameters through named bounds in fit_phenology().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen
 }
