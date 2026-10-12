@@ -24,8 +24,8 @@ test_that("both conversion directions round trip and preserve other parameters",
     expect_identical(restored[-(5:8)], characteristic[-(5:8)])
     expect_identical(kinetic[-(5:8)], characteristic[-(5:8)])
     expect_equal(restored, legacy$convert_parameters_old_to_new(kinetic), tolerance = 1e-12)
-    expect_identical(convert_parameters(characteristic), kinetic)
-    expect_identical(convert_parameters_old_to_new(kinetic), restored)
+    expect_identical(suppressWarnings(convert_parameters(characteristic), classes = "deprecatedWarning"), kinetic)
+    expect_identical(suppressWarnings(convert_parameters_old_to_new(kinetic), classes = "deprecatedWarning"), restored)
     names(characteristic) <- phenoflex_parnames_characteristic
     named_kinetic <- characteristic_to_kinetic(characteristic)
     expect_identical(names(named_kinetic), phenoflex_parnames_kinetic)

@@ -43,8 +43,8 @@ test_that("constant populations replicate a single bud and compatibility helper"
   pop <- phenoflex_population(population_weather, population_par, n = 3)
   expect_equal(pop$bloomindex, rep(single$bloomindex, 3))
   expect_equal(pop$z[, 2], as.vector(single$z))
-  expect_identical(pop, helper_run_pop_model(population_par, 0, 0, NULL,
-                                            population_weather, n = 3))
+  expect_identical(pop, suppressWarnings(helper_run_pop_model(population_par, 0, 0, NULL,
+                                            population_weather, n = 3), classes = "deprecatedWarning"))
   basic <- phenoflex_population(population_weather, population_par, n = 3,
                                 basic_output = TRUE)
   expect_equal(basic$bloomindex, pop$bloomindex)
