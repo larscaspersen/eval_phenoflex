@@ -2,10 +2,7 @@
 % Please edit documentation in R/eval_phenoflex_three_stages.R
 \name{eval_phenoflex_three_stages}
 \alias{eval_phenoflex_three_stages}
-\title{Evaluation function for three phenological stages at once
- 
-Takes model parameters for PhenoFlex, however, three individual heat requirements for 
-each modelled stage individually.}
+\title{Evaluate PhenoFlex parameters for three successive phenological stages}
 \usage{
 eval_phenoflex_three_stages(
   x,
@@ -18,54 +15,71 @@ eval_phenoflex_three_stages(
 )
 }
 \arguments{
-\item{x}{model parameters of PhenoFlex, new format: 
-c(yc, zc1, zc2, zc3 s1,Tu, theta_c, pie_c, tau, Tf, Tb, slope)
-will get converted to the format: E0, E1, A0, A1, Tf, slope to run the Dynamic Model}
+\item{x}{Numeric characteristic PhenoFlex parameter vector in the order
+yc, zc1, zc2, zc3, s1, Tu, theta_c, tau, pie_c, Tf, Tb, slope.
+The three zc values are cumulative heat requirements for the successive stages.
+Tc and theta_star are supplied separately.}
 
-\item{modelfn}{function used within the evaluation function to calculate the actual bloomday, often we use
-the 'custom_GDH_wrapper' function for that}
+\item{modelfn}{Function that returns a bloom date and accumulated chill and heat
+for a season, such as \code{\link{custom_PhenoFlex_GDHwrapper_v2}}.}
 
-\item{bloomdates_df}{data.frame, with four columns: year, firstbloom, fullbloom and budbreak.
-The phenological stages have the julian day of the occurence as values.}
+\item{bloomdates_df}{Data frame with columns year, firstbloom, fullbloom and
+budbreak. Stage dates are expressed as days of the year.}
 
-\item{SeasonList}{list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-generated using \link[chillR]{genSeasonList}}
+\item{SeasonList}{List of hourly weather data frames, one per phenological season.
+Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+Season lists can be generated with \code{\link[chillR]{genSeasonList}}.}
 
-\item{Tc}{numeric, by default 36. Critical temperature (°C) parameter of the GDH model.}
+\item{Tc}{Numeric upper temperature threshold of the GDH model, in degrees Celsius.}
 
-\item{theta_star}{numeric, by default 279. Optimal temperature (K) for chill accumulation of the
-Dynamic Model.}
+\item{theta_star}{Numeric optimal temperature for chill accumulation, in Kelvin.}
 
-\item{na_penalty}{numeric, by default 365. Penalty for the phenology
-prediction function when it fails return a bloom prediction}
+\item{na_penalty}{Numeric replacement for a missing bloom prediction. Defaults
+to 365; this value is used in place of the missing date when calculating loss.}
 }
 \value{
-list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-second is 'g' which is the values of the additional model constraints defined in the function.
-If the flag for return_pred set TRUE, then it returns bloom dates
+A list with F (the residual sum of squares) and g (the model's
+constraint values).
 }
 \description{
-The function returns for one season the timing of the three phenological stages. 
-E0 to A1 parameters of the chill submodel are replaced by intermediate parameters. 
-Parameters Tc and theta_star are fixed, as they contribute little to
-model performance. The function is usually called by an optimization algorithm
-during model calibration.
+Evaluate a model with a separate cumulative heat requirement for each of
+three successive phenological stages. All other model parameters are shared
+across stages; Tc and theta_star are supplied separately and held fixed.
+}
+\details{
+Characteristic chill parameters are converted to kinetic Dynamic Model
+parameters. The function compares predicted and observed stage dates and
+returns an objective value and constraint values for model calibration.
 }
 \examples{
-\dontrun{
+# Prepare two seasons from the bundled daily temperature data.
+data("cka_weather", package = "evalpheno")
+hourly <- chillR::stack_hourly_temps(
+  cka_weather, latitude = attr(cka_weather, "latitude")
+)$hourtemps
+seasons <- chillR::genSeasonList(
+  hourly, mrange = c(8, 6), years = 2008:2009
+)
 
-ncult <- 3
-#          theta_star, theta_c, pie_c, tau, Tf, slope
-par <-   c(40, 50, 150, 200, 0.5, 26, 281, 24, 45, 4, 1.6)
+# Ordered cumulative heat requirements: budbreak, first bloom, full bloom.
+parameters <- c(
+  yc = 40, zc1 = 180, zc2 = 250, zc3 = 300, s1 = 0.5, Tu = 25,
+  theta_c = 286.1, tau = 47.7, pie_c = 28, Tf = 4, Tb = 4, slope = 1.6
+)
 
-#prepare weather data
-weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
-hourtemps<-stack_hourly_temps(weather, latitude=50.4)
-seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
-
-eval_phenoflex_three_stages(x = par, par = SeasonList)
-}
+# Synthetic stage observations, ordered to match the two seasons.
+# These dates demonstrate the interface; they are not measured observations.
+observed <- data.frame(
+  year = 2008:2009, budbreak = c(115, 105),
+  firstbloom = c(125, 117), fullbloom = c(131, 123)
+)
+result <- eval_phenoflex_three_stages(
+  x = parameters, modelfn = custom_PhenoFlex_GDHwrapper_v2,
+  bloomdates_df = observed, SeasonList = seasons,
+  Tc = 36, theta_star = 279
+)
+result$F # Total residual sum of squares across stages and seasons
+result$g # Eight parameter constraint values
 }
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}

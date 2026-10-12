@@ -2,10 +2,7 @@
 % Please edit documentation in R/optimizer_gensa_combined_fitting.R
 \name{phenologyFitter_combined_fitting}
 \alias{phenologyFitter_combined_fitting}
-\title{Evaluation function for combined fitting of cultivars, using GenSA optimizer
- 
-Takes model parameters for PhenoFlex, parameters of yc, zc, s1 for individual cultivars and the remaining ones are shared. 
-Used the function for the apple study in Bonn and Asturias (Hajar Mojahid)}
+\title{Calibrate a combined cultivar model with GenSA}
 \usage{
 phenologyFitter_combined_fitting(
   par.guess = NULL,
@@ -22,44 +19,46 @@ phenologyFitter_combined_fitting(
 )
 }
 \arguments{
-\item{par.guess}{vector, numeric. Initial guess of the model parameters 
-yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope}
+\item{par.guess}{Numeric initial parameter vector containing one yc value per
+cultivar, followed by one zc and one s1 value per cultivar, then shared parameters
+Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope for par_type = "old".
+For par_type = "new", replace E0, E1, A0 and A1 with theta_star, theta_c,
+tau and pie_c.}
 
-\item{modelfn}{function used within the evaluation function to calculate the actual bloomday, by default we
-are using the PhenoFlex_GDHwrapper f chillR package}
+\item{modelfn}{Function that predicts a bloom date from weather and parameters.
+Defaults to \code{\link[chillR]{PhenoFlex_GDHwrapper}}.}
 
-\item{bloomJDays}{numeric containing the days of the year with the observed bloom}
+\item{bloomJDays}{List of numeric observed bloom-date vectors, one per cultivar.
+Dates must match the order of seasons in SeasonList.}
 
-\item{SeasonList}{list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-generated using \link[chillR]{genSeasonList}}
+\item{SeasonList}{Nested list of hourly weather data frames, with one season
+list per cultivar in the same order as bloomJDays.}
 
-\item{n_cult}{numeric, indicates the number of cultivars combined in the study}
+\item{n_cult}{Number of cultivars to calibrate together.}
 
-\item{par_type}{character, controls if we use the old type (with E0, E1, A0, A1) or 
-when equal to "new" for the format with (theta_star, theta_c, pie_c, tau)}
+\item{par_type}{Character string selecting the chill parameter representation:
+"old" for kinetic parameters or "new" for characteristic parameters.}
 
-\item{control}{list, contains arguments controling the GenSA optimization algorithm.
-For more details see in the documentation of the GenSA package.}
+\item{control}{List of GenSA optimizer controls. See \code{\link[GenSA]{GenSA}}
+for available settings.}
 
-\item{lower}{vector, contains lower bound of the search space for the parameters}
+\item{lower}{Numeric vector of lower parameter bounds.}
 
-\item{upper}{vector, contains upper bound of the search space for the parameters}
+\item{upper}{Numeric vector of upper parameter bounds.}
 
-\item{seed}{numeric, sets seed to make the random process of optimization reproducible}
+\item{seed}{Numeric seed for reproducible optimization.}
 
-\item{...}{further arguments for the modelfn function}
+\item{...}{Additional arguments accepted by the fitting interface.}
 }
 \value{
-list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-second is 'g' which is the values of the additional model constraints defined in the function.
-If the flag for return_pred set TRUE, then it returns bloom dates
+A phenologyFit result containing model_fit (the native GenSA result),
+par (the fitted parameters), initial settings, weather and observed bloom dates.
 }
 \description{
-The function evaluates a set of parameters, it assumes the chill requirement (yc), heat
-requirement (zc) and transition parameter (s1) cultivar-specific and the remaining
-parameters for chill and heat submodels are shared. The function is mainly used
-in model calibration and gets called by the global optimization algorithm.
+Fit cultivar-specific chill requirements (yc), heat requirements (zc) and
+transition parameters (s1), with shared chill and heat submodel parameters.
+The GenSA optimizer minimizes the total residual sum of squares across
+cultivars and seasons.
 }
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}

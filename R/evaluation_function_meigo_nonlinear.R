@@ -1,30 +1,34 @@
-#' Function used in the optimization process to generate bloom data
-#' 
-#' This function works like \link[evalpheno]{evaluation_function_meigo} except that it uses 
-#' parameters theta_star, theta_c, tau and pie_c instead of the commonly used
-#' E0, E1, A0 and A1 parameters, which get calculated in an intermediate step.
-#' 
-#' This function follows the approach suggested in Egea 2021 and solves a 
-#' nonlinear system of equations to derive the parameters E0, E1, A0 and A1 from the 
-#' newly used parameters theta_star, theta_c, tau and pie_c. ' 
-#' 
-#' 
+#' Evaluate characteristic PhenoFlex parameters for MEIGO
+#'
+#' Like \code{\link{evaluation_function_meigo}}, this function evaluates
+#' PhenoFlex predictions during calibration. It accepts characteristic chill
+#' parameters (theta_star, theta_c, tau and pie_c) in place of kinetic parameters
+#' (E0, E1, A0 and A1).
+#'
+#' Following Egea et al. (2021), a nonlinear system of equations is solved to
+#' derive the kinetic parameters before predicting bloom dates.
+#'
 #' @param x traditional model parameters of PhenoFlex in the order yc, zc, s1, Tu, theta_star, theta_c, tau, pie_c, Tf, Tc, Tb, slope.
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
-#' the 'custom_GDH_wrapper' function for that
-#' @param bloomJDays numeric containing the days of the year witht the observed bloom
-#' @param SeasonList list of hourly temperatures for the individual phenological seasons. Each element should contain a data.frame
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param na_penalty numeric, value which is used when the model fails to generate a prediction
-#' for the bloom date. By default 365
-#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-#' second is 'g' which is the values of the additional model constraints defined in the function.
-#' 
+#' @param modelfn Function that predicts a bloom date from a season's weather
+#' and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.
+#'
+#' @param bloomJDays Numeric vector of observed bloom dates, expressed as days of
+#' the year and ordered to match SeasonList.
+#'
+#' @param SeasonList List of hourly weather data frames, one per phenological season.
+#' Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+#' Season lists can be generated with \code{\link[chillR]{genSeasonList}}.
+#'
+#' @param na_penalty Numeric replacement for a missing bloom prediction. Defaults
+#' to 365; this value is used in place of the missing date when calculating loss.
+#'
+#' @return A list with F (the residual sum of squares) and g (the model's
+#' constraint values).
+#'
 #' @author Lars Caspersen
 #' @keywords utility
 #' @importFrom nleqslv nleqslv
-#'  
+#'
 #' @export evaluation_function_meigo_nonlinear
 
 evaluation_function_meigo_nonlinear <- function(x, 

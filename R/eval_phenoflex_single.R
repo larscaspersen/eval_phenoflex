@@ -1,33 +1,43 @@
-#' Evaluation function for single fitting of cultivars
-#'  
-#' Takes model parameters for PhenoFlex, parameters of yc, zc, s1, Tu, theta_c, pie_c, tau, Tf, Tb, slope. 
-#' 
-#' The function is used to calibrate the PhenoFlex model. We assumed that the Tc and theta_star parameter
-#' do not contribute much to the calibrated model performance and fixed them
-#' to their default values. 
-#' 
-#' I used the function for the analysis on apple cultivars at lake Constance, though the 
-#' results will probaly be not part of the final paper.
-#' 
-#' @param x model parameters of PhenoFlex, new format. yc, zc, s1, Tu, theta_c, pie_c, tau, Tf, Tb, slope. 
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
-#' the 'custom_GDH_wrapper' function for that
-#' @param bloomJDays numeric containing the days of the year with the observed bloom
-#' @param SeasonList list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param Tc numeric, by default 36. Critical temperature (°C) parameter of the GDH model.
-#' @param theta_star numeric, by default 279. Optimal temperature (K) for chill accumulation of the
-#' Dynamic Model. 
-#' @param return_pred logical, by default FALSE. If set TRUE the function will return
-#' bloom dates instead of the output required by the global optimzation algorithm.
-#' @param na_penalty numeric, by default 365. Penalty for the phenology
-#' prediction function when it fails return a bloom prediction
-#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-#' second is 'g' which is the values of the additional model constraints defined in the function.
-#' If the flag for return_pred set TRUE, then it returns bloom dates
+#' Evaluate PhenoFlex parameters for a single cultivar
+#'
+#' Evaluate PhenoFlex parameters during calibration, with Tc and theta_star
+#' supplied separately and held fixed. Characteristic chill parameters are
+#' converted to kinetic Dynamic Model parameters before predicting bloom dates.
+#'
+#' @param x Numeric characteristic PhenoFlex parameter vector in the order
+#' yc, zc, s1, Tu, theta_c, tau, pie_c, Tf, Tb, slope.
+#' Tc and theta_star are supplied separately.
+#'
+#' @param modelfn Function that predicts a bloom date from a season's weather
+#' and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.
+#'
+#' @param bloomJDays Numeric vector of observed bloom dates, expressed as days of
+#' the year and ordered to match SeasonList.
+#'
+#' @param SeasonList List of hourly weather data frames, one per phenological season.
+#' Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+#' Season lists can be generated with \code{\link[chillR]{genSeasonList}}.
+#'
+#' @param Tc Numeric upper temperature threshold of the GDH model, in degrees Celsius.
+#'
+#' @param theta_star Numeric optimal temperature for chill accumulation, in Kelvin.
+#'
+#' @param return_pred Logical. If TRUE, return predicted bloom dates instead of
+#' the objective value and constraint values. Defaults to FALSE.
+#'
+#' @param na_penalty Numeric replacement for a missing bloom prediction. Defaults
+#' to 365; this value is used in place of the missing date when calculating loss.
+#'
+#' @return A list with F (the residual sum of squares) and g (the model's
+#' constraint values) when return_pred is FALSE. If parameter conversion fails,
+#' F is 1e6 and g contains five values of 1e6.
+#' If return_pred is TRUE, return a numeric vector of bloom dates, one per season
+#' in SeasonList order. If parameter conversion fails, return NA_real_ for every
+#' season. After successful conversion, missing bloom predictions are replaced
+#' by na_penalty.
+#'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
-#' 
+#'
 #' @export eval_phenoflex_single
 eval_phenoflex_single  <- function(x, 
                                    modelfn,
@@ -71,6 +81,9 @@ eval_phenoflex_single  <- function(x,
   if (output$termcd >= 3){
     #if the nle algorithm has stalled just discard this solution
     E0<-NA; E1<-NA; A0<-NA; A1<-NA
+    
+    if(return_pred) return(rep(NA_real_, length(SeasonList)))
+    
     return(list(F=10^6, g=rep(10^6,5)))
     
     #You would add here a flag to let your optimization procedure know

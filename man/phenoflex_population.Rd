@@ -73,8 +73,9 @@ of length `n`. Supplying it bypasses sampling, useful for calibration.}
 }
 \value{
 A list with `bloomindex`, `yc_pop`, and `zc_pop`. Detailed output adds
-shared chill vectors `x`, `y`, an hours-by-buds heat matrix `z`, cutting-days-by-buds
-matrices `exp` and `z_effec`, and the potential forcing increment `exp_force_inc`.
+shared chill vectors `x` and `y`, a heat matrix `z` with one row per hour
+and one column per bud, matrices with one row per cutting day and one column
+per bud named `exp` and `z_effec`, and the potential forcing increment `exp_force_inc`.
 }
 \description{
 Chill accumulation is shared by all buds; heat accumulation is computed

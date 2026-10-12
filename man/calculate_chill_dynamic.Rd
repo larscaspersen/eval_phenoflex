@@ -40,6 +40,6 @@ an endpoint and does not generate a further interval.
 }
 \description{
 Computes chill throughout the supplied series, independently of a structure's
-requirements. A structure can freeze this trajectory once its requirement is met.
+requirements. Structure functions use this trajectory to determine heat effectiveness.
 The final column is the chill measure consumed by structure functions.
 }

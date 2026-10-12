@@ -1,0 +1,171 @@
+---
+title: "Model Calibration: Special cases"
+author: "Lars Caspersen"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+csl: elsevier-harvard.csl
+bibliography: vignette_evalpheno.bib
+vignette: >
+  %\VignetteIndexEntry{Model Calibration: Special cases}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The classic use case of spring-phenology is model to have a single calibrated model for
+each cultivar or phenological stage (budbreak, flowering). However,
+there are situations where specialized model calibration may be desired. This vignette will demonstate evalphenos function to do cross-validation, the model calibration of several successive phenological stages and the partial pooling of model structure across cultivars.
+
+In the first step, the phenology model is defined. In addition, the temperature data is converted to hourly format and split by season, meaning that we create a list with seperate
+data.frames, each entry contains hourly temperature from the start of the season, by default September, to the end of the season, by default June in the following year. 
+
+```{r weather}
+library(evalpheno)
+
+data("cka_weather", package = "evalpheno")
+head(cka_weather)
+
+hourly <- chillR::stack_hourly_temps(
+  cka_weather, latitude = attr(cka_weather, "latitude")
+)$hourtemps
+years <- 2008:2009
+seasons <- chillR::genSeasonList(hourly, mrange = c(8, 6), years = years)
+names(seasons) <- as.character(years)
+season <- seasons[[1]]
+
+
+phenoflex_model <- pheno_model(structure = "phenoflex")
+```
+
+## Cross-validation and weighted mean predictions
+
+Cross-validation can be usefull when we want to assess the uncertainty of the calibrated model parameters. Prepare the splits before fitting so they can be inspected. Each cross-validation fold retains a different set of training data for validation. In this example we have only two seasons, which is definitely not enough for real-world applications. Normally, 20 seasons or more are required for model training. The obtained models can also be used together to perform weighted mean predictions, as done for example by @caspersen_contrasting_2025.
+
+```{r cross-validation}
+
+observed <- c(`2008` = 125, `2009` = 117)
+
+bounds <- default_bounds(phenoflex_model, parameter_names = c("yc", "zc"))
+bounds$lower["zc"] <- 180
+bounds$upper["zc"] <- 350
+
+prepared <- prepare_phenology_cv(
+  seasons, observed, years = years, v = 2, repeats = 1, seed = 21
+)
+prepared$assignments
+cv <- fit_phenology_cv(
+  phenoflex_model, data = prepared, evaluation = phenology_rss,
+  lower = bounds$lower["zc"], upper = bounds$upper["zc"],
+  optimizer = "DEoptim", max_iterations = 2,
+  control = list(NP = 10, trace = FALSE),
+  restarts = 1, refit = FALSE, weighting = "inverse_mse", seed = 22
+)
+cv$calibration$scores
+cv$predictions # held-out predictions of each fold model
+```
+
+`repeats` redraws fold assignments; `restarts` repeats optimization within each
+split and selects the lowest training loss. Only `zc` is fitted in this small
+CV example. With sufficient data, use `groups = years` to keep entries of the
+same year together, and reserve independent validation through
+`validation_indices` or `validation_prop` before fitting.
+
+Fold scores assess individual held-out predictions. An ensemble prediction on
+these same seasons includes models trained on them and is **not** an independent
+validation result. With a larger dataset and reserved entries, use
+`validate_phenology(cv)` after choosing the ensemble policy. Ensemble spread is
+descriptive, not a confidence interval; missing-event votes can suppress the
+mean according to `failure_threshold`.
+
+The CV result stores an ensemble of fold models. `"inverse_mse"` weights them
+by `1 / (assessment MSE + epsilon)`; `"equal"` gives equal weights. Examine the
+weights and predict with the weighted mean:
+
+```{r weighted-predictions}
+cv$model$weights
+predict_phenology(cv, season)
+weighted <- predict_phenology(cv, season, basic_output = FALSE)
+weighted$summary
+```
+
+You can also set explicit weights for the same fold models:
+
+```{r explicit-weights}
+ensemble <- pheno_ensemble(cv, weights = c(0.4, 0.6))
+predict_phenology(ensemble, season)
+```
+
+
+
+## Fit successive stages together
+
+`stage_pheno_models()` uses ordered cumulative heat thresholds for successive
+stages. This can be helpfull to model successive phenological stages such as budbreak, first flowering and full flowering [@caspersen_spring_2025] Heat does not restart at each stage. The ordering of stages is separate
+from the choice of model structure; here the underlying structure is PhenoFlex.
+All parameters except `zc1`, `zc2`, etc. are shared.
+
+```{r stage-fit}
+stages <- stage_pheno_models(
+  phenoflex_model, c(budbreak = 180, first_bloom = 250, full_bloom = 300)
+)
+stage_observed <- list(
+  budbreak = c(115, 105),
+  first_bloom = c(125, 117),
+  full_bloom = c(131, 123)
+)
+stage_fit <- fit_phenology(
+  stages, evaluation = phenology_rss_stages,
+  seasons = seasons, observed = stage_observed,
+  lower = c(zc1 = 120, zc2 = 220, zc3 = 280),
+  upper = c(zc1 = 220, zc2 = 280, zc3 = 350),
+  max_iterations = 2, control = list(NP = 30, trace = FALSE), seed = 19
+)
+stage_fit$par[c("zc1", "zc2", "zc3")]
+predict_phenology(stage_fit, seasons)
+```
+
+##  Fit cultivars together
+
+Partially pooling observations from several cultivars can be usefull if each cultivar by
+themselve does not have observation for a regular model calibration. You choose
+which parameters of the models are shared across cultivars and which are cultivar-specific. For example, the submodels for chill and heat accumulation can be shared accross cultivars but the chill and heat requirements remain cultivar-specific. This approach was
+developed by @caspersen_combining_2026.
+
+For combined fitting, choose cultivar-specific structure parameters. All other
+parameters are shared. Data are nested by cultivar, then season, and their
+order must agree with the cultivar indices in the parameter names.
+
+```{r combined-fit}
+combined <- combined_pheno_model(
+  phenoflex_model, n_cultivars = 2, cultivar_specific = c("yc", "zc")
+)
+combined_parameters <- model_parameters(combined)
+combined_parameters[c("yc1", "yc2")] <- c(35, 45)
+combined <- combined_pheno_model(
+  phenoflex_model, n_cultivars = 2, cultivar_specific = c("yc", "zc"),
+  parameters = combined_parameters
+)
+combined_seasons <- list(cultivar_a = seasons, cultivar_b = seasons)
+combined_observed <- list(cultivar_a = observed, cultivar_b = c(130, 123))
+combined_bounds <- default_bounds(combined, c("zc", "tau"))
+combined_fit <- fit_phenology(
+  combined, evaluation = phenology_rss_combined,
+  seasons = combined_seasons, observed = combined_observed,
+  lower = combined_bounds$lower, upper = combined_bounds$upper,
+  max_iterations = 2, control = list(NP = 30, trace = FALSE), seed = 20
+)
+combined_fit$par[c("yc1", "yc2", "zc1", "zc2", "tau")]
+predict_phenology(combined_fit, combined_seasons)
+```
+
+Here `yc1` and `yc2` are cultivar-specific but fixed. `zc1` and `zc2` are fitted
+separately, and `tau` is fitted once for the shared chill submodel. Include
+`"yc"` in `default_bounds()` to fit both chill requirements too. Shared heat
+parameters can likewise be added to the search.
+
+
+## References
+

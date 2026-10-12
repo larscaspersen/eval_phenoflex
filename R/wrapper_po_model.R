@@ -1,21 +1,24 @@
-#' Wrapper for Partial Overlap Model
-#' 
-#' Takes hourly weather time series and parameters from Partial Overlap model and returns day of the year with bloom. 
-#' 
-#' This function is mainly used by function called by the optimizer during calibration
-#' 
-#' @param x data.frame with at least the column "Temp" (hourly temperature data) and "JDay" (day of the year)
-#' @param par vector of length 14 with the parameters of the Partial Overlap model (5), chill submodel (6) and heat submodel (3):
+#' Predict a bloom date with the partial overlap model
+#'
+#' Predict the day of the year of bloom from hourly weather and partial overlap
+#' model parameters. This wrapper is used by objective functions during
+#' model calibration.
+#'
+#' @param x Hourly weather data frame with Temp (hourly temperature)
+#' and JDay (day of the year) columns.
+#'
+#' @param par Numeric vector of length 14 with the parameters of the partial overlap model (5), chill submodel (6) and heat submodel (3):
 #' yc (initial chill requirement), b1 (minimum heat requirement), b2 (additional
 #' heat requirement at zero additional chill), b3 (exponential decay coefficient),
-#' ol (overlap multiplier; chill stops at b1*ol accumulated heat).
+#' ol (overlap multiplier; additional chill stops affecting the heat
+#' requirement at b1*ol accumulated heat).
 #' Additional chill is counted from the first row reaching yc; total chill and
 #' internal pools are not reset.
-#' parameters of chill submodel (Dynamic Model) include: E0, E1, A0, A1, Tf, slope. See \link[chillR]{Dynamic_Model} for more information.
-#' parameters of heat submodel (Growing Degree Hour model): Tb, Tu, Tc. See \link[chillR]{GDH} for more information.
-#' @return single numeric value with the day of the year, for which the model predicts bloom
-#' with given temperature data and model parameters. 
-#' 
+#' Dynamic Model chill parameters: E0, E1, A0, A1, Tf, slope. See \link[chillR]{Dynamic_Model} for more information.
+#' GDH heat parameters: Tb, Tu, Tc. See \link[chillR]{GDH} for more information.
+#' @return A numeric predicted bloom date, expressed as a day of the year,
+#' for the supplied weather and model parameters.
+#'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @references Pope, K.S., Da Silva, D., Brown, P.H., DeJong, T.M. (2014). A biologically based approach to modeling spring phenology in temperate deciduous trees. Agricultural and Forest Meteorology, 198, 15-23. https://doi.org/10.1016/j.agrformet.2014.07.009
 #' @import chillR

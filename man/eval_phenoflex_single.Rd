@@ -2,9 +2,7 @@
 % Please edit documentation in R/eval_phenoflex_single.R
 \name{eval_phenoflex_single}
 \alias{eval_phenoflex_single}
-\title{Evaluation function for single fitting of cultivars
- 
-Takes model parameters for PhenoFlex, parameters of yc, zc, s1, Tu, theta_c, pie_c, tau, Tf, Tb, slope.}
+\title{Evaluate PhenoFlex parameters for a single cultivar}
 \usage{
 eval_phenoflex_single(
   x,
@@ -18,41 +16,43 @@ eval_phenoflex_single(
 )
 }
 \arguments{
-\item{x}{model parameters of PhenoFlex, new format. yc, zc, s1, Tu, theta_c, pie_c, tau, Tf, Tb, slope.}
+\item{x}{Numeric characteristic PhenoFlex parameter vector in the order
+yc, zc, s1, Tu, theta_c, tau, pie_c, Tf, Tb, slope.
+Tc and theta_star are supplied separately.}
 
-\item{modelfn}{function used within the evaluation function to calculate the actual bloomday, often we use
-the 'custom_GDH_wrapper' function for that}
+\item{modelfn}{Function that predicts a bloom date from a season's weather
+and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.}
 
-\item{bloomJDays}{numeric containing the days of the year with the observed bloom}
+\item{bloomJDays}{Numeric vector of observed bloom dates, expressed as days of
+the year and ordered to match SeasonList.}
 
-\item{SeasonList}{list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-generated using \link[chillR]{genSeasonList}}
+\item{SeasonList}{List of hourly weather data frames, one per phenological season.
+Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+Season lists can be generated with \code{\link[chillR]{genSeasonList}}.}
 
-\item{Tc}{numeric, by default 36. Critical temperature (°C) parameter of the GDH model.}
+\item{Tc}{Numeric upper temperature threshold of the GDH model, in degrees Celsius.}
 
-\item{theta_star}{numeric, by default 279. Optimal temperature (K) for chill accumulation of the
-Dynamic Model.}
+\item{theta_star}{Numeric optimal temperature for chill accumulation, in Kelvin.}
 
-\item{return_pred}{logical, by default FALSE. If set TRUE the function will return
-bloom dates instead of the output required by the global optimzation algorithm.}
+\item{return_pred}{Logical. If TRUE, return predicted bloom dates instead of
+the objective value and constraint values. Defaults to FALSE.}
 
-\item{na_penalty}{numeric, by default 365. Penalty for the phenology
-prediction function when it fails return a bloom prediction}
+\item{na_penalty}{Numeric replacement for a missing bloom prediction. Defaults
+to 365; this value is used in place of the missing date when calculating loss.}
 }
 \value{
-list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-second is 'g' which is the values of the additional model constraints defined in the function.
-If the flag for return_pred set TRUE, then it returns bloom dates
+A list with F (the residual sum of squares) and g (the model's
+constraint values) when return_pred is FALSE. If parameter conversion fails,
+F is 1e6 and g contains five values of 1e6.
+If return_pred is TRUE, return a numeric vector of bloom dates, one per season
+in SeasonList order. If parameter conversion fails, return NA_real_ for every
+season. After successful conversion, missing bloom predictions are replaced
+by na_penalty.
 }
 \description{
-The function is used to calibrate the PhenoFlex model. We assumed that the Tc and theta_star parameter
-do not contribute much to the calibrated model performance and fixed them
-to their default values.
-}
-\details{
-I used the function for the analysis on apple cultivars at lake Constance, though the 
-results will probaly be not part of the final paper.
+Evaluate PhenoFlex parameters during calibration, with Tc and theta_star
+supplied separately and held fixed. Characteristic chill parameters are
+converted to kinetic Dynamic Model parameters before predicting bloom dates.
 }
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}

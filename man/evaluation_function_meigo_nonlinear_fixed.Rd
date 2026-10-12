@@ -2,7 +2,7 @@
 % Please edit documentation in R/evaluation_function_meigo_nonlinear_fixed.R
 \name{evaluation_function_meigo_nonlinear_fixed}
 \alias{evaluation_function_meigo_nonlinear_fixed}
-\title{Function used in the optimization process to generate bloom data}
+\title{Evaluate multiple cultivars with selected PhenoFlex parameters fixed}
 \usage{
 evaluation_function_meigo_nonlinear_fixed(
   x,
@@ -19,49 +19,51 @@ evaluation_function_meigo_nonlinear_fixed(
 )
 }
 \arguments{
-\item{x}{traditional model parameters of PhenoFlex in the order yc, zc, s1, Tu, theta_star, theta_c, tau, pie_c, Tf, Tc, Tb, slope. The parameters
-yc, zc and s1 need to be replicated as often as cultivars are fitted.}
+\item{x}{Numeric parameter vector containing one yc value per cultivar,
+followed by one zc and one s1 value per cultivar, then the shared parameters
+Tu, theta_c, tau and Tf. Other parameters are supplied separately.}
 
-\item{modelfn}{function used within the evaluation function to calculate the actual bloomday, often we use
-the 'custom_GDH_wrapper' function for that}
+\item{modelfn}{Function that predicts a bloom date from a season's weather
+and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.}
 
-\item{bloomJDays}{list of numeric vectors containing the observed bloom dates in day of the year format}
+\item{bloomJDays}{List of data frames with observed bloom dates in a pheno
+column, one data frame per cultivar. Dates are expressed as days of the year.}
 
-\item{SeasonList}{list of lists, containing the hourly temperatures for the individual phenological seasons. One element per cultivar.
-The list of each cultivar should contain data.frames for eachs season
-with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-generated using \link[chillR]{genSeasonList}}
+\item{SeasonList}{Nested list with one season list per cultivar.
+Each season is a weather data frame with Temp and JDay columns, ordered to
+match the observations for that cultivar.}
 
-\item{na_penalty}{numeric, value which is used when the model fails to generate a prediction
-for the bloom date. By default 365}
+\item{na_penalty}{Numeric replacement for a missing bloom prediction. Defaults
+to 365; this value is used in place of the missing date when calculating loss.}
 
-\item{n_cult}{Numeric, specifying the numbers of cultivars fitted}
+\item{n_cult}{Number of cultivars to calibrate together.}
 
-\item{theta_star}{numeric, by default 286. Is the optimal temperature for chill accumulation measured in Kelvin}
+\item{theta_star}{Numeric optimal temperature for chill accumulation, in Kelvin.}
 
-\item{pie_c}{numeric, ny default 28. Is the interval length in hours of a cycled two-temperature experiment which lead 
-to absolute chill negation.}
+\item{pie_c}{Numeric duration, in hours, of the alternating-temperature
+experiment that produces complete chill negation. Defaults to 28.}
 
-\item{Tc}{numeric, by default 36. Is the upper limit of temperature in degree Celsius, above which no heat accumulation happens.}
+\item{Tc}{Numeric upper temperature threshold of the GDH model, in degrees Celsius.}
 
-\item{Tb}{numeric, by default 2. Is the lower limit of temperature in degree Celsius, below which no heat accumulation happens.}
+\item{Tb}{Numeric lower temperature threshold of the GDH model, in degrees Celsius.}
 
-\item{slope}{numeric, by default 1.6. Defines the slope of the transition process converting labile to stabile chill portions.}
+\item{slope}{Numeric slope of the transition function that converts labile
+chill to stable chill portions. Defaults to 1.6.}
 }
 \value{
-list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-second is 'g' which is the values of the additional model constraints defined in the function.
+A list with F (the residual sum of squares) and g (the model's
+constraint values).
 }
 \description{
-This is the evaluation function for the fitting process. It takes the "new" parameters
-(theta_star, theta_c, tau, pie_c) instead of the old ones (E0, E1, A0, A1). This function
-allows combined fitting of cultivars. It will only estimate cultivar-specific parameters of yc, zc and s1. Furthermore
-it has fixed values of theta_star, pie_c, Tc, Tu and slope.
+Evaluate cultivar-specific yc, zc and s1 parameters, with shared chill and
+heat submodel parameters. The parameters theta_star, pie_c, Tc, Tb and slope
+are supplied separately and held fixed. Characteristic chill parameters
+are converted to kinetic parameters before prediction.
 }
 \details{
-This function will be best used in combination with the \link[MEIGOR]{MEIGO} function 
-to estimate PhenoFlex parameter values. The order of bloomJDays and SeasonList should be the same. 
-The order will correspond to estimated cultivar-specific parameters
+Use this objective function with \link[MEIGOR]{MEIGO}. Cultivars in
+bloomJDays and SeasonList must appear in the same order as their parameter
+values; seasons must also appear in matching order within each cultivar.
 }
 \author{
 Lars Caspersen

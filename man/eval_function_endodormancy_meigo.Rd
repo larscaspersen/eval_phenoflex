@@ -2,56 +2,57 @@
 % Please edit documentation in R/eval_function_endodormancy_meigo.R
 \name{eval_function_endodormancy_meigo}
 \alias{eval_function_endodormancy_meigo}
-\title{Evaluation function for endodormancy}
+\title{Evaluate Dynamic Model parameters using endodormancy observations}
 \usage{
 eval_function_endodormancy_meigo(x, SeasonList, dispersion_fun = "calc_cv")
 }
 \arguments{
-\item{x}{model parameters of Dynamic Model, new format: theta_star, theta_c, pie_c, tau, Tf, slope
-will get converted to the format: E0, E1, A0, A1, Tf, slope to run the Dynamic Model}
+\item{x}{Numeric characteristic Dynamic Model parameter vector of length six, in the order
+theta_star, theta_c, tau, pie_c, Tf, slope. Characteristic parameters are
+converted to E0, E1, A0 and A1 before calculating chill accumulation.}
 
-\item{SeasonList}{List of SeasonLists. For each cultivar one entry. Individual seasonlists 
-per cultivar contain exactly period of: measured end of endodormancy release to measured
-ecodormancy release.}
+\item{SeasonList}{Nested list with one season list per cultivar. Each season
+contains an hourly temperature series in a Temp column for the observation
+period used to assess endodormancy release. The outer object and each
+cultivar entry must be lists; data frames are individual seasons, not season lists.}
 
-\item{dispersion_fun}{name of function to measure dispersion of accumulated GDH per
-cultivar. Needs to be a function loaded in the environment. Can also be a custom function.
-By default "calc_cv", which calculates the coefficient of variation.}
+\item{dispersion_fun}{Name of a function that measures dispersion of accumulated
+chill portions across seasons within a cultivar. The function must be available
+by name. Defaults to "calc_cv", which calculates the coefficient of variation.}
 }
 \value{
-sum of the dispersion function. This will be subject to global optimization.
+A list with F (the sum of cultivar-specific dispersion values)
+and g (the Q10 constraint values).
 }
 \description{
-Takes model parameters for Dynamic Model and list of seasons with daily temperature time series.
+Calculate accumulated chill portions for each supplied temperature series,
+then measure the dispersion of these totals across seasons within each
+cultivar. Calibration minimizes the sum of the cultivar-specific dispersion
+values. Characteristic parameters are converted to kinetic Dynamic Model
+parameters before chill accumulation is calculated.
 }
 \details{
-The function evaluates a set of parameters and calculates accumulated chill portions (CP) for each of the supplied temperature time series.
-Then it returns a dispersion metric measuring how different accumulated CP are among the seasons.
-The function is usually used in an optimization problem, where the goal is to estimate
-Dynamic Model parameters most suitable to minimize the dispersion of accumulated CP.
-
-The function has very specific requirements on the structure of the Seasonlist.
-In fact it is a list of Seasonlists created for several cultivars.
-For each cultivar, the seasonlist contains exactly the period from endodormancy 
-release to observed ecodormancy release.
-
-
-Used this function for the Olive study of Efe Deger
+Supply a nested list of seasons, with one outer entry per cultivar.
 }
 \examples{
 \dontrun{
-#          theta_star, theta_c, pie_c, tau, Tf, slope
-par <-   c(279,        281,      ?      ?    4,  1.6)
+#          theta_star, theta_c, tau,   pie_c, Tf, slope
+par <-   c(279,        286,      28      47.7    4,  1.6)
 
 #prepare weather data
-weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
-hourtemps<-stack_hourly_temps(weather, latitude=50.4)
-seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
+weather <- chillR::fix_weather(
+  chillR::KA_weather[chillR::KA_weather$Year > 2004, ]
+)
+hourtemps <- chillR::stack_hourly_temps(weather, latitude = 50.4)
+seasonList <- chillR::genSeasonList(hourtemps$hourtemps, years = 2006)
 
-#get endodormancy / ecodormancy release date
-#--> prepare SeasonList for different cultivars
+#seasonnlist needs be a list for each cultivar, if cultivars cover
+#different parts of the generated seasonlist, adjust this part accordingly
+seasonlist_all <- list(seasonList,
+                      seasonList,
+                      seasonList)
 
-eval_function_endodormancy_meigo(x = par, par = SeasonList)
+eval_function_endodormancy_meigo(x = par, SeasonList = SeasonList)
 
 
 }

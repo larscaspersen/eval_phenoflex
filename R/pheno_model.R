@@ -1,9 +1,9 @@
 #' Specify a phenology model
 #'
-#' A model specification is an S3 list storing the algorithms and named parameter
-#' values. Supports sequential, linear parallel,
+#' A model specification is an S3 list storing algorithms and named parameter
+#' values. It supports sequential, linear parallel,
 #' partial-overlap and PhenoFlex coupling with the Dynamic Model and GDH.
-#' Other combinations are rejected as unsupported, not judged scientifically.
+#' Other combinations are not supported by this interface.
 #' @param structure One of "sequential", "parallel", "partial_overlap" or "phenoflex".
 #' @param chill Chill specification returned by chill_dynamic().
 #' @param heat Heat specification returned by heat_gdh().
@@ -61,7 +61,7 @@ chill_dynamic <- function(parameterization = c("characteristic", "kinetic")) {
 
 #' @rdname pheno_model
 #' @param scaling "unscaled" returns Growing Degree Hour (GDH) units without scaling via (Tu-Tb).
-#' "scaled" returns units multiplied by (Tu-Tb). Standard implementation of PhenoFlex
+#' "scaled" returns units multiplied by (Tu-Tb). The standard implementation of PhenoFlex
 #' uses unscaled GDH, while most other studies use scaled GDH.
 #' @export
 heat_gdh <- function(scaling = c("unscaled", "scaled")) list(name = "gdh",

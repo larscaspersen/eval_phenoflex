@@ -34,7 +34,7 @@ reproducible draws without changing the caller's random-number state.}
 A list containing numeric vectors `yc_pop` and `zc_pop`, each of length `n`.
 }
 \description{
-Independent normal or skew-normal requirements. Zero standard deviation
+Draw independent normal or skew-normal chill and heat requirements. Zero standard deviation
 produces a constant population. Skew-normal parameters describe the actual
 mean and standard deviation, with shape supplied in `skew`.
 Negative draws are rejected with an error rather than silently truncated.

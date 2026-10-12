@@ -2,7 +2,7 @@
 % Please edit documentation in R/evaluation_function_meigo_nonlinear_combined.R
 \name{evaluation_function_meigo_nonlinear_combined}
 \alias{evaluation_function_meigo_nonlinear_combined}
-\title{Function used in the optimization process to generate bloom data}
+\title{Evaluate characteristic PhenoFlex parameters for multiple cultivars}
 \usage{
 evaluation_function_meigo_nonlinear_combined(
   x,
@@ -15,39 +15,47 @@ evaluation_function_meigo_nonlinear_combined(
 )
 }
 \arguments{
-\item{x}{traditional model parameters of PhenoFlex in the order yc, zc, s1, Tu, theta_star, theta_c, tau, pie_c, Tf, Tc, Tb, slope. The parameters
-yc, zc and s1 need to be replicated as often as cultivars are fitted.}
+\item{x}{Numeric parameter vector containing one yc value per cultivar,
+followed by one zc and one s1 value per cultivar, then shared parameters
+Tu, theta_star, theta_c, tau, pie_c, Tf, Tc, Tb, slope.}
 
-\item{modelfn}{function used within the evaluation function to calculate the actual bloomday, often we use
-the 'custom_GDH_wrapper' function for that}
+\item{modelfn}{Function that predicts a bloom date from a season's weather
+and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.}
 
-\item{bloomJDays}{list of numeric vectors containing the observed bloom dates in day of the year format}
+\item{bloomJDays}{List of data frames with observed bloom dates in a pheno
+column, one data frame per cultivar. Dates are expressed as days of the year.}
 
-\item{SeasonList}{list of lists, containing the hourly temperatures for the individual phenological seasons. One element per cultivar.
-The list of each cultivar should contain data.frames for eachs season
-with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-generated using \link[chillR]{genSeasonList}}
+\item{SeasonList}{Nested list with one season list per cultivar.
+Each season is a weather data frame with Temp and JDay columns, ordered to
+match the observations for that cultivar.}
 
-\item{n_cult}{Numeric, specifying the numbers of cultivars fitted}
+\item{n_cult}{Number of cultivars to calibrate together.}
 
-\item{na_penalty}{numeric, value which is used when the model fails to generate a prediction
-for the bloom date. By default 365}
+\item{na_penalty}{Numeric replacement for a missing bloom prediction. Defaults
+to 365; this value is used in place of the missing date when calculating loss.}
 
-\item{return_bloom_days}{boolean, by default set FALSE. Controls if the evaluation score or the predicted bloom dates get returned by the function}
+\item{return_bloom_days}{Logical. If TRUE, return predicted bloom dates instead
+of the objective value and constraint values. Defaults to FALSE.}
 }
 \value{
-list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-second is 'g' which is the values of the additional model constraints defined in the function.
+A list with F (the residual sum of squares) and g (the model's
+constraint values) when return_bloom_days is FALSE. If parameter conversion
+fails, F is 1e6 and g contains five values of 1e6.
+If return_bloom_days is TRUE, return a list of numeric bloom-date vectors,
+one per cultivar in SeasonList order. Each vector follows that cultivar's
+season order. If parameter conversion fails, return the same list structure
+with NA_real_ for every season. After successful conversion, missing bloom
+predictions are replaced by na_penalty.
 }
 \description{
-This is the evaluation function for the fitting process. It takes the "new" parameters
-(theta_star, theta_c, tau, pie_c) instead of the old ones (E0, E1, A0, A1). This function
-allows combined fitting of cultivars. It will only estimate cultivar-specific parameters of yc, zc and s1.
+Evaluate cultivar-specific yc, zc and s1 parameters, with shared chill and
+heat submodel parameters. Characteristic chill parameters (theta_star,
+theta_c, tau and pie_c) are converted to kinetic parameters before prediction.
 }
 \details{
-This function will be best used in combination with the \link[MEIGOR]{MEIGO} function 
-to estimate PhenoFlex parameter values. The order of bloomJDays and SeasonList should be the same. 
-The order will correspond to estimated cultivar-specific parameters
+Use this objective function with \link[MEIGOR]{MEIGO}. Cultivars in
+bloomJDays and SeasonList must appear in the same order as their parameter
+values; seasons must also appear in matching order within each cultivar.
 }
 \author{
 Lars Caspersen

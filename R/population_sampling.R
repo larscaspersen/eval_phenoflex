@@ -1,6 +1,6 @@
 #' Sample bud-specific chill and heat requirements
 #'
-#' Independent normal or skew-normal requirements. Zero standard deviation
+#' Draw independent normal or skew-normal chill and heat requirements. Zero standard deviation
 #' produces a constant population. Skew-normal parameters describe the actual
 #' mean and standard deviation, with shape supplied in `skew`.
 #' Negative draws are rejected with an error rather than silently truncated.

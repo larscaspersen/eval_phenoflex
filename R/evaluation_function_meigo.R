@@ -1,27 +1,28 @@
-#' Function used in the optimization process to generate bloom data
-#' 
-#' This function takes the temperature data, the phenological observations and model parameters and returns
-#' a model performance score. This score is used by the optimization algorithm to 
-#' find better model parameters.
-#' 
-#' 
-#' 
-#' 
+#' Evaluate PhenoFlex parameters for the MEIGO optimizer
+#'
+#' Predict bloom dates from hourly weather and model parameters, then return
+#' the residual sum of squares and parameter constraint values for calibration.
+#'
 #' @param x traditional model parameters of PhenoFlex in the order yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope.
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
-#' the 'custom_GDH_wrapper' function for that
-#' @param bloomJDays numeric containing the days of the year witht the observed bloom
-#' @param SeasonList list of hourly temperatures for the individual phenological seasons. Each element should contain a data.frame
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param na_penalty numeric, value which is used when the model fails to generate a prediction
-#' for the bloom date. By default 365
-#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-#' second is 'g' which is the values of the additional model constraints defined in the function.
-#' 
+#' @param modelfn Function that predicts a bloom date from a season's weather
+#' and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.
+#'
+#' @param bloomJDays Numeric vector of observed bloom dates, expressed as days of
+#' the year and ordered to match SeasonList.
+#'
+#' @param SeasonList List of hourly weather data frames, one per phenological season.
+#' Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+#' Season lists can be generated with \code{\link[chillR]{genSeasonList}}.
+#'
+#' @param na_penalty Numeric replacement for a missing bloom prediction. Defaults
+#' to 365; this value is used in place of the missing date when calculating loss.
+#'
+#' @return A list with F (the residual sum of squares) and g (the model's
+#' constraint values).
+#'
 #' @author Lars Caspersen
 #' @keywords utility
-#'  
+#'
 #' @export evaluation_function_meigo
 
 evaluation_function_meigo <- function(x, 

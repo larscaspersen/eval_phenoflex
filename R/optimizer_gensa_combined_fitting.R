@@ -1,38 +1,49 @@
-#' Evaluation function for combined fitting of cultivars, using GenSA optimizer
-#'  
-#' Takes model parameters for PhenoFlex, parameters of yc, zc, s1 for individual cultivars and the remaining ones are shared. 
-#' Used the function for the apple study in Bonn and Asturias (Hajar Mojahid)  
-#' 
-#' The function evaluates a set of parameters, it assumes the chill requirement (yc), heat
-#' requirement (zc) and transition parameter (s1) cultivar-specific and the remaining
-#' parameters for chill and heat submodels are shared. The function is mainly used
-#' in model calibration and gets called by the global optimization algorithm. 
-#' 
-#' @param par.guess vector, numeric. Initial guess of the model parameters 
-#' yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, by default we
-#' are using the PhenoFlex_GDHwrapper f chillR package
-#' @param bloomJDays numeric containing the days of the year with the observed bloom
-#' @param SeasonList list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param n_cult numeric, indicates the number of cultivars combined in the study
-#' @param par_type character, controls if we use the old type (with E0, E1, A0, A1) or 
-#' when equal to "new" for the format with (theta_star, theta_c, pie_c, tau)
-#' @param control list, contains arguments controling the GenSA optimization algorithm.
-#' For more details see in the documentation of the GenSA package.
-#' @param lower vector, contains lower bound of the search space for the parameters
-#' @param upper vector, contains upper bound of the search space for the parameters
-#' @param seed numeric, sets seed to make the random process of optimization reproducible
-#' @param ... further arguments for the modelfn function
-#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-#' second is 'g' which is the values of the additional model constraints defined in the function.
-#' If the flag for return_pred set TRUE, then it returns bloom dates
+#' Calibrate a combined cultivar model with GenSA
+#'
+#' Fit cultivar-specific chill requirements (yc), heat requirements (zc) and
+#' transition parameters (s1), with shared chill and heat submodel parameters.
+#' The GenSA optimizer minimizes the total residual sum of squares across
+#' cultivars and seasons.
+#'
+#' @param par.guess Numeric initial parameter vector containing one yc value per
+#' cultivar, followed by one zc and one s1 value per cultivar, then shared parameters
+#' Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope for par_type = "old".
+#' For par_type = "new", replace E0, E1, A0 and A1 with theta_star, theta_c,
+#' tau and pie_c.
+#'
+#' @param modelfn Function that predicts a bloom date from weather and parameters.
+#' Defaults to \code{\link[chillR]{PhenoFlex_GDHwrapper}}.
+#'
+#' @param bloomJDays List of numeric observed bloom-date vectors, one per cultivar.
+#' Dates must match the order of seasons in SeasonList.
+#'
+#' @param SeasonList Nested list of hourly weather data frames, with one season
+#' list per cultivar in the same order as bloomJDays.
+#'
+#' @param n_cult Number of cultivars to calibrate together.
+#'
+#' @param par_type Character string selecting the chill parameter representation:
+#' "old" for kinetic parameters or "new" for characteristic parameters.
+#'
+#' @param control List of GenSA optimizer controls. See \code{\link[GenSA]{GenSA}}
+#' for available settings.
+#'
+#' @param lower Numeric vector of lower parameter bounds.
+#'
+#' @param upper Numeric vector of upper parameter bounds.
+#'
+#' @param seed Numeric seed for reproducible optimization.
+#'
+#' @param ... Additional arguments accepted by the fitting interface.
+#'
+#' @return A phenologyFit result containing model_fit (the native GenSA result),
+#' par (the fitted parameters), initial settings, weather and observed bloom dates.
+#'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @importFrom GenSA GenSA
 #' @importFrom purrr map_dbl
 #' @importFrom chillR PhenoFlex_GDHwrapper
-#' 
+#'
 #' @export phenologyFitter_combined_fitting
 phenologyFitter_combined_fitting <- function (par.guess = NULL, modelfn = chillR::PhenoFlex_GDHwrapper, bloomJDays, 
                                               SeasonList, 
@@ -88,7 +99,7 @@ phenologyFitter_combined_fitting <- function (par.guess = NULL, modelfn = chillR
   res$model_fit <- GenSA::GenSA(par = par.guess, fn = chifull_combined_fitting, 
                                 bloomJDays = bloomJDays, SeasonList = SeasonList, modelfn = modelfn, 
                                 control = control, lower = lower, upper = upper, n_cult = n_cult,
-                                convert_par = convert_par)
+                                convert_par = convert_par, ...)
   res$par <- res$model_fit$par
   
   

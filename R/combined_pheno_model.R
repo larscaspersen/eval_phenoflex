@@ -14,8 +14,8 @@
 #'   expand. NULL expands all structure parameters. For example, `c("yc", "zc")`
 #'   keeps PhenoFlex's `s1` shared. `character()` shares all parameters.
 #' @param parameters Optional complete named vector in the expanded schema.
-#'   Named theta_star and theta_c values in 0--20 accept the automatic Celsius
-#'   convention of pheno_model(); stored characteristic temperatures use Kelvin.
+#'   Named theta_star and theta_c values in 0--20 are interpreted as Celsius
+#'   using the convention in pheno_model(); stored characteristic temperatures use Kelvin.
 #'   NULL repeats the base model's stored values for cultivar-specific parameters
 #'   and retains its remaining values. Explicit names are required even for one
 #'   cultivar: an expanded `yc` is always called `yc1`.
@@ -154,7 +154,7 @@ cultivar_parameters <- function(model, cultivar, parameters = model$parameters) 
 #' @param parameters Complete expanded vector, defaulting to stored values.
 #' @param stopatzc,basic_output Passed to [predict_phenology()] for each season.
 #' @return A list of numeric prediction vectors, one per cultivar, in input order.
-#'   Missing bloom is NA. With `basic_output = FALSE`, a nested list of detailed
+#'   Missing bloom is NA. With `basic_output = FALSE`, return a nested list of detailed
 #'   single-season results instead. Input list names are retained.
 #' @md
 #' @export

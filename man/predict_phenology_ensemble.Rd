@@ -30,6 +30,6 @@ predict_phenology(ensemble, weather) returns dates with the usual vector/list
 shape. With basic_output = FALSE it returns summary and individual predictions.
 }
 \description{
-Each ensemble member predicts the same weather. Cultivars/stages remain
+Each ensemble member predicts dates for the same weather data. Cultivars/stages remain
 separate outputs; their dates are never averaged together.
 }

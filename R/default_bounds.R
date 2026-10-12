@@ -25,7 +25,7 @@
 #' Kinetic ranges are E0 = 2500--5500,
 #' E1 = 8000--16000, A0 = 1e3--1e6 and A1 = 1e13--1e19. These exploratory
 #' kinetic boxes cover both the package's defaults and the chillR vignette's
-#' starting values; they are not the converted image of the characteristic box.
+#' starting values; they are not obtained by converting the characteristic bounds.
 #' Amplitudes span orders of magnitude, so characteristic fitting is generally
 #' easier to interpret. Bounds alone do not guarantee plausible chill responses.
 #'
@@ -34,7 +34,8 @@
 #' for some candidates; fit_phenology() excludes these with an infinite loss.
 #'
 #' @param model A single, population, combined or model-list specification.
-#'   An ordinary list is wrapped using [pheno_model_list()]'s default sharing.
+#'   An ordinary list is converted with [pheno_model_list()], using its default
+#'   parameter sharing.
 #' @param parameter_names Optional character vector selecting parameters to fit.
 #'   For collections, base names such as "zc" select all corresponding indexed
 #'   parameters; individual indexed names such as "zc2" select only that member.

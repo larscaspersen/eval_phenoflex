@@ -24,7 +24,7 @@ cultivar. Cultivars are matched by outer position, not by list names.}
 }
 \value{
 A list of numeric prediction vectors, one per cultivar, in input order.
-Missing bloom is NA. With \code{basic_output = FALSE}, a nested list of detailed
+Missing bloom is NA. With \code{basic_output = FALSE}, return a nested list of detailed
 single-season results instead. Input list names are retained.
 }
 \description{

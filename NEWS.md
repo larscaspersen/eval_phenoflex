@@ -1,3 +1,13 @@
+# evalpheno 0.1.0
+
+* Fix the upper Q10 check for E1 in both custom PhenoFlex wrappers. With
+  constraints enabled, Q10 values for both E0 and E1 must be between 1.5 and
+  3.5, inclusive; invalid values return NA before prediction.
+
+* Add the CKA daily temperature dataset and a getting-started vignette covering
+  model settings, bud sampling and cutting, calibration, cross-validation and
+  weighted ensemble predictions. Calibration dates in the vignette are synthetic.
+
 # evalpheno 0.0.2.0
 
 * Support parallel DEoptim fitting through native parallel controls and supplied

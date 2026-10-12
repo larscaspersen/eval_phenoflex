@@ -11,3 +11,4 @@
 ^download$
 ^climate_data$
 ^temp_data$
+^data-raw$

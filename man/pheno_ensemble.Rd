@@ -32,7 +32,7 @@ Named weights are matched by member name. Overrides weighting.}
 is NA. A number in (0, 1]; 0.5 means at least half the votes predict no bloom.}
 
 \item{failure_vote}{"count" uses the unweighted fraction of all members;
-"weight" uses their base weight mass. This is not a calibrated probability.}
+"weight" uses their total base weight. This is not a calibrated probability.}
 
 \item{max_weight}{Optional cap in (0, 1] on successful members' normalized
 weights. If too few positive-weight members survive to satisfy the cap,
@@ -46,7 +46,7 @@ A pheno_ensemble containing models, normalized weights and aggregation
 settings. Use predict_phenology() or predict_phenology_ensemble() for new data.
 }
 \description{
-Separate independently calibrated fits from pheno_model_list(), which records
-shared parameters within one calibration. Each ensemble entry can itself be a
+Combine independently calibrated models into an ensemble. In contrast,
+pheno_model_list() records shared parameters within a single calibration. Each ensemble entry can itself be a
 combined/stage fit; predictions are aggregated separately for each output.
 }

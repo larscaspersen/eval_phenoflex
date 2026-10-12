@@ -1,7 +1,7 @@
 #' Construct an ensemble of fitted phenology models
 #'
-#' Separate independently calibrated fits from pheno_model_list(), which records
-#' shared parameters within one calibration. Each ensemble entry can itself be a
+#' Combine independently calibrated models into an ensemble. In contrast,
+#' pheno_model_list() records shared parameters within a single calibration. Each ensemble entry can itself be a
 #' combined/stage fit; predictions are aggregated separately for each output.
 #'
 #' @param models A phenology_cv result, or a non-empty list of phenology_fit or
@@ -17,7 +17,7 @@
 #' @param failure_threshold Failure fraction at or above which the ensemble date
 #'   is NA. A number in (0, 1]; 0.5 means at least half the votes predict no bloom.
 #' @param failure_vote "count" uses the unweighted fraction of all members;
-#'   "weight" uses their base weight mass. This is not a calibrated probability.
+#'   "weight" uses their total base weight. This is not a calibrated probability.
 #' @param max_weight Optional cap in (0, 1] on successful members' normalized
 #'   weights. If too few positive-weight members survive to satisfy the cap,
 #'   their successful weights are normalized without a cap and cap_relaxed is
@@ -78,10 +78,10 @@ pheno_ensemble <- function(models, weighting = c("equal", "inverse_mse"),
 #' Aggregate existing ensemble predictions with no-bloom handling
 #'
 #' Successful dates are averaged after renormalizing the surviving positive
-#' weights. No successful weight always gives NA, even below the failure vote
-#' threshold. ensemble_sd is sqrt(sum(w * (date - weighted_mean)^2)): descriptive
+#' weights. If no successful member has positive weight, the result is NA even below
+#' the failure vote threshold. ensemble_sd is sqrt(sum(w * (date - weighted_mean)^2)): descriptive
 #' weighted spread, not a standard error or prediction interval. Zero spread
-#' is returned for one surviving member. No-bloom is NA; infinite predictions
+#' is returned for one surviving member. Missing bloom predictions are represented by NA; infinite predictions
 #' are rejected. The spread remains available even when the vote suppresses the
 #' ensemble date, describing the successful members conditional on bloom.
 #'
@@ -199,7 +199,7 @@ summarise_ensemble_predictions <- function(predicted, weights = NULL,
 
 #' Predict dates and spread for a phenology ensemble
 #'
-#' Each ensemble member predicts the same weather. Cultivars/stages remain
+#' Each ensemble member predicts dates for the same weather data. Cultivars/stages remain
 #' separate outputs; their dates are never averaged together.
 #' @param model A pheno_ensemble from pheno_ensemble().
 #' @param weather Weather accepted by predict_phenology(): one data frame, a

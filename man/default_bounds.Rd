@@ -13,7 +13,8 @@ default_bounds(
 }
 \arguments{
 \item{model}{A single, population, combined or model-list specification.
-An ordinary list is wrapped using \code{\link[=pheno_model_list]{pheno_model_list()}}'s default sharing.}
+An ordinary list is converted with \code{\link[=pheno_model_list]{pheno_model_list()}}, using its default
+parameter sharing.}
 
 \item{parameter_names}{Optional character vector selecting parameters to fit.
 For collections, base names such as "zc" select all corresponding indexed
@@ -58,7 +59,7 @@ physiological ranges reported by Egea et al. (2021); pie_c extends their
 Kinetic ranges are E0 = 2500--5500,
 E1 = 8000--16000, A0 = 1e3--1e6 and A1 = 1e13--1e19. These exploratory
 kinetic boxes cover both the package's defaults and the chillR vignette's
-starting values; they are not the converted image of the characteristic box.
+starting values; they are not obtained by converting the characteristic bounds.
 Amplitudes span orders of magnitude, so characteristic fitting is generally
 easier to interpret. Bounds alone do not guarantee plausible chill responses.
 

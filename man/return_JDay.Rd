@@ -2,28 +2,31 @@
 % Please edit documentation in R/return_JDay.R
 \name{return_JDay}
 \alias{return_JDay}
-\title{Returns Julian Day (with fraction)}
+\title{Convert an hourly row index to a fractional day of the year}
 \usage{
 return_JDay(index, Jday_vec, year_vec = NULL)
 }
 \arguments{
-\item{index}{integer, when heat requirement is met}
+\item{index}{Integer row index at which the phenological requirement is met.}
 
-\item{Jday_vec}{vector of julian days}
+\item{Jday_vec}{Numeric vector of days of the year, one per weather row.}
 
-\item{year_vec}{vector with the year}
+\item{year_vec}{Vector of calendar years, one per weather row.}
 }
 \value{
-day of the year, with a fraction to account for when (at which hour)
-the requirement is met. 12:00 midday corresponds to .0, in the afternoon up to +0.5 is added to the julian day, 
-if it is before midday up to -0.5 is added to the Julian Day
+Numeric day of the year with a fractional part for the time of day.
+Noon corresponds to an integer value. Times after noon add up to 0.5;
+times before noon subtract up to 0.5. In a season spanning two calendar years,
+dates in the first year are expressed relative to the end of that year.
 }
 \description{
-Function needed to handle the calibration function for several phenology stages
+Convert the row at which a phenological requirement is met to a day of the
+year with a fractional part representing the time of day. This helper is
+used when predicting successive phenological stages.
 }
 \examples{
 \dontrun{
- 
+
  i <- 56
  Jday_vec <- rep(1:30, each = 24)
  year_vec <- rep(2024, length(Jday_vec))
