@@ -49,6 +49,11 @@
 #'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #'
+#' @section Deprecated:
+#' \code{eval_all_daoptim()} is deprecated since evalpheno 0.0.3.1.
+#' Use fit_phenology() with phenology_rss(); choose fixed parameters through named bounds.
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export eval_all_daoptim
 eval_all_daoptim <- function(x, modelfn, bloomJDays, SeasonList, na_penalty = 365, intermed_chill = FALSE,
                      pos_int = c(5:8), check_constrain = FALSE,
@@ -56,8 +61,10 @@ eval_all_daoptim <- function(x, modelfn, bloomJDays, SeasonList, na_penalty = 36
                      pos_heat = c(11, 4, 10),
                      c_L = c(  0,   0,   0,     1.5, 1.5), 
                      c_U = c(Inf, Inf, Inf,     3.5, 3.5)){
+  .Deprecated(new = "phenology_rss", package = "evalpheno",
+              msg = "eval_all_daoptim() is deprecated. Use fit_phenology() with phenology_rss(); choose fixed parameters through named bounds. See help('evalpheno-deprecated') for migration differences.")
   if(intermed_chill){
-    int <- convert_parameters(c(rep(0, 4), x[pos_int], rep(0,4)))
+    int <- characteristic_to_kinetic(c(rep(0, 4), x[pos_int], rep(0,4)))
     
     if(is.list(int)) return(Inf)
     

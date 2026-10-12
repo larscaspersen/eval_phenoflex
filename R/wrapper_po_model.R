@@ -22,10 +22,17 @@
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @references Pope, K.S., Da Silva, D., Brown, P.H., DeJong, T.M. (2014). A biologically based approach to modeling spring phenology in temperate deciduous trees. Agricultural and Forest Meteorology, 198, 15-23. https://doi.org/10.1016/j.agrformet.2014.07.009
 #' @import chillR
+#' @section Deprecated:
+#' \code{wrapper_po_model()} is deprecated since evalpheno 0.0.3.1.
+#' Use predict_phenology() with pheno_model('partial_overlap', chill_dynamic('kinetic'), heat_gdh('scaled')).
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export wrapper_po_model
 
 #helper function partial overlap model
 wrapper_po_model <- function(x, par){
+  .Deprecated(new = "predict_phenology", package = "evalpheno",
+              msg = "wrapper_po_model() is deprecated. Use predict_phenology() with pheno_model('partial_overlap', chill_dynamic('kinetic'), heat_gdh('scaled')). See help('evalpheno-deprecated') for migration differences.")
   yc = par[1]
   b1 = par[2]
   b2 = par[3]

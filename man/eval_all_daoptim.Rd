@@ -70,6 +70,14 @@ parameter constraints are violated.
 Optional controls convert characteristic Dynamic Model parameters to kinetic
 parameters and check additional parameter constraints before prediction.
 }
+\section{Deprecated}{
+
+\code{eval_all_daoptim()} is deprecated since evalpheno 0.0.3.1.
+Use fit_phenology() with phenology_rss(); choose fixed parameters through named bounds.
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}
 }

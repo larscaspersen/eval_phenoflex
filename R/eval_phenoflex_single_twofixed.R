@@ -43,6 +43,11 @@
 #' @keywords utility
 #' @importFrom nleqslv nleqslv
 #'
+#' @section Deprecated:
+#' \code{eval_phenoflex_single_twofixed()} is deprecated since evalpheno 0.0.3.1.
+#' Use pheno_model() and phenology_rss(); choose fixed parameters through named bounds in fit_phenology().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export eval_phenoflex_single_twofixed
 
 #return predicted days of different functions
@@ -54,6 +59,8 @@ eval_phenoflex_single_twofixed  <- function(x,
                                    theta_star = 279,
                                    return_pred = FALSE,
                                    na_penalty = 365){
+  .Deprecated(new = "phenology_rss", package = "evalpheno",
+              msg = "eval_phenoflex_single_twofixed() is deprecated. Use pheno_model() and phenology_rss(); choose fixed parameters through named bounds in fit_phenology(). See help('evalpheno-deprecated') for migration differences.")
   
   x <-  c(x[1:4], theta_star, x[5:8], Tc, x[9:10])
   

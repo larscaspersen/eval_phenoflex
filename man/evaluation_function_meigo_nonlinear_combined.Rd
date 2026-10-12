@@ -57,6 +57,14 @@ Use this objective function with \link[MEIGOR]{MEIGO}. Cultivars in
 bloomJDays and SeasonList must appear in the same order as their parameter
 values; seasons must also appear in matching order within each cultivar.
 }
+\section{Deprecated}{
+
+\code{evaluation_function_meigo_nonlinear_combined()} is deprecated since evalpheno 0.0.3.1.
+Use a characteristic model collection with phenology_rss_combined() and fit_phenology().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen
 }

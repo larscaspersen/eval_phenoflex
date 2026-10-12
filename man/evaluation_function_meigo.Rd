@@ -30,6 +30,14 @@ constraint values).
 Predict bloom dates from hourly weather and model parameters, then return
 the residual sum of squares and parameter constraint values for calibration.
 }
+\section{Deprecated}{
+
+\code{evaluation_function_meigo()} is deprecated since evalpheno 0.0.3.1.
+Use pheno_model(), phenology_rss() and fit_phenology().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen
 }

@@ -35,6 +35,11 @@
 #'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #'
+#' @section Deprecated:
+#' \code{eval_phenoflex_onlyreq()} is deprecated since evalpheno 0.0.3.1.
+#' Use pheno_model() and phenology_rss(); bound only the structure parameters in fit_phenology().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export eval_phenoflex_onlyreq
 eval_phenoflex_onlyreq  <- function(x,
                                     modelfn,
@@ -44,6 +49,8 @@ eval_phenoflex_onlyreq  <- function(x,
                                     constrains = TRUE,
                                     return_pred = FALSE,
                                     na_penalty = 365){
+  .Deprecated(new = "phenology_rss", package = "evalpheno",
+              msg = "eval_phenoflex_onlyreq() is deprecated. Use pheno_model() and phenology_rss(); bound only the structure parameters in fit_phenology(). See help('evalpheno-deprecated') for migration differences.")
   
   
   par <- c(x, par_fixed)

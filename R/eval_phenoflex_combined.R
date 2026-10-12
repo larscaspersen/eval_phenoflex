@@ -84,6 +84,11 @@
 #'                        Tc = 36,
 #'                        theta_star = 279)
 #' }
+#' @section Deprecated:
+#' \code{eval_phenoflex_combined()} is deprecated since evalpheno 0.0.3.1.
+#' Use combined_pheno_model() or pheno_model_list() with phenology_rss_combined() and fit_phenology().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export eval_phenoflex_combined
 eval_phenoflex_combined  <- function(x,
                                      modelfn,
@@ -94,6 +99,8 @@ eval_phenoflex_combined  <- function(x,
                                      theta_star = 279,
                                      return_pred = FALSE,
                                      na_penalty = 365){
+  .Deprecated(new = "phenology_rss_combined", package = "evalpheno",
+              msg = "eval_phenoflex_combined() is deprecated. Use combined_pheno_model() or pheno_model_list() with phenology_rss_combined() and fit_phenology(). See help('evalpheno-deprecated') for migration differences.")
   if (!is.numeric(ncult) || length(ncult) != 1L || !is.null(dim(ncult)) ||
       !is.finite(ncult) || ncult < 1 || ncult != floor(ncult) ||
       ncult > .Machine$integer.max) {

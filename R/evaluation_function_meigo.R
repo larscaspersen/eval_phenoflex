@@ -23,6 +23,11 @@
 #' @author Lars Caspersen
 #' @keywords utility
 #'
+#' @section Deprecated:
+#' \code{evaluation_function_meigo()} is deprecated since evalpheno 0.0.3.1.
+#' Use pheno_model(), phenology_rss() and fit_phenology().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export evaluation_function_meigo
 
 evaluation_function_meigo <- function(x, 
@@ -30,6 +35,8 @@ evaluation_function_meigo <- function(x,
                                       bloomJDays,
                                       SeasonList,
                                       na_penalty = 365){
+  .Deprecated(new = "phenology_rss", package = "evalpheno",
+              msg = "evaluation_function_meigo() is deprecated. Use pheno_model(), phenology_rss() and fit_phenology(). See help('evalpheno-deprecated') for migration differences.")
   
   #innput:
   #         x is the parameters in meigo

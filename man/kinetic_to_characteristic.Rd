@@ -23,6 +23,14 @@ The numerical helpers solve for sigma and pie_c. Conversion can fail for
 parameter sets outside the domain of the characteristic parameterization.
 Only the chill-submodel positions 5:8 change; all other values are preserved.
 }
+\section{Deprecated}{
+
+\code{convert_parameters_old_to_new()} is deprecated since evalpheno 0.0.3.1.
+Use kinetic_to_characteristic().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \seealso{
 \code{\link{characteristic_to_kinetic}}
 }

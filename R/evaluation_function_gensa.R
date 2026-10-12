@@ -43,6 +43,11 @@
 #' @keywords utility
 #' @importFrom nleqslv nleqslv
 #'
+#' @section Deprecated:
+#' \code{evaluation_function_gensa()} is deprecated since evalpheno 0.0.3.1.
+#' Use fit_phenology(optimizer = 'GenSA') with phenology_rss().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export evaluation_function_gensa
 
 evaluation_function_gensa <- function (x, 
@@ -55,6 +60,8 @@ evaluation_function_gensa <- function (x,
                                q10_penalty = 10^10,
                                na_penalty = 365) 
 {
+  .Deprecated(new = "phenology_rss", package = "evalpheno",
+              msg = "evaluation_function_gensa() is deprecated. Use fit_phenology(optimizer = 'GenSA') with phenology_rss(). See help('evalpheno-deprecated') for migration differences.")
   par <- x
   
   if(intermed_par){

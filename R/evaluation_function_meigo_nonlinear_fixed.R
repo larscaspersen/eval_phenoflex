@@ -47,6 +47,11 @@
 #' @keywords utility
 #' @importFrom nleqslv nleqslv
 #'
+#' @section Deprecated:
+#' \code{evaluation_function_meigo_nonlinear_fixed()} is deprecated since evalpheno 0.0.3.1.
+#' Use a characteristic model collection with phenology_rss_combined(); choose fixed parameters through named bounds in fit_phenology().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export evaluation_function_meigo_nonlinear_fixed
 
 evaluation_function_meigo_nonlinear_fixed <- function(x, 
@@ -60,6 +65,8 @@ evaluation_function_meigo_nonlinear_fixed <- function(x,
                                                       Tc = 36,
                                                       Tb  = 2,
                                                       slope = 1.6){
+  .Deprecated(new = "phenology_rss_combined", package = "evalpheno",
+              msg = "evaluation_function_meigo_nonlinear_fixed() is deprecated. Use a characteristic model collection with phenology_rss_combined(); choose fixed parameters through named bounds in fit_phenology(). See help('evalpheno-deprecated') for migration differences.")
   
   
   #bring x to another variable

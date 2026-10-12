@@ -1,3 +1,13 @@
+# evalpheno 0.0.3.1
+
+* Deprecate legacy optimizer evaluators, combined GenSA fitting and weather
+  prediction wrappers in favor of the modular model, fitting and prediction API.
+  Deprecate helper_run_pop_model() and the two conversion aliases. All retain
+  their behavior and exports, with standard R warnings pointing to replacements.
+  Add migration documentation covering Q10 constraints, missing-prediction
+  penalties, GDH scaling and result formats. Keep conversion residuals and
+  specialized stage, dispersion and legacy population functions available.
+
 # evalpheno 0.1.0
 
 * Fix the upper Q10 check for E1 in both custom PhenoFlex wrappers. With

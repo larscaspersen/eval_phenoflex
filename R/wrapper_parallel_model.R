@@ -17,9 +17,16 @@
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @references Hänninen, H. and Kramer, K. (2007). A framework for modelling the annual cycle of trees in boreal and temperate regions. Silva Fennica 41(1), 167-205. Equation B4b. doi:10.14214/sf.313.
 #' @import chillR
+#' @section Deprecated:
+#' \code{wrapper_parallel_model()} is deprecated since evalpheno 0.0.3.1.
+#' Use predict_phenology() with pheno_model('parallel', chill_dynamic('kinetic'), heat_gdh('scaled')).
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export wrapper_parallel_model
 
 wrapper_parallel_model <- function(x, par){
+  .Deprecated(new = "predict_phenology", package = "evalpheno",
+              msg = "wrapper_parallel_model() is deprecated. Use predict_phenology() with pheno_model('parallel', chill_dynamic('kinetic'), heat_gdh('scaled')). See help('evalpheno-deprecated') for migration differences.")
   yc = par[1]
   zc = par[2]
   kmin = par[3]

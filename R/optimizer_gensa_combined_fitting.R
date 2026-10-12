@@ -44,6 +44,11 @@
 #' @importFrom purrr map_dbl
 #' @importFrom chillR PhenoFlex_GDHwrapper
 #'
+#' @section Deprecated:
+#' \code{phenologyFitter_combined_fitting()} is deprecated since evalpheno 0.0.3.1.
+#' Use a model collection with fit_phenology(optimizer = 'GenSA') and phenology_rss_combined().
+#' The legacy implementation remains available and warns on use.
+#' See \code{\link{evalpheno-deprecated}} for migration differences.
 #' @export phenologyFitter_combined_fitting
 phenologyFitter_combined_fitting <- function (par.guess = NULL, modelfn = chillR::PhenoFlex_GDHwrapper, bloomJDays, 
                                               SeasonList, 
@@ -53,6 +58,8 @@ phenologyFitter_combined_fitting <- function (par.guess = NULL, modelfn = chillR
                                                              maxit = 1000, nb.stop.improvement = 250), lower, upper, 
                                               seed = 1235433, ...) 
 {
+  .Deprecated(new = "fit_phenology", package = "evalpheno",
+              msg = "phenologyFitter_combined_fitting() is deprecated. Use a model collection with fit_phenology(optimizer = 'GenSA') and phenology_rss_combined(). See help('evalpheno-deprecated') for migration differences.")
   control$seed <- seed
   stopifnot(is.list(SeasonList))
   stopifnot(length(SeasonList) == length(bloomJDays))
@@ -124,7 +131,7 @@ chifull_combined_fitting <- function (par,
     
     #convert parameters new to old if needed
     if(convert_par){
-      par_cult <- convert_parameters(par_cult)
+      par_cult <- characteristic_to_kinetic(par_cult)
       if (is.list(par_cult)) return(Inf)
     }
     

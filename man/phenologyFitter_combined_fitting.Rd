@@ -60,6 +60,14 @@ transition parameters (s1), with shared chill and heat submodel parameters.
 The GenSA optimizer minimizes the total residual sum of squares across
 cultivars and seasons.
 }
+\section{Deprecated}{
+
+\code{phenologyFitter_combined_fitting()} is deprecated since evalpheno 0.0.3.1.
+Use a model collection with fit_phenology(optimizer = 'GenSA') and phenology_rss_combined().
+The legacy implementation remains available and warns on use.
+See \code{\link{evalpheno-deprecated}} for migration differences.
+}
+
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}
 }
