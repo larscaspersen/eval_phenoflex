@@ -100,6 +100,7 @@
 #'   parameters. [model_parameters()] returns the flat vector and [as_pheno_models()]
 #'   extracts a plain list of single models from a fitted result.
 #' @examples
+#' require(DEoptim)
 #' model <- pheno_model()
 #' lower <- c(yc = 10)
 #' upper <- c(yc = 80)

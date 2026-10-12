@@ -38,9 +38,23 @@ using namespace Rcpp;
 //' With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
 //' each with the same length as the input temperature vector `temp`.
 //' @examples
-//' temperatures <- rep(15, 240)
-//' result <- seq_model(temp = temperatures, times = seq_along(temperatures))
-//' result$bloomindex
+//' # Synthetic winter (90 days at 6 C), followed by spring (45 days at 18 C).
+//' temperatures <- c(rep(6, 90 * 24), rep(18, 45 * 24))
+//' times <- seq_along(temperatures) - 1 # Elapsed hours
+//' # Illustrative requirements: 40 chill portions and 6000 scaled GDH.
+//' # Heat contributes to development only after the chill requirement is met.
+//' result <- seq_model(
+//'   temp = temperatures, times = times, yc = 40, zc = 6000,
+//'   stopatzc = FALSE, basic_output = FALSE
+//' )
+//' bloom_day <- times[result$bloomindex] / 24
+//' bloom_day # Elapsed days until bloom, rather than a calendar day of the year
+//' data.frame(chill = result$y[result$bloomindex],
+//'            heat = result$z[result$bloomindex])
+//' plot(times / 24, result$z, type = "l",
+//'      xlab = "Days since start", ylab = "Accumulated effective heat (GDH)")
+//' abline(h = 6000, lty = 2)
+//' abline(v = bloom_day, lty = 3)
 //' @export
 // [[Rcpp::export]]
  List seq_model(NumericVector temp,

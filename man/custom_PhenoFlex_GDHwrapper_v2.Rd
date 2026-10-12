@@ -35,14 +35,14 @@ If a check fails, return NA instead of predicting bloom. The checks require:
 \itemize{
   \item GDH thresholds satisfying \code{Tu > Tb} and \code{Tc > Tb}.
   \item \code{exp(10 * E0 / (297 * 279))} between 1.5 and 3.5, inclusive.
-  \item \code{exp(10 * E1 / (297 * 279))} at least 1.5.
+  \item \code{exp(10 * E1 / (297 * 279))} between 1.5 and 3.5, inclusive.
 }
 
 The Dynamic Model parameter checks follow Egea et al. (2021), who used
 Q10 to constrain E0 and E1. Q10 describes the factor by which a reaction rate
 increases with a 10-degree Celsius temperature increase. Biological reactions
-typically have Q10 values between 2 and 3. These legacy wrappers check both
-limits for E0 and only the lower limit for E1.
+typically have Q10 values between 2 and 3. These wrappers check both
+limits, 1.5 and 3.5, for both E0 and E1.
 }
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}

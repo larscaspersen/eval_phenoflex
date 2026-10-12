@@ -26,13 +26,17 @@ Characteristic chill parameters are converted before prediction.}
 and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.}
 
 \item{bloomJDays}{List of numeric observed bloom-date vectors, one per cultivar.
-Dates are days of the year and must match the order of seasons in SeasonList.}
+Dates are days of the year and must match the order of seasons in SeasonList.
+The list must have length ncult. Each vector must have the same length as
+the corresponding cultivar's season list.}
 
 \item{SeasonList}{Nested list of hourly weather data frames: one season list
 per cultivar, in the same order as bloomJDays and the cultivar-specific parameters.
-Each data frame contains Temp (hourly temperature) and JDay (day of the year).}
+Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+The outer list must have length ncult, and each entry must be a list with
+one season per observation in the corresponding bloomJDays vector.}
 
-\item{ncult}{Number of cultivars to calibrate together.}
+\item{ncult}{Positive integer number of cultivars to calibrate together.}
 
 \item{Tc}{Numeric upper temperature threshold of the GDH model, in degrees Celsius.}
 
@@ -46,7 +50,13 @@ to 365; this value is used in place of the missing date when calculating loss.}
 }
 \value{
 A list with F (the residual sum of squares) and g (the model's
-constraint values). If return_pred is TRUE, return predicted bloom dates instead.
+constraint values) when return_pred is FALSE. If parameter conversion fails,
+F is 1e6 and g contains five values of 1e6.
+If return_pred is TRUE, return a numeric vector of bloom dates in cultivar
+order, then season order within each cultivar. Its length is the total number
+of seasons across cultivars. If parameter conversion fails, every date is
+NA_real_. After successful conversion, missing bloom predictions are replaced
+by na_penalty.
 }
 \description{
 Evaluate cultivar-specific chill requirements (yc), heat requirements (zc)
@@ -62,17 +72,32 @@ parameters before predicting bloom dates.
 
 ncult <- 3
 #          theta_star, theta_c, pie_c, tau, Tf, slope
-par <-   c(rep(40, ncult), zc(300, ncult), rep(0.5, ncult), 26, 281, ?, ?,
+par <-   c(rep(40, ncult), rep(300, ncult), rep(0.5, ncult), 25, 286, 47, 28, 4, 4, 1.6)
 
 #prepare weather data
-weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
-hourtemps<-stack_hourly_temps(weather, latitude=50.4)
-seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
+weather<-chillR::fix_weather(chillR::KA_weather[which(chillR::KA_weather$Year>2004),])
+hourtemps<-chillR::stack_hourly_temps(weather, latitude=50.4)
+seasonList <- chillR::genSeasonList(hourtemps$hourtemps, year = 2006)
 
-#get endodormancy / ecodormancy release date
-#--> prepare SeasonList for different cultivars
+#seasonnlist needs be a list for each cultivar, if cultivars cover
+#different parts of the generated seasonlist, adjust this part accordingly
+seasonlist_all <- list(seasonList,
+                      seasonList,
+                      seasonList)
 
-eval_phenoflex_combined(x = par, par = SeasonList)
+#here you save the observations, one vector for each cultivar
+#needs to have the same order as the seasonlist
+obs_list <- list(100,
+                101,
+                102)
+
+eval_phenoflex_combined(x = par,
+                       modelfn = custom_PhenoFlex_GDHwrapper,
+                       bloomJDays = obs_list,
+                       SeasonList = seasonlist_all,
+                       ncult = 3,
+                       Tc = 36,
+                       theta_star = 279)
 }
 }
 \author{

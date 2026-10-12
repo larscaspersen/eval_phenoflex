@@ -7,13 +7,14 @@
 eval_function_endodormancy_meigo(x, SeasonList, dispersion_fun = "calc_cv")
 }
 \arguments{
-\item{x}{Numeric characteristic Dynamic Model parameter vector in the order
+\item{x}{Numeric characteristic Dynamic Model parameter vector of length six, in the order
 theta_star, theta_c, tau, pie_c, Tf, slope. Characteristic parameters are
 converted to E0, E1, A0 and A1 before calculating chill accumulation.}
 
 \item{SeasonList}{Nested list with one season list per cultivar. Each season
 contains an hourly temperature series in a Temp column for the observation
-period used to assess endodormancy release.}
+period used to assess endodormancy release. The outer object and each
+cultivar entry must be lists; data frames are individual seasons, not season lists.}
 
 \item{dispersion_fun}{Name of a function that measures dispersion of accumulated
 chill portions across seasons within a cultivar. The function must be available
@@ -35,18 +36,23 @@ Supply a nested list of seasons, with one outer entry per cultivar.
 }
 \examples{
 \dontrun{
-#          theta_star, theta_c, pie_c, tau, Tf, slope
-par <-   c(279,        281,      ?      ?    4,  1.6)
+#          theta_star, theta_c, tau,   pie_c, Tf, slope
+par <-   c(279,        286,      28      47.7    4,  1.6)
 
 #prepare weather data
-weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
-hourtemps<-stack_hourly_temps(weather, latitude=50.4)
-seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
+weather <- chillR::fix_weather(
+  chillR::KA_weather[chillR::KA_weather$Year > 2004, ]
+)
+hourtemps <- chillR::stack_hourly_temps(weather, latitude = 50.4)
+seasonList <- chillR::genSeasonList(hourtemps$hourtemps, years = 2006)
 
-#get endodormancy / ecodormancy release date
-#--> prepare SeasonList for different cultivars
+#seasonnlist needs be a list for each cultivar, if cultivars cover
+#different parts of the generated seasonlist, adjust this part accordingly
+seasonlist_all <- list(seasonList,
+                      seasonList,
+                      seasonList)
 
-eval_function_endodormancy_meigo(x = par, par = SeasonList)
+eval_function_endodormancy_meigo(x = par, SeasonList = SeasonList)
 
 
 }

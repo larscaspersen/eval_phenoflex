@@ -85,9 +85,23 @@ calculate_heat_gdh_unscaled <- function(temp, times, Tu = 25, Tb = 4, Tc = 36, d
 #' With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
 #' each with the same length as the input temperature vector `temp`.
 #' @examples
-#' temperatures <- rep(15, 240)
-#' result <- parallel_model(temp = temperatures, times = seq_along(temperatures))
-#' result$bloomindex
+#' # Synthetic winter (90 days at 6 C), followed by spring (45 days at 18 C).
+#' temperatures <- c(rep(6, 90 * 24), rep(18, 45 * 24))
+#' times <- seq_along(temperatures) - 1 # Elapsed hours
+#' # Illustrative requirements: 40 chill portions and 6000 scaled GDH.
+#' # Heat effectiveness starts at kmin = 0.2 and rises to 1 at yc = 40.
+#' result <- parallel_model(
+#'   temp = temperatures, times = times, yc = 40, zc = 6000, kmin = 0.2,
+#'   stopatzc = FALSE, basic_output = FALSE
+#' )
+#' bloom_day <- times[result$bloomindex] / 24
+#' bloom_day # Elapsed days until bloom, rather than a calendar day of the year
+#' data.frame(chill = result$y[result$bloomindex],
+#'            heat = result$z[result$bloomindex])
+#' plot(times / 24, result$z, type = "l",
+#'      xlab = "Days since start", ylab = "Accumulated effective heat (GDH)")
+#' abline(h = 6000, lty = 2)
+#' abline(v = bloom_day, lty = 3)
 #' @references Hänninen, H. and Kramer, K. (2007). A framework for modelling the annual cycle of trees in boreal and temperate regions. Silva Fennica 41(1), 167-205. Equation B4b. doi:10.14214/sf.313.
 #' @export
 parallel_model <- function(temp, times, yc = 40, zc = 1119, kmin = 0.1, A0 = 6319.5, A1 = 5.939917e13, E0 = 3372.8, E1 = 9900.3, slope = 1.6, Tf = 4, Tu = 25, Tb = 4, Tc = 36, Delta = 4, stopatzc = TRUE, deg_celsius = TRUE, basic_output = TRUE) {
@@ -132,9 +146,24 @@ parallel_model <- function(temp, times, yc = 40, zc = 1119, kmin = 0.1, A0 = 631
 #' With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
 #' each with the same length as the input temperature vector `temp`.
 #' @examples
-#' temperatures <- rep(15, 240)
-#' result <- po_model(temp = temperatures, times = seq_along(temperatures))
-#' result$bloomindex
+#' # Synthetic winter (90 days at 6 C), followed by spring (45 days at 18 C).
+#' temperatures <- c(rep(6, 90 * 24), rep(18, 45 * 24))
+#' times <- seq_along(temperatures) - 1 # Elapsed hours
+#' # Illustrative requirements; heat is measured in scaled GDH.
+#' # After yc, additional chill lowers the requirement from b1 + b2 toward b1.
+#' # It stops changing the requirement when effective heat reaches b1 * ol.
+#' result <- po_model(
+#'   temp = temperatures, times = times, yc = 40,
+#'   b1 = 1000, b2 = 8000, b3 = 0.03, ol = 0.75,
+#'   stopatzc = FALSE, basic_output = FALSE
+#' )
+#' bloom_day <- times[result$bloomindex] / 24
+#' bloom_day # Elapsed days until bloom, rather than a calendar day of the year
+#' data.frame(chill = result$y[result$bloomindex],
+#'            heat = result$z[result$bloomindex])
+#' plot(times / 24, result$z, type = "l",
+#'      xlab = "Days since start", ylab = "Accumulated effective heat (GDH)")
+#' abline(v = bloom_day, lty = 3)
 #' @export
 po_model <- function(temp, times, yc = 40, b1 = 1119, b2 = 8677, b3 = 0.01119, ol = 0.75, A0 = 6319.5, A1 = 5.939917e13, E0 = 3372.8, E1 = 9900.3, slope = 1.6, Tf = 4, Tu = 25, Tb = 4, Tc = 36, Delta = 4, stopatzc = TRUE, deg_celsius = TRUE, basic_output = TRUE) {
     .Call('_evalpheno_po_model', PACKAGE = 'evalpheno', temp, times, yc, b1, b2, b3, ol, A0, A1, E0, E1, slope, Tf, Tu, Tb, Tc, Delta, stopatzc, deg_celsius, basic_output)
@@ -183,9 +212,23 @@ PhenoFlex_pop_slim <- function(temp, times, yc, zc, max_days_forcing = 50L, i_cu
 #' With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
 #' each with the same length as the input temperature vector `temp`.
 #' @examples
-#' temperatures <- rep(15, 240)
-#' result <- seq_model(temp = temperatures, times = seq_along(temperatures))
-#' result$bloomindex
+#' # Synthetic winter (90 days at 6 C), followed by spring (45 days at 18 C).
+#' temperatures <- c(rep(6, 90 * 24), rep(18, 45 * 24))
+#' times <- seq_along(temperatures) - 1 # Elapsed hours
+#' # Illustrative requirements: 40 chill portions and 6000 scaled GDH.
+#' # Heat contributes to development only after the chill requirement is met.
+#' result <- seq_model(
+#'   temp = temperatures, times = times, yc = 40, zc = 6000,
+#'   stopatzc = FALSE, basic_output = FALSE
+#' )
+#' bloom_day <- times[result$bloomindex] / 24
+#' bloom_day # Elapsed days until bloom, rather than a calendar day of the year
+#' data.frame(chill = result$y[result$bloomindex],
+#'            heat = result$z[result$bloomindex])
+#' plot(times / 24, result$z, type = "l",
+#'      xlab = "Days since start", ylab = "Accumulated effective heat (GDH)")
+#' abline(h = 6000, lty = 2)
+#' abline(v = bloom_day, lty = 3)
 #' @export
 seq_model <- function(temp, times, yc = 40, zc = 6000, A0 = 6319.5, A1 = 5.939917e13, E0 = 3372.8, E1 = 9900.3, slope = 1.6, Tf = 4, Tu = 25, Tb = 4, Tc = 36, Delta = 4, stopatzc = TRUE, deg_celsius = TRUE, basic_output = TRUE) {
     .Call('_evalpheno_seq_model', PACKAGE = 'evalpheno', temp, times, yc, zc, A0, A1, E0, E1, slope, Tf, Tu, Tb, Tc, Delta, stopatzc, deg_celsius, basic_output)

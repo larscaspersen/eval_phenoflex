@@ -31,7 +31,13 @@
 #' of the objective value and constraint values. Defaults to FALSE.
 #'
 #' @return A list with F (the residual sum of squares) and g (the model's
-#' constraint values). If return_bloom_days is TRUE, return predicted bloom dates instead.
+#' constraint values) when return_bloom_days is FALSE. If parameter conversion
+#' fails, F is 1e6 and g contains five values of 1e6.
+#' If return_bloom_days is TRUE, return a list of numeric bloom-date vectors,
+#' one per cultivar in SeasonList order. Each vector follows that cultivar's
+#' season order. If parameter conversion fails, return the same list structure
+#' with NA_real_ for every season. After successful conversion, missing bloom
+#' predictions are replaced by na_penalty.
 #'
 #' @author Lars Caspersen
 #' @keywords utility
@@ -77,14 +83,13 @@ evaluation_function_meigo_nonlinear_combined <- function(x,
   
   
   #This is a numerical method which can produce non-convergence. Check this
-  if (output$termcd >= 3){
-    #if the nle algorithm has stalled just discard this solution
-    E0<-NA; E1<-NA; A0<-NA; A1<-NA
-    return(list(F=10^6, g=rep(10^6,5)))
-    
-    #You would add here a flag to let your optimization procedure know
-    #That this solution should be ignored by lack of convergence
-    
+  if (output$termcd >= 3) {
+    if (return_bloom_days) {
+      return(lapply(seq_along(SeasonList), function(i) {
+        rep(NA_real_, length(SeasonList[[i]]))
+      }))
+    }
+    return(list(F = 1e6, g = rep(1e6, 5)))
   } else {
     
     E0 <- output$x[1]
@@ -104,8 +109,6 @@ evaluation_function_meigo_nonlinear_combined <- function(x,
   par[(5:8)+((n_cult -1) * 3)] <- c(E0, E1, A0, A1)
   
   #split the parameters and reconstruct them for the different cultivar
-  
-  pred_bloom <- NULL
   
   #loop over the cultivars, calculate predicted days for each cultivar
   rss <- purrr::map_dbl(1:length(SeasonList), function(i){
@@ -166,6 +169,21 @@ evaluation_function_meigo_nonlinear_combined <- function(x,
     #output
     return(list(F=F, g=g))
   } else{
+    
+    pred_bloom <- purrr::map(1:length(SeasonList), function(i){
+      
+      #extract the parameters
+      par_cult <- par[c(i, 1+((n_cult -1))+i, 2+((n_cult -1)*2)+i, (length(par)-8):length(par))]
+      #predict the bloom
+      pred_bloom <- unlist(lapply(X = SeasonList[[i]], FUN = modelfn, par = par_cult))
+      pred_bloom <- ifelse(is.na(pred_bloom), yes = na_penalty, no = pred_bloom)
+      #calculate for each cultivar the rss
+      return(pred_bloom)
+      
+    })
+    
+    
+    
     return(pred_bloom)
   }
 }

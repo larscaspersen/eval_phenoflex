@@ -99,7 +99,7 @@ phenologyFitter_combined_fitting <- function (par.guess = NULL, modelfn = chillR
   res$model_fit <- GenSA::GenSA(par = par.guess, fn = chifull_combined_fitting, 
                                 bloomJDays = bloomJDays, SeasonList = SeasonList, modelfn = modelfn, 
                                 control = control, lower = lower, upper = upper, n_cult = n_cult,
-                                convert_par = convert_par)
+                                convert_par = convert_par, ...)
   res$par <- res$model_fit$par
   
   

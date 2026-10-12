@@ -29,14 +29,19 @@
 #' par <-   c(4,  26, 36)
 #'
 #' #prepare weather data
-#' weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
-#' hourtemps<-stack_hourly_temps(weather, latitude=50.4)
-#' seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
+#' weather <- chillR::fix_weather(
+#'   chillR::KA_weather[chillR::KA_weather$Year > 2004, ]
+#' )
+#' hourtemps <- chillR::stack_hourly_temps(weather, latitude = 50.4)
+#' seasonList <- chillR::genSeasonList(hourtemps$hourtemps, years = 2006)
 #'
-#' #get endodormancy / ecodormancy release date
-#' #--> prepare SeasonList for different cultivars
+#'#seasonnlist needs be a list for each cultivar, if cultivars cover
+#'#different parts of the generated seasonlist, adjust this part accordingly
+#'seasonlist_all <- list(seasonList,
+#'                       seasonList,
+#'                       seasonList)
 #'
-#' eval_function_gdh(x = par, par = SeasonList)
+#' eval_function_gdh(x = par, SeasonList = seasonlist_all)
 #'
 #'
 #' }

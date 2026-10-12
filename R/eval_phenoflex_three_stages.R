@@ -40,19 +40,34 @@
 #' @importFrom nleqslv nleqslv
 #' @importFrom tidyr replace_na
 #' @examples
-#' \dontrun{
+#' # Prepare two seasons from the bundled daily temperature data.
+#' data("cka_weather", package = "evalpheno")
+#' hourly <- chillR::stack_hourly_temps(
+#'   cka_weather, latitude = attr(cka_weather, "latitude")
+#' )$hourtemps
+#' seasons <- chillR::genSeasonList(
+#'   hourly, mrange = c(8, 6), years = 2008:2009
+#' )
 #'
-#' ncult <- 3
-#' #          theta_star, theta_c, pie_c, tau, Tf, slope
-#' par <-   c(40, 50, 150, 200, 0.5, 26, 281, 24, 45, 4, 1.6)
+#' # Ordered cumulative heat requirements: budbreak, first bloom, full bloom.
+#' parameters <- c(
+#'   yc = 40, zc1 = 180, zc2 = 250, zc3 = 300, s1 = 0.5, Tu = 25,
+#'   theta_c = 286.1, tau = 47.7, pie_c = 28, Tf = 4, Tb = 4, slope = 1.6
+#' )
 #'
-#' #prepare weather data
-#' weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
-#' hourtemps<-stack_hourly_temps(weather, latitude=50.4)
-#' seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
-#'
-#' eval_phenoflex_three_stages(x = par, par = SeasonList)
-#' }
+#' # Synthetic stage observations, ordered to match the two seasons.
+#' # These dates demonstrate the interface; they are not measured observations.
+#' observed <- data.frame(
+#'   year = 2008:2009, budbreak = c(115, 105),
+#'   firstbloom = c(125, 117), fullbloom = c(131, 123)
+#' )
+#' result <- eval_phenoflex_three_stages(
+#'   x = parameters, modelfn = custom_PhenoFlex_GDHwrapper_v2,
+#'   bloomdates_df = observed, SeasonList = seasons,
+#'   Tc = 36, theta_star = 279
+#' )
+#' result$F # Total residual sum of squares across stages and seasons
+#' result$g # Eight parameter constraint values
 #' @export eval_phenoflex_three_stages
 eval_phenoflex_three_stages  <- function(x, 
                                           modelfn,

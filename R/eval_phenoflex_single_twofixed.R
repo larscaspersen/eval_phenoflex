@@ -32,7 +32,12 @@
 #' to 365; this value is used in place of the missing date when calculating loss.
 #'
 #' @return A list with F (the residual sum of squares) and g (the model's
-#' constraint values). If return_pred is TRUE, return predicted bloom dates instead.
+#' constraint values) when return_pred is FALSE. If parameter conversion fails,
+#' F is 1e6 and g contains five values of 1e6.
+#' If return_pred is TRUE, return a numeric vector of bloom dates, one per season
+#' in SeasonList order. If parameter conversion fails, return NA_real_ for every
+#' season. After successful conversion, missing bloom predictions are replaced
+#' by na_penalty.
 #'
 #' @author Lars Caspersen
 #' @keywords utility
@@ -83,6 +88,8 @@ eval_phenoflex_single_twofixed  <- function(x,
   if (output$termcd >= 3){
     #if the nle algorithm has stalled just discard this solution
     E0<-NA; E1<-NA; A0<-NA; A1<-NA
+    
+    if(return_pred) return(rep(NA_real_, length(SeasonList)))
     return(list(F=10^6, g=rep(10^6,5)))
     
     #You would add here a flag to let your optimization procedure know

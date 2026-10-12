@@ -39,7 +39,13 @@ of the objective value and constraint values. Defaults to FALSE.}
 }
 \value{
 A list with F (the residual sum of squares) and g (the model's
-constraint values). If return_bloom_days is TRUE, return predicted bloom dates instead.
+constraint values) when return_bloom_days is FALSE. If parameter conversion
+fails, F is 1e6 and g contains five values of 1e6.
+If return_bloom_days is TRUE, return a list of numeric bloom-date vectors,
+one per cultivar in SeasonList order. Each vector follows that cultivar's
+season order. If parameter conversion fails, return the same list structure
+with NA_real_ for every season. After successful conversion, missing bloom
+predictions are replaced by na_penalty.
 }
 \description{
 Evaluate cultivar-specific yc, zc and s1 parameters, with shared chill and
