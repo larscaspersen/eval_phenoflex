@@ -124,9 +124,3 @@ legend("topleft", legend = as.character(cut_dates), col = 1:3,
 
 
 
-Fold scores assess individual held-out predictions. An ensemble prediction on
-these same seasons includes models trained on them and is **not** an independent
-validation result. With a larger dataset and reserved entries, use
-`validate_phenology(cv)` after choosing the ensemble policy. Ensemble spread is
-descriptive, not a confidence interval; missing-event votes can suppress the
-mean according to `failure_threshold`.
