@@ -2,9 +2,7 @@
 % Please edit documentation in R/eval_all_daoptim.R
 \name{eval_all_daoptim}
 \alias{eval_all_daoptim}
-\title{Evaluation funciton full model, general format
- 
-Takes model parameters from PhenoFlex, Sequential Model, Parallel Model or Partial Overlap Model}
+\title{Evaluate phenology model parameters for GenSA or DEoptim}
 \usage{
 eval_all_daoptim(
   x,
@@ -22,46 +20,55 @@ eval_all_daoptim(
 )
 }
 \arguments{
-\item{x}{model parameters needs to fit the format of PhenoFlex, Parallel Model, Sequential Model or Partial Overlap Model}
+\item{x}{Numeric model parameter vector in the order required by modelfn.}
 
-\item{modelfn}{function used within the evaluation function to calculate the actual bloomday}
+\item{modelfn}{Function that predicts a bloom date from a season's weather
+and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.}
 
-\item{bloomJDays}{numeric containing the days of the year with the observed bloom}
+\item{bloomJDays}{Numeric vector of observed bloom dates, expressed as days of
+the year and ordered to match SeasonList.}
 
-\item{SeasonList}{list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-generated using \link[chillR]{genSeasonList}}
+\item{SeasonList}{List of hourly weather data frames, one per phenological season.
+Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+Season lists can be generated with \code{\link[chillR]{genSeasonList}}.}
 
-\item{na_penalty}{numeric, by default 365. Penalty for the phenology
-prediction function when it fails return a bloom prediction}
+\item{na_penalty}{Numeric replacement for a missing bloom prediction. Defaults
+to 365; this value is used in place of the missing date when calculating loss.}
 
-\item{intermed_chill}{boolean, by default `FALSE`. If `TRUE` converts intermediate parameters of chill submodel (theta_star, theta_c, pie_c, tau) to E0, E1, A0, A1. 
-Intermediate parameters have tighter search space and optimization algorithms find faster combinations.}
+\item{intermed_chill}{Logical. If TRUE, convert characteristic chill parameters
+(theta_star, theta_c, tau and pie_c) to kinetic parameters (E0, E1, A0 and A1).
+Defaults to FALSE. Characteristic parameters provide a more narrowly defined
+search space.}
 
-\item{pos_int}{numeric vector of length 4. Tells the position of intermediate parameters in vector `x` that should be converted 
-if `intermed_chill=TRUE`. Assumes order: theta_star, theta_c, piec and tau.}
+\item{pos_int}{Numeric vector of four positions in x to convert when
+intermed_chill is TRUE, in the order theta_star, theta_c, tau, pie_c.}
 
-\item{check_constrain}{booloean, by default `FALSE`. If set `TRUE` additional constraints will be evaluated. This includes
-Q10 metric for parameters E0 and E1 should be in plausible range for biological processes (between 1.5 and 3.5) and 
-logical constraints in GDH model (Tb <= Tu <= Tc). If constraints are violated, function does not compute prdiction error
-but Inf}
+\item{check_constrain}{Logical. If TRUE, check Q10 values and GDH temperature
+constraints before prediction. Defaults to FALSE. Q10 values for E0 and E1
+must lie within the supplied tolerance limits, and GDH temperatures must be
+ordered. Return Inf if a constraint is violated.}
 
-\item{pos_E0_E1}{numeric vector of length 2, indicates position of E0 and E1 in the parameter vector `x`. Only relevant when checking for constraints.}
+\item{pos_E0_E1}{Numeric vector giving the positions of E0 and E1 in x.
+Used when checking constraints.}
 
-\item{pos_heat}{numeric vector of length 3, indicates position of Tb, Tu and Tc in the parameter vector `x`. Only relevant when checking for constraints.}
+\item{pos_heat}{Numeric vector giving the positions of Tb, Tu and Tc in x.
+Used when checking constraints.}
 
-\item{c_L}{numeric vector of length 5, lower tolerance level of constraints.}
+\item{c_L}{Numeric vector of five lower constraint limits.}
 
-\item{c_U}{numeric vector of length 5, upper tolerance level of constraints.}
+\item{c_U}{Numeric vector of five upper constraint limits.}
 }
 \value{
-numeric, sum of squared difference between predicted and observed phenology observations.
+Numeric residual sum of squares between predicted and observed dates. Return Inf if parameter constraints are violated.
 }
 \description{
-The function is parsed to the optimization algorithm during calibration. Format is compatible with
-GenSA and DEoptim optimizers. Allows for additional parameter constraints. Also can allow
-parameter conversion for chill submodel (Dynamic Model). Returns the squared sum of prediction errors or
-Inf if constraints are violated.
+Evaluate parameters for a PhenoFlex, sequential, parallel or partial overlap
+model during calibration. Return the residual sum of squares, or Inf when
+parameter constraints are violated.
+}
+\details{
+Optional controls convert characteristic Dynamic Model parameters to kinetic
+parameters and check additional parameter constraints before prediction.
 }
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}

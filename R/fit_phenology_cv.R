@@ -1,7 +1,7 @@
 #' Fit models using prepared cross-validation splits
 #'
-#' Consumes splits made by prepare_phenology_cv(); never shuffles data or uses
-#' independent validation entries. For each split, run the requested optimizer
+#' Uses splits made by prepare_phenology_cv() without reshuffling the data or
+#' including reserved independent validation entries in fitting. For each split, run the requested optimizer
 #' restarts and retain the fit with the lowest training loss. Predict assessment
 #' seasons using that fitted model and record held-out date errors.
 #'
@@ -21,7 +21,7 @@
 #'   validation. Stores its model separately in calibration$refit.
 #' @param ... Additional fixed training-loss arguments. Season-dependent data
 #'   must be supplied through seasons/observed in the preparation function;
-#'   arguments in ... are not subset.
+#'   arguments in ... are not subsetted.
 #' @param weighting,weights,failure_threshold,failure_vote,max_weight,epsilon
 #'   Passed to pheno_ensemble() to configure the stored prediction ensemble.
 #'   Equal weights are the default; independent validation is never used to set weights.

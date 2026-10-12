@@ -4,7 +4,7 @@
 #' Precompute unrestricted Dynamic Model chill
 #'
 #' Computes chill throughout the supplied series, independently of a structure's
-#' requirements. A structure can freeze this trajectory once its requirement is met.
+#' requirements. Structure functions use this trajectory to determine heat effectiveness.
 #' The final column is the chill measure consumed by structure functions.
 #' @param temp At least two finite hourly temperatures, above -273 Celsius or
 #' zero Kelvin. The existing Celsius conversion adds 273.
@@ -53,9 +53,9 @@ calculate_heat_gdh_unscaled <- function(temp, times, Tu = 25, Tb = 4, Tc = 36, d
     .Call('_evalpheno_calculate_heat_gdh_unscaled', PACKAGE = 'evalpheno', temp, times, Tu, Tb, Tc, deg_celsius)
 }
 
-#' @title parallel_model
-#' @description Parallel model, combining dynamic model for chill accumulation and the GDH model
-#' Uses precomputed chill and heat modules. All chill pools continue updating.
+#' @title Run a parallel phenology model
+#' @description Combine Dynamic Model chill accumulation and GDH heat
+#' accumulation in a parallel model. Use precomputed chill and heat modules. All chill pools continue updating.
 #'
 #' @param temp At least two finite hourly temperatures, greater than -273 Celsius
 #' (or zero Kelvin), matching the legacy temperature conversion.
@@ -70,19 +70,20 @@ calculate_heat_gdh_unscaled <- function(temp, times, Tu = 25, Tb = 4, Tc = 36, d
 #' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
 #' @param slope numeric. Slope parameter for sigmoidal function
 #' @param Tf numeric. Transition temperature in the same units as temp.
-#' @param Tb numeric. GDH base temperature (lower threshold) 
-#' @param Tu numeric. GDH optimal temperature 
+#' @param Tb numeric. GDH base temperature (lower threshold)
+#' @param Tu numeric. GDH optimal temperature
 #' @param Tc numeric. GDH upper temperature (upper threshold)
 #' @param Delta numeric. Positive compatibility argument; unused by the GDH heat model.
-#' @param stopatzc boolean. If TRUE, stop when the bloom requirement is reached;
+#' @param stopatzc logical. If TRUE, stop when the bloom requirement is reached;
 #' otherwise process the complete series while preserving the first bloom index.
-#' @param deg_celsius boolean. If set `TRUE` function assumes degree celsius temperature parameters, otherwise kelvin.
-#' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+#' @param deg_celsius logical. If TRUE, temperatures are supplied in Celsius; otherwise Kelvin.
+#' @param basic_output logical. If `TRUE`, return a list containing only bloomindex.
 #' @useDynLib evalpheno
 #' @author Lars Caspersen <lcaspers@uni-bonn.de>
 #' @return
-#' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
-#' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+#' A list with `bloomindex`, the row index at which bloom occurs.
+#' With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
+#' each with the same length as the input temperature vector `temp`.
 #' @examples
 #' temperatures <- rep(15, 240)
 #' result <- parallel_model(temp = temperatures, times = seq_along(temperatures))
@@ -93,9 +94,9 @@ parallel_model <- function(temp, times, yc = 40, zc = 1119, kmin = 0.1, A0 = 631
     .Call('_evalpheno_parallel_model', PACKAGE = 'evalpheno', temp, times, yc, zc, kmin, A0, A1, E0, E1, slope, Tf, Tu, Tb, Tc, Delta, stopatzc, deg_celsius, basic_output)
 }
 
-#' @title partial_overlap_model
-#' @description Partial Overlap Model, combining the dynamic model for chill accumulation and the GDH model
-#' Uses precomputed chill and heat modules. Chill continues throughout. Once heat at
+#' @title Run a partial overlap phenology model
+#' @description Combine Dynamic Model chill accumulation and GDH heat
+#' accumulation in a partial overlap model. Use precomputed chill and heat modules. Chill continues throughout. Once heat at
 #' the start of an interval reaches b1*ol, additional chill no longer changes the heat requirement.
 #'
 #' Additional chill is measured from the first row reaching yc, including any
@@ -116,19 +117,20 @@ parallel_model <- function(temp, times, yc = 40, zc = 1119, kmin = 0.1, A0 = 631
 #' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
 #' @param slope numeric. Slope parameter for sigmoidal function
 #' @param Tf numeric. Transition temperature in the same units as temp.
-#' @param Tb numeric. GDH base temperature (lower threshold)  
-#' @param Tu numeric. GDH optimal temperature 
-#' @param Tc numeric. GDH critical temperature 
+#' @param Tb numeric. GDH base temperature (lower threshold)
+#' @param Tu numeric. GDH optimal temperature
+#' @param Tc numeric. GDH critical temperature
 #' @param Delta numeric. Positive compatibility argument; unused by the GDH heat model.
-#' @param stopatzc boolean. If TRUE, stop when the bloom requirement is reached;
+#' @param stopatzc logical. If TRUE, stop when the bloom requirement is reached;
 #' otherwise process the complete series while preserving the first bloom index.
 #' @param deg_celsius If TRUE, temperatures are supplied in Celsius; otherwise Kelvin.
-#' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+#' @param basic_output logical. If `TRUE`, return a list containing only bloomindex.
 #' @useDynLib evalpheno
 #' @author Lars Caspersen <lcaspers@uni-bonn.de>
 #' @return
-#' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
-#' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+#' A list with `bloomindex`, the row index at which bloom occurs.
+#' With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
+#' each with the same length as the input temperature vector `temp`.
 #' @examples
 #' temperatures <- rep(15, 240)
 #' result <- po_model(temp = temperatures, times = seq_along(temperatures))
@@ -146,12 +148,13 @@ PhenoFlex_pop_slim <- function(temp, times, yc, zc, max_days_forcing = 50L, i_cu
     .Call('_evalpheno_PhenoFlex_pop_slim', PACKAGE = 'evalpheno', temp, times, yc, zc, max_days_forcing, i_cut, forcing_temperature, s1, E0, E1, A0, A1, Tf, slope, Tb, Tu, Tc, Delta, Imodel, placeholder_fail, adjust_zc_forcing_exp, stopatzc, deg_celsius, basic_output)
 }
 
-#' @title Sequential Model
-#' @description Sequential Model, combining the dynamic model for chill accumulation and the GDH model
+#' @title Run a sequential phenology model
+#' @description Combine Dynamic Model chill accumulation and GDH heat
+#' accumulation in a sequential model.
 #' Heat uses the updated chill state: the interval reaching yc contributes its
 #' full heat increment. States are recorded at interval endpoints.
-#' Dynamic chill and potential GDH are precomputed in separate modules. Once
-#' yc is reached, x and y remain fixed; the remaining x pool is not converted.
+#' Dynamic chill and potential GDH are precomputed in separate modules.
+#' All chill pools continue updating after yc is reached.
 #'
 #' @param temp At least two finite hourly temperatures, greater than -273 Celsius
 #' (or zero Kelvin), matching the legacy temperature conversion.
@@ -165,19 +168,20 @@ PhenoFlex_pop_slim <- function(temp, times, yc, zc, max_days_forcing = 50L, i_cu
 #' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
 #' @param slope numeric. Slope parameter for sigmoidal function
 #' @param Tf numeric. Transition temperature in the same units as temp.
-#' @param Tb numeric. GDH base temperature (lower threshold) 
-#' @param Tu numeric. GDH optimal temperature 
+#' @param Tb numeric. GDH base temperature (lower threshold)
+#' @param Tu numeric. GDH optimal temperature
 #' @param Tc numeric. GDH upper temperature (upper threshold)
 #' @param Delta Positive compatibility argument; unused by the GDH heat model.
-#' @param stopatzc boolean. If TRUE, stop when the bloom requirement is reached;
+#' @param stopatzc logical. If TRUE, stop when the bloom requirement is reached;
 #' otherwise process the complete series while preserving the first bloom index.
 #' @param deg_celsius If TRUE, temperatures are supplied in Celsius; otherwise Kelvin.
-#' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+#' @param basic_output logical. If `TRUE`, return a list containing only bloomindex.
 #' @useDynLib evalpheno
 #' @author Lars Caspersen <lcaspers@uni-bonn.de>
 #' @return
-#' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
-#' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+#' A list with `bloomindex`, the row index at which bloom occurs.
+#' With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
+#' each with the same length as the input temperature vector `temp`.
 #' @examples
 #' temperatures <- rep(15, 240)
 #' result <- seq_model(temp = temperatures, times = seq_along(temperatures))

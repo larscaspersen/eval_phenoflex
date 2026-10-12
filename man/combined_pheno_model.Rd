@@ -21,8 +21,8 @@ expand. NULL expands all structure parameters. For example, \code{c("yc", "zc")}
 keeps PhenoFlex's \code{s1} shared. \code{character()} shares all parameters.}
 
 \item{parameters}{Optional complete named vector in the expanded schema.
-Named theta_star and theta_c values in 0--20 accept the automatic Celsius
-convention of pheno_model(); stored characteristic temperatures use Kelvin.
+Named theta_star and theta_c values in 0--20 are interpreted as Celsius
+using the convention in pheno_model(); stored characteristic temperatures use Kelvin.
 NULL repeats the base model's stored values for cultivar-specific parameters
 and retains its remaining values. Explicit names are required even for one
 cultivar: an expanded \code{yc} is always called \code{yc1}.}

@@ -1,42 +1,40 @@
-#' Function to return bloom dates
-#' 
-#' Takes hourly weather time series and PhenoFlex model parameters and returns day of the year with bloom. 
-#' 
-#' This function is mainly used by the global optimization objective functions
-#' (\code{\link[evalpheno]{evaluation_function_meigo}, \link[evalpheno]{evaluation_function_meigo_nonlinear}, \link[evalpheno]{evaluation_function_meigo_vns}}) 
-#' to fit the PhenoFlex parameters. For a single season hourly temperature data time series and a set of model
-#' parameters it returns the predicted day of the year of bloom.
-#' 
-#' @param x data.frame with at least the column "Temp" (hourly temperature data) and "JDay" (day of the year)
-#' @param par vector of length 12 with the PhenoFlex model parameters in the following order:
-#' yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope. If the set of parameters include 
-#' theta_star, theta_c, tau and pie_c instead of E0, E1, A0, and A1, then the function \code{\link{convert_parameters}}
-#' should be run before inserting the parameters
-#' @param constraints boolean, set FALSE by default. If set TRUE, the function will perform
-#' some checks on the model parameter prior to the prediction of bloom day. For more information 
-#' see "Details"
-#' @return single numeric value with the day of the year, for which the model predicts bloom
-#' with given temperature data and model parameters. 
-#' @details In case constraints is TRUE, logic checks will be performed for some parameters. If one of the checks 
-#' is violated, then the function will return "NA" instead of the predicted bloom day. Checks involve parameters
-#' of the dynamic chill model and the growing degree hour (GDH) model. Tests include:
+#' Predict a bloom date with PhenoFlex
+#'
+#' Predict the day of the year of bloom from hourly weather and PhenoFlex
+#' parameters for one season.
+#'
+#' This wrapper is used by calibration objective functions such as
+#' \code{\link{evaluation_function_meigo}},
+#' \code{\link{evaluation_function_meigo_nonlinear}} and
+#' \code{\link{evaluation_function_meigo_vns}}.
+#'
+#' @param x Hourly weather data frame with Temp (hourly temperature)
+#' and JDay (day of the year) columns.
+#'
+#' @param par Numeric PhenoFlex parameter vector of length 12, ordered
+#' yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope. Convert characteristic chill
+#' parameters (theta_star, theta_c, tau and pie_c) with
+#' \code{\link{convert_parameters}} before supplying them.
+#'
+#' @param constraints Logical. If TRUE, check selected model parameter
+#' constraints before predicting bloom. Defaults to FALSE. See Details.
+#'
+#' @return A numeric predicted bloom date, expressed as a day of the year.
+#'
+#' @details If constraints is TRUE, check selected Dynamic Model and GDH parameters.
+#' If a check fails, return NA instead of predicting bloom. The checks require:
 #' \itemize{
-#'  \item{Parameters of GDH model:}
-#'     \itemize{
-#'     \item{Tf > Tb}
-#'     \item{Tc > Tb}
-#'     }
-#'  \item{Dynamic model}
-#'  \itemize{
-#'     \item{exp((10 * E0)/(297 * 279)) > 1.5 & exp((10 * E0)/(297 * 279)) < 3.5}
-#'     \item{exp((10 * E1)/(297 * 279)) > 1.5 | exp((10 * E0)/(297 * 279)) < 3.5}
-#'     }
+#'   \item GDH thresholds satisfying \code{Tu > Tb} and \code{Tc > Tb}.
+#'   \item \code{exp(10 * E0 / (297 * 279))} between 1.5 and 3.5, inclusive.
+#'   \item \code{exp(10 * E1 / (297 * 279))} at least 1.5.
 #' }
-#' 
-#' The parameter test of the dynamic model follows the approach suggested by Egea et al (2021)
-#' in which the Q10 parameter was used to constraint the E0 and E1 parameters. The Q10
-#' parameter how much a chemical process increases by increasing the temperature by 10 degree 
-#' Celsius. Biological reactions typically a Q10 value ranging from 2 to 3. Here, ranges of 1.5 to 3.5 were used as a threshold.
+#'
+#' The Dynamic Model parameter checks follow Egea et al. (2021), who used
+#' Q10 to constrain E0 and E1. Q10 describes the factor by which a reaction rate
+#' increases with a 10-degree Celsius temperature increase. Biological reactions
+#' typically have Q10 values between 2 and 3. These legacy wrappers check both
+#' limits for E0 and only the lower limit for E1.
+#'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @import chillR
 #' @export custom_PhenoFlex_GDHwrapper

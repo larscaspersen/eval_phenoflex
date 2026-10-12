@@ -1,34 +1,42 @@
-#' Function used in the optimization process to generate bloom data
-#' 
-#' This is the evaluation function for the fitting process. It takes the "new" parameters
-#' (theta_star, theta_c, tau, pie_c) instead of the old ones (E0, E1, A0, A1). This function
-#' allows combined fitting of cultivars. It will only estimate cultivar-specific parameters of yc, zc and s1.
-#' 
-#' This function will be best used in combination with the \link[MEIGOR]{MEIGO} function 
-#' to estimate PhenoFlex parameter values. The order of bloomJDays and SeasonList should be the same. 
-#' The order will correspond to estimated cultivar-specific parameters 
-#' 
-#' 
-#' @param x traditional model parameters of PhenoFlex in the order yc, zc, s1, Tu, theta_star, theta_c, tau, pie_c, Tf, Tc, Tb, slope. The parameters
-#' yc, zc and s1 need to be replicated as often as cultivars are fitted. 
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
-#' the 'custom_GDH_wrapper' function for that
-#' @param bloomJDays list of numeric vectors containing the observed bloom dates in day of the year format
-#' @param SeasonList list of lists, containing the hourly temperatures for the individual phenological seasons. One element per cultivar.
-#' The list of each cultivar should contain data.frames for eachs season
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param n_cult Numeric, specifying the numbers of cultivars fitted
-#' @param na_penalty numeric, value which is used when the model fails to generate a prediction
-#' for the bloom date. By default 365
-#' @param return_bloom_days boolean, by default set FALSE. Controls if the evaluation score or the predicted bloom dates get returned by the function
-#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-#' second is 'g' which is the values of the additional model constraints defined in the function.
-#' 
+#' Evaluate characteristic PhenoFlex parameters for multiple cultivars
+#'
+#' Evaluate cultivar-specific yc, zc and s1 parameters, with shared chill and
+#' heat submodel parameters. Characteristic chill parameters (theta_star,
+#' theta_c, tau and pie_c) are converted to kinetic parameters before prediction.
+#'
+#' Use this objective function with \link[MEIGOR]{MEIGO}. Cultivars in
+#' bloomJDays and SeasonList must appear in the same order as their parameter
+#' values; seasons must also appear in matching order within each cultivar.
+#'
+#' @param x Numeric parameter vector containing one yc value per cultivar,
+#' followed by one zc and one s1 value per cultivar, then shared parameters
+#' Tu, theta_star, theta_c, tau, pie_c, Tf, Tc, Tb, slope.
+#'
+#' @param modelfn Function that predicts a bloom date from a season's weather
+#' and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.
+#'
+#' @param bloomJDays List of data frames with observed bloom dates in a pheno
+#' column, one data frame per cultivar. Dates are expressed as days of the year.
+#'
+#' @param SeasonList Nested list with one season list per cultivar.
+#' Each season is a weather data frame with Temp and JDay columns, ordered to
+#' match the observations for that cultivar.
+#'
+#' @param n_cult Number of cultivars to calibrate together.
+#'
+#' @param na_penalty Numeric replacement for a missing bloom prediction. Defaults
+#' to 365; this value is used in place of the missing date when calculating loss.
+#'
+#' @param return_bloom_days Logical. If TRUE, return predicted bloom dates instead
+#' of the objective value and constraint values. Defaults to FALSE.
+#'
+#' @return A list with F (the residual sum of squares) and g (the model's
+#' constraint values). If return_bloom_days is TRUE, return predicted bloom dates instead.
+#'
 #' @author Lars Caspersen
 #' @keywords utility
 #' @importFrom nleqslv nleqslv
-#'  
+#'
 #' @export evaluation_function_meigo_nonlinear_combined
 
 #bloomJDays is now a dataframe with the column pheno

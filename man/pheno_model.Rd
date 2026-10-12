@@ -39,7 +39,7 @@ all other temperature parameters remain Celsius.}
 \item{parameterization}{Dynamic Model representation: "characteristic" or "kinetic".}
 
 \item{scaling}{"unscaled" returns Growing Degree Hour (GDH) units without scaling via (Tu-Tb).
-"scaled" returns units multiplied by (Tu-Tb). Standard implementation of PhenoFlex
+"scaled" returns units multiplied by (Tu-Tb). The standard implementation of PhenoFlex
 uses unscaled GDH, while most other studies use scaled GDH.}
 
 \item{model}{Model specification.}
@@ -49,10 +49,10 @@ pheno_model() returns a pheno_model list. Component constructors return
 lists; validate_model_spec() invisibly returns TRUE or raises an error.
 }
 \description{
-A model specification is an S3 list storing the algorithms and named parameter
-values. Supports sequential, linear parallel,
+A model specification is an S3 list storing algorithms and named parameter
+values. It supports sequential, linear parallel,
 partial-overlap and PhenoFlex coupling with the Dynamic Model and GDH.
-Other combinations are rejected as unsupported, not judged scientifically.
+Other combinations are not supported by this interface.
 }
 \examples{
 model <- pheno_model()

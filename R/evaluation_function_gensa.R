@@ -1,38 +1,48 @@
-#' Evaluation function for phenoflex formatted for GenSA optimizer
-#' 
-#' This function communicates with the GenSA optimizer during the model calibration. It
-#' takes model parameters and seasonlist, predicts bloom dates, compares it to the 
-#' observed bloom dates and returns an error score. The optimizer
-#' tries to reduce the error score.
-#' 
-#' Parameters can follow the traditional format (with the E0 to A1 parameters),
-#' or include the intermediate parameter format (with theta_star to tau). In case of
-#' intermediate parameters, they get converted to the traditional format before bloom dates are calculated.
-##' 
-#' @param x model parameters of PhenoFlex. Expected order when intermed_par = TRUE (default) yc, zc, s1, Tu, theta_star, theta_c, tau, pie_c, Tf, Tc, Tb, slope.
-#' Expected order when intermed_par = FALSE yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope.
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
-#' the 'custom_GDH_wrapper' function for that
-#' @param bloomJDays numeric containing the days of the year witht the observed bloom
-#' @param SeasonList list of hourly temperatures for the individual phenological seasons. Each element should contain a data.frame
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param intermed_par boolean, by default TRUE. Decides if intermediate parameter format is used, when set equal FALSE, then old format without conversion step is used
-#' @param q10_lower lower boundary of Q10 metric, affects the E0 to A1 parameters. 
-#' By default set to 1.5. If parameters lead to lower Q10 score, the evalfunction punishes the parameters, despite their 
-#' predictive performance
-#' @param q10_upper upper boundary of Q10 metric, affects the E0 to A1 parameters. 
-#' By default set to 3.5. If parameters lead to higher Q10 score, the evalfunction punishes the parameters, despite their 
-#' predictive performance
-#' @param q10_penalty by default 10^10, the penalty when the calculated Q10 metric is outside the upper and lower boundary
-#' @param na_penalty numeric, value which is used when the model fails to generate a prediction
-#' for the bloom date. By default 365
-#' @return residual sum of predicted and observed bloom dates. This is the score that optimizer tries to reduce
-#' 
+#' Evaluate PhenoFlex parameters for the GenSA optimizer
+#'
+#' Predict bloom dates for the supplied seasons, compare them with observed
+#' dates and return a residual sum of squares for GenSA to minimize.
+#'
+#' Parameters may use the kinetic chill representation (E0, E1, A0 and A1)
+#' or the characteristic representation (theta_star, theta_c, tau and pie_c).
+#' Characteristic parameters are converted before bloom dates are predicted.
+#'
+#' @param x Numeric PhenoFlex parameter vector. With intermed_par = TRUE,
+#' use yc, zc, s1, Tu, theta_star, theta_c, tau, pie_c, Tf, Tc, Tb, slope.
+#' With intermed_par = FALSE, use yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope.
+#'
+#' @param modelfn Function that predicts a bloom date from a season's weather
+#' and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.
+#'
+#' @param bloomJDays Numeric vector of observed bloom dates, expressed as days of
+#' the year and ordered to match SeasonList.
+#'
+#' @param SeasonList List of hourly weather data frames, one per phenological season.
+#' Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+#' Season lists can be generated with \code{\link[chillR]{genSeasonList}}.
+#'
+#' @param intermed_par Logical. If TRUE (the default), convert characteristic
+#' chill parameters before prediction. If FALSE, use kinetic parameters directly.
+#'
+#' @param q10_lower Lower allowed Q10 value for E0 and E1. Defaults to 1.5.
+#' Candidates outside the allowed range return q10_penalty regardless of prediction accuracy.
+#'
+#' @param q10_upper Upper allowed Q10 value for E0 and E1. Defaults to 3.5.
+#' Candidates outside the allowed range return q10_penalty regardless of prediction accuracy.
+#'
+#' @param q10_penalty Objective value returned when chill parameter conversion
+#' fails or a Q10 value is outside the allowed range. Defaults to 10^10.
+#'
+#' @param na_penalty Numeric replacement for a missing bloom prediction. Defaults
+#' to 365; this value is used in place of the missing date when calculating loss.
+#'
+#' @return Numeric residual sum of squares between predicted and observed bloom
+#' dates, or q10_penalty if conversion fails or a Q10 constraint is violated.
+#'
 #' @author Lars Caspersen
 #' @keywords utility
 #' @importFrom nleqslv nleqslv
-#'  
+#'
 #' @export evaluation_function_gensa
 
 evaluation_function_gensa <- function (x, 

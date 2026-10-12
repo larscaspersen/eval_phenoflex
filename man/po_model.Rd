@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{po_model}
 \alias{po_model}
-\title{partial_overlap_model}
+\title{Run a partial overlap phenology model}
 \usage{
 po_model(
   temp,
@@ -64,20 +64,21 @@ values must be one hour apart (absolute tolerance 1e-8 hours).}
 
 \item{Delta}{numeric. Positive compatibility argument; unused by the GDH heat model.}
 
-\item{stopatzc}{boolean. If TRUE, stop when the bloom requirement is reached;
+\item{stopatzc}{logical. If TRUE, stop when the bloom requirement is reached;
 otherwise process the complete series while preserving the first bloom index.}
 
 \item{deg_celsius}{If TRUE, temperatures are supplied in Celsius; otherwise Kelvin.}
 
-\item{basic_output}{boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.}
+\item{basic_output}{logical. If `TRUE`, return a list containing only bloomindex.}
 }
 \value{
-A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
-returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+A list with `bloomindex`, the row index at which bloom occurs.
+With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
+each with the same length as the input temperature vector `temp`.
 }
 \description{
-Partial Overlap Model, combining the dynamic model for chill accumulation and the GDH model
-Uses precomputed chill and heat modules. Chill continues throughout. Once heat at
+Combine Dynamic Model chill accumulation and GDH heat
+accumulation in a partial overlap model. Use precomputed chill and heat modules. Chill continues throughout. Once heat at
 the start of an interval reaches b1*ol, additional chill no longer changes the heat requirement.
 
 Additional chill is measured from the first row reaching yc, including any

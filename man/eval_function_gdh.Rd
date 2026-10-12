@@ -2,40 +2,34 @@
 % Please edit documentation in R/GDH_wrapper.R
 \name{eval_function_gdh}
 \alias{eval_function_gdh}
-\title{Evaluation function for ecodormancy}
+\title{Evaluate GDH parameters using ecodormancy release observations}
 \usage{
 eval_function_gdh(x, SeasonList, dispersion_fun = "calc_cv")
 }
 \arguments{
-\item{x}{model parameters of GDH model, order: Tb, Tu, Tc}
+\item{x}{Numeric GDH parameter vector in the order Tb, Tu, Tc.}
 
-\item{SeasonList}{List of SeasonLists. For each cultivar one entry. Individual seasonlists 
-per cultivar contain exactly period of: measured end of endodormancy release to measured
-ecodormancy release.}
+\item{SeasonList}{Nested list with one season list per cultivar. Each hourly
+temperature series covers the period from observed endodormancy release to
+observed ecodormancy release.}
 
-\item{dispersion_fun}{name of function to measure dispersion of accumulated GDH per
-cultivar. Needs to be a function loaded in the environment. Can also be a custom function.
-By default "calc_cv", which calculates the coefficient of variation.}
+\item{dispersion_fun}{Name of a function that measures dispersion of accumulated
+GDH across seasons within a cultivar. The function must be available by name.
+Defaults to "calc_cv", which calculates the coefficient of variation.}
 }
 \value{
-sum of the dispersion function. This will be subject to global optimization.
+Numeric sum of the cultivar-specific dispersion values to minimize.
 }
 \description{
-Takes model parameters for GDH model and list of seasons with daily temperature time series.
+Calculate accumulated growing degree hours (GDH) for each supplied
+temperature series, then measure the dispersion of these totals across
+seasons within each cultivar. Calibration minimizes the sum of the
+cultivar-specific dispersion values.
 }
 \details{
-The function evaluates a set of parameters and calculates accumulated GDH for each of the supplied temperature time series.
-Then it returns a dispersion metric measuring how different accumulated GDH are among the seasons.
-The function is usually used in an optimization probelm, where the goal is to estimate
-GDH model parameters most suitable to minimize the dispersion of accumulated GDH.
-
-The function has very specific requirements on the structure of the Seasonlist.
-In fact it is a list of Seasonlists created for several cultivars.
-For each cultivar, the seasonlist contains exactly the period from endodormancy 
+Supply a nested list of seasons, with one outer entry per cultivar.
+Each temperature series should cover the period from observed endodormancy
 release to observed ecodormancy release.
-
-
-Used this function for the Olive study of Efe Deger
 }
 \examples{
 \dontrun{

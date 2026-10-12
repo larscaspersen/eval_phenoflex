@@ -2,9 +2,7 @@
 % Please edit documentation in R/eval_fixed_daoptim.R
 \name{eval_fixed_daoptim}
 \alias{eval_fixed_daoptim}
-\title{Evaluation funciton full model, general format
- 
-Takes model parameters from PhenoFlex, Sequential Model, Parallel Model or Partial Overlap Model}
+\title{Evaluate structure parameters with fixed chill and heat submodels}
 \usage{
 eval_fixed_daoptim(
   x,
@@ -24,19 +22,21 @@ eval_fixed_daoptim(
 )
 }
 \arguments{
-\item{x}{model parameters needs to fit the format of PhenoFlex, Parallel Model, Sequential Model or Partial Overlap Model
-Assumes only model specific parameters, excluding parameters of the submodel for chill and heat accumulation.}
+\item{x}{Numeric vector containing only the structure parameters required
+by modelfn. Chill and heat submodel parameters are supplied separately.}
 
-\item{modelfn}{function used within the evaluation function to calculate the actual bloomday}
+\item{modelfn}{Function that predicts a bloom date from a season's weather
+and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.}
 
-\item{bloomJDays}{numeric containing the days of the year with the observed bloom}
+\item{bloomJDays}{Numeric vector of observed bloom dates, expressed as days of
+the year and ordered to match SeasonList.}
 
-\item{SeasonList}{list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-generated using \link[chillR]{genSeasonList}}
+\item{SeasonList}{List of hourly weather data frames, one per phenological season.
+Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+Season lists can be generated with \code{\link[chillR]{genSeasonList}}.}
 
-\item{na_penalty}{numeric, by default 365. Penalty for the phenology
-prediction function when it fails return a bloom prediction}
+\item{na_penalty}{Numeric replacement for a missing bloom prediction. Defaults
+to 365; this value is used in place of the missing date when calculating loss.}
 
 \item{E0}{numeric. Parameter \eqn{E_0}{E0} of the dynamic model}
 
@@ -46,7 +46,7 @@ prediction function when it fails return a bloom prediction}
 
 \item{A1}{numeric. Parameter \eqn{A_1}{A1} of the dynamic model}
 
-\item{Tf}{numeric. Transition temperature (in degree Kelvin) for the sigmoidal function}
+\item{Tf}{numeric. Transition temperature (in Kelvin) for the sigmoidal function}
 
 \item{slope}{numeric. Slope parameter for sigmoidal function}
 
@@ -54,16 +54,16 @@ prediction function when it fails return a bloom prediction}
 
 \item{Tu}{numeric. GDH optimal temperature}
 
-\item{Tc}{numeric. GDH upper temperature (upper threshold)}
+\item{Tc}{Numeric upper temperature threshold of the GDH model, in degrees Celsius.}
 }
 \value{
-numeric, sum of squared difference between predicted and observed phenology observations.
+Numeric residual sum of squares between predicted and observed dates.
 }
 \description{
-The function is parsed to the optimization algorithm during calibration. Format is compatible with
-GenSA and DEoptim optimizers. Allows for additional parameter constraints. Also can allow
-parameter conversion for chill submodel (Dynamic Model). Returns the squared sum of prediction errors or
-Inf if constraints are violated.
+Evaluate the structure parameters of a PhenoFlex, sequential, parallel or
+partial overlap model while keeping chill and heat submodel parameters fixed.
+Return the residual sum of squares in a format compatible with GenSA and
+DEoptim.
 }
 \author{
 Lars Caspersen, \email{lars.caspersen@uni-bonn.de}

@@ -15,7 +15,7 @@ double conversion_fraction(double T, double Tf, double slope) {
 //' Precompute unrestricted Dynamic Model chill
 //'
 //' Computes chill throughout the supplied series, independently of a structure's
-//' requirements. A structure can freeze this trajectory once its requirement is met.
+//' requirements. Structure functions use this trajectory to determine heat effectiveness.
 //' The final column is the chill measure consumed by structure functions.
 //' @param temp At least two finite hourly temperatures, above -273 Celsius or
 //' zero Kelvin. The existing Celsius conversion adds 273.

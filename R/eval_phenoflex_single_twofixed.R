@@ -1,34 +1,43 @@
-#' Function used in the optimization process to generate bloom data
-#' 
-#' This function works like \link[evalpheno]{evaluation_function_meigo} except that it uses 
-#' parameters theta_star, theta_c, tau and pie_c instead of the commonly used
-#' E0, E1, A0 and A1 parameters, which get calculated in an intermediate step.
-#' 
-#' This function follows the approach suggested in Egea 2021 and solves a 
-#' nonlinear system of equations to derive the parameters E0, E1, A0 and A1 from the 
-#' newly used parameters theta_star, theta_c, tau and pie_c. ' 
-#' 
-#' 
-#' @param x traditional model parameters of PhenoFlex in the order yc, zc, s1, Tu, theta_c, tau, pie_c, Tf, Tb, slope.
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
-#' the 'custom_GDH_wrapper' function for that
-#' @param bloomJDays numeric containing the days of the year witht the observed bloom
-#' @param SeasonList list of hourly temperatures for the individual phenological seasons. Each element should contain a data.frame
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param theta_star numeric, by default 286. Is the optimal temperature for chill accumulation measured in Kelvin
-#' @param Tc numeric, by default 36. Is the upper limit of temperature in degree Celsius, above which no heat accumulation happens.
-#' @param return_pred boolean, by default FALSE. If set TRUE, then the evaluation function
-#' does not return the performance score but the predicted bloom dates.
-#' @param na_penalty numeric, value which is used when the model fails to generate a prediction
-#' for the bloom date. By default 365
-#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-#' second is 'g' which is the values of the additional model constraints defined in the function.
-#' 
+#' Evaluate PhenoFlex parameters with fixed Tc and theta_star
+#'
+#' This function uses characteristic chill parameters (theta_star, theta_c,
+#' tau and pie_c) in place of kinetic parameters (E0, E1, A0 and A1).
+#' Tc and theta_star are supplied separately and held fixed during calibration.
+#'
+#' Following Egea et al. (2021), a nonlinear system of equations is solved to
+#' derive the kinetic parameters before predicting bloom dates.
+#'
+#' @param x Numeric characteristic PhenoFlex parameter vector in the order
+#' yc, zc, s1, Tu, theta_c, tau, pie_c, Tf, Tb, slope.
+#' Tc and theta_star are supplied separately.
+#'
+#' @param modelfn Function that predicts a bloom date from a season's weather
+#' and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.
+#'
+#' @param bloomJDays Numeric vector of observed bloom dates, expressed as days of
+#' the year and ordered to match SeasonList.
+#'
+#' @param SeasonList List of hourly weather data frames, one per phenological season.
+#' Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+#' Season lists can be generated with \code{\link[chillR]{genSeasonList}}.
+#'
+#' @param theta_star Numeric optimal temperature for chill accumulation, in Kelvin.
+#'
+#' @param Tc Numeric upper temperature threshold of the GDH model, in degrees Celsius.
+#'
+#' @param return_pred Logical. If TRUE, return predicted bloom dates instead of
+#' the objective value and constraint values. Defaults to FALSE.
+#'
+#' @param na_penalty Numeric replacement for a missing bloom prediction. Defaults
+#' to 365; this value is used in place of the missing date when calculating loss.
+#'
+#' @return A list with F (the residual sum of squares) and g (the model's
+#' constraint values). If return_pred is TRUE, return predicted bloom dates instead.
+#'
 #' @author Lars Caspersen
 #' @keywords utility
 #' @importFrom nleqslv nleqslv
-#'  
+#'
 #' @export eval_phenoflex_single_twofixed
 
 #return predicted days of different functions

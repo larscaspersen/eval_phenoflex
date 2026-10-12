@@ -26,10 +26,10 @@ n_success (all finite predictions), n_fail, failure_fraction and cap_relaxed.
 }
 \description{
 Successful dates are averaged after renormalizing the surviving positive
-weights. No successful weight always gives NA, even below the failure vote
-threshold. ensemble_sd is sqrt(sum(w * (date - weighted_mean)^2)): descriptive
+weights. If no successful member has positive weight, the result is NA even below
+the failure vote threshold. ensemble_sd is sqrt(sum(w * (date - weighted_mean)^2)): descriptive
 weighted spread, not a standard error or prediction interval. Zero spread
-is returned for one surviving member. No-bloom is NA; infinite predictions
+is returned for one surviving member. Missing bloom predictions are represented by NA; infinite predictions
 are rejected. The spread remains available even when the vote suppresses the
 ensemble date, describing the successful members conditional on bloom.
 }

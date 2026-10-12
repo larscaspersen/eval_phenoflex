@@ -1,33 +1,40 @@
-#' Evaluation function for combined fitting of cultivars
-#'  
-#' Takes model parameters for PhenoFlex, parameters of yc, zc, s1. Other parameters are fixed.
-#' Used this function 
-#' 
-#' The function evaluates a set of parameters, it assumes the chill requirement (yc), heat
-#' requirement (zc) and transition parameter (s1) cultivar-specific and the remaining
-#' parameters for chill and heat submodels are shared. The function is mainly used
-#' in model calibration and gets called by the global optimization algorithm. 
-#' 
-#' @param x model parameters of PhenoFlex, with chill requirement (yc), 
-#' heat requirement (zc), and transition parameter (s1) new format: 
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
-#' the 'custom_GDH_wrapper' function for that
-#' @param bloomJDays numeric containing the days of the year with the observed bloom
-#' @param SeasonList list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param par_fixed parameters of chill and heat submodel, order: Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope 
-#' @param constrains logical, by default set TRUE. Indicates if there are further
-#' checks on the parameters except the boundaries of the optimization algorithm
-#' @param return_pred logical, by default FALSE. If set TRUE the function will return
-#' bloom dates instead of the output required by the global optimzation algorithm.
-#' @param na_penalty numeric, by default 365. Penalty for the phenology
-#' prediction function when it fails return a bloom prediction
-#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-#' second is 'g' which is the values of the additional model constraints defined in the function.
-#' If the flag for return_pred set TRUE, then it returns bloom dates
+#' Evaluate PhenoFlex structure parameters with fixed submodels
+#'
+#' Evaluate the chill requirement (yc), heat requirement (zc) and transition
+#' parameter (s1) while keeping all chill and heat submodel parameters fixed.
+#' The function returns an objective value and parameter constraint values
+#' for use during calibration.
+#'
+#' @param x Numeric PhenoFlex structure parameter vector in the order
+#' yc (chill requirement), zc (heat requirement), s1 (transition parameter).
+#'
+#' @param modelfn Function that predicts a bloom date from a season's weather
+#' and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.
+#'
+#' @param bloomJDays Numeric vector of observed bloom dates, expressed as days of
+#' the year and ordered to match SeasonList.
+#'
+#' @param SeasonList List of hourly weather data frames, one per phenological season.
+#' Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+#' Season lists can be generated with \code{\link[chillR]{genSeasonList}}.
+#'
+#' @param par_fixed Fixed chill and heat submodel parameters in the order
+#' Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope.
+#'
+#' @param constrains Logical compatibility argument, defaulting to TRUE.
+#' The current implementation returns constraint values regardless of this setting.
+#'
+#' @param return_pred Logical. If TRUE, return predicted bloom dates instead of
+#' the objective value and constraint values. Defaults to FALSE.
+#'
+#' @param na_penalty Numeric replacement for a missing bloom prediction. Defaults
+#' to 365; this value is used in place of the missing date when calculating loss.
+#'
+#' @return A list with F (the residual sum of squares) and g (the model's
+#' constraint values). If return_pred is TRUE, return predicted bloom dates instead.
+#'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
-#' 
+#'
 #' @export eval_phenoflex_onlyreq
 eval_phenoflex_onlyreq  <- function(x,
                                     modelfn,

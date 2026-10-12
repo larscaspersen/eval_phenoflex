@@ -3,8 +3,8 @@
 #' Minimize a user-supplied evaluation function using DEoptim or GenSA. The
 #' evaluation function is called as `evaluation(parameters, model, ...)`, or
 #' `evaluation(parameters, model, observed = observed, ...)` when observations
-#' are supplied, with
-#' a complete named parameter vector in schema order. It must return one numeric
+#' are supplied. In either case, parameters is
+#' a complete named vector in schema order. It must return one numeric
 #' loss to minimize; `Inf` excludes a candidate. Numerical characteristic-to-kinetic
 #' conversion failures raised by predict_phenology() are excluded with `Inf`;
 #' other errors in the evaluation function propagate. Candidates outside the
@@ -26,7 +26,7 @@
 #'   fitting, as required by the evaluator; NULL slots can represent missing
 #'   observations for the example RSS evaluators. Matching predictions to dates
 #'   and calculating the loss remain the evaluator's responsibility. This
-#'   argument must be named. If omitted it is not passed, allowing evaluators
+#'   argument must be named. If omitted, it is not passed, allowing evaluators
 #'   that capture observations in a closure or use another interface.
 #' @param prediction Optional function called as prediction(fitted_model),
 #'   returning dates to store with the observations. NULL automatically predicts
@@ -65,7 +65,7 @@
 #' @param max_iterations Optional positive integer iteration limit; overrides
 #'   `control$itermax` for DEoptim or `control$maxit` for GenSA. Iterations are
 #'   generations for DEoptim and annealing steps for GenSA, not evaluation counts.
-#'   If NULL, the optimizer's control/default limit applies.
+#'   If NULL, the optimizer's configured or default limit applies.
 #' @param max_seconds Optional positive optimizer running-time limit in seconds,
 #'   passed directly to GenSA as `control$max.time`. Overrides a value in `control`.
 #'   DEoptim has no native time-limit control, so this argument is rejected for
@@ -92,13 +92,13 @@
 #'   the original season/member positions without evaluating their weather.
 #'   `calibration_settings` contains optimizer, complete lower/upper bounds,
 #'   seed, effective control, requested limits, initial parameters and evaluation.
-#'   `diagnostics` contains evaluations (including invalid candidates/baseline),
+#'   `diagnostics` contains evaluations (including invalid candidates and the baseline),
 #'   elapsed (seconds including baseline), termination ("optimizer" or "fixed"),
 #'   and optimizer_result (native result or NULL). An error is raised if no
 #'   finite loss is found. Termination does not assert global optimality.
 #'   For model lists, `model[[i]]` is an ordinary single model with its fitted
 #'   parameters. [model_parameters()] returns the flat vector and [as_pheno_models()]
-#'   materializes a plain list of single models from a fitted result.
+#'   extracts a plain list of single models from a fitted result.
 #' @examples
 #' model <- pheno_model()
 #' lower <- c(yc = 10)

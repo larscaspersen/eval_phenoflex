@@ -3,9 +3,9 @@
 #include "model_validation.h"
 using namespace Rcpp;
 
-//' @title parallel_model
-//' @description Parallel model, combining dynamic model for chill accumulation and the GDH model
-//' Uses precomputed chill and heat modules. All chill pools continue updating.
+//' @title Run a parallel phenology model
+//' @description Combine Dynamic Model chill accumulation and GDH heat
+//' accumulation in a parallel model. Use precomputed chill and heat modules. All chill pools continue updating.
 //'
 //' @param temp At least two finite hourly temperatures, greater than -273 Celsius
 //' (or zero Kelvin), matching the legacy temperature conversion.
@@ -20,19 +20,20 @@ using namespace Rcpp;
 //' @param E1 numeric. Parameter \eqn{E_1}{E1} of the dynamic model
 //' @param slope numeric. Slope parameter for sigmoidal function
 //' @param Tf numeric. Transition temperature in the same units as temp.
-//' @param Tb numeric. GDH base temperature (lower threshold) 
-//' @param Tu numeric. GDH optimal temperature 
+//' @param Tb numeric. GDH base temperature (lower threshold)
+//' @param Tu numeric. GDH optimal temperature
 //' @param Tc numeric. GDH upper temperature (upper threshold)
 //' @param Delta numeric. Positive compatibility argument; unused by the GDH heat model.
-//' @param stopatzc boolean. If TRUE, stop when the bloom requirement is reached;
+//' @param stopatzc logical. If TRUE, stop when the bloom requirement is reached;
 //' otherwise process the complete series while preserving the first bloom index.
-//' @param deg_celsius boolean. If set `TRUE` function assumes degree celsius temperature parameters, otherwise kelvin.
-//' @param basic_output boolean. If `TRUE`, only the bloomindex is returned as a named element of the return list.
+//' @param deg_celsius logical. If TRUE, temperatures are supplied in Celsius; otherwise Kelvin.
+//' @param basic_output logical. If `TRUE`, return a list containing only bloomindex.
 //' @useDynLib evalpheno
 //' @author Lars Caspersen <lcaspers@uni-bonn.de>
 //' @return
-//' A list is returned with named element `bloomindex`, which is the index at which blooming occurs. When `basic_output=FALSE` also `x`, `y`, `z` and `xs` are
-//' returned as named element of this list, which are numeric vectors of the same length as the input vector `temp` containing the hourly temperatures.
+//' A list with `bloomindex`, the row index at which bloom occurs.
+//' With `basic_output = FALSE`, also return numeric vectors `x`, `y`, `z` and `xs`,
+//' each with the same length as the input temperature vector `temp`.
 //' @examples
 //' temperatures <- rep(15, 240)
 //' result <- parallel_model(temp = temperatures, times = seq_along(temperatures))

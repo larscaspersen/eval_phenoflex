@@ -70,7 +70,7 @@ population_pheno_model <- function(structure = "phenoflex", chill = chill_dynami
 #' in random draws during fitting. With `seed = NULL`, sampling advances the RNG.
 #' @param model Specification from [population_pheno_model()].
 #' @param parameters Named population means and shared submodel parameters.
-#' @return A numeric buds-by-structure-parameters matrix. Column names are the
+#' @return A numeric matrix with one row per bud and one column per structure parameter. Column names are the
 #' structure parameter names; row order identifies buds.
 #' @export
 sample_population_parameters <- function(model, parameters = default_parameters(model)) {
@@ -123,7 +123,7 @@ sample_population_parameters <- function(model, parameters = default_parameters(
 #' a population specification. Each bud retains the first bloom index; zero
 #' denotes no bloom and its calendar result is NA. All buds remain in the output.
 #' Detailed output contains the full unrestricted shared chill trajectory and
-#' hours-by-buds effective heat. Early stopping leaves zero-filled heat tails.
+#' effective heat with one row per hour and one column per bud. Early stopping leaves zero-filled heat tails.
 #' @param model Specification from [population_pheno_model()].
 #' @param weather Complete hourly weather as required by [predict_phenology()].
 #' @param parameters Named population means and shared submodel parameters.
@@ -133,11 +133,11 @@ sample_population_parameters <- function(model, parameters = default_parameters(
 #' @param basic_output Omit chill and effective heat trajectories if TRUE.
 #' @return A list with `bloomindex`, `bloom_jday` and `population`. Detailed output
 #' additionally contains `chill` and `z`; the columns of `z` correspond to population rows.
-#' With cuts, `forcing` contains `cut_indices`, cuts-by-buds matrices
+#' With cuts, `forcing` contains `cut_indices`, matrices with one row per cut and one column per bud named
 #' `hours_to_bloom`, `z_at_cut` and `z_final`. Elapsed forcing hours start at zero
 #' at cutting, unlike the legacy kernel's zero-based step indices: one means one
 #' complete forcing interval, zero means already bloomed, and NA means not reached.
-#' Detailed forcing output adds a list `z`, one (hours+1)-by-buds matrix per cut.
+#' Detailed forcing output adds a list `z`, one matrix per cut, with hours+1 rows and one column per bud.
 #' @param cut_indices Optional distinct one-based weather row indices at which
 #' buds are cut. A cut uses the state stored at that row, before its next interval.
 #' @param forcing_temperature Constant forcing temperature in degrees Celsius.

@@ -1,50 +1,56 @@
-#' Evaluation function for three phenological stages at once
-#'  
-#' Takes model parameters for PhenoFlex, however, three individual heat requirements for 
-#' each modelled stage individually.
-#' 
-#' The function returns for one season the timing of the three phenological stages. 
-#' E0 to A1 parameters of the chill submodel are replaced by intermediate parameters. 
-#' Parameters Tc and theta_star are fixed, as they contribute little to
-#' model performance. The function is usually called by an optimization algorithm
-#' during model calibration.
-#' 
-#' @param x model parameters of PhenoFlex, new format: 
-#' c(yc, zc1, zc2, zc3 s1,Tu, theta_c, pie_c, tau, Tf, Tb, slope)
-#' will get converted to the format: E0, E1, A0, A1, Tf, slope to run the Dynamic Model 
-#' @param modelfn function used within the evaluation function to calculate the actual bloomday, often we use
-#' the 'custom_GDH_wrapper' function for that
-#' @param bloomdates_df data.frame, with four columns: year, firstbloom, fullbloom and budbreak.
-#' The phenological stages have the julian day of the occurence as values. 
-#' @param SeasonList list of hourly temperatures for the individual phonological seasons. Each element should contain a data.frame
-#' with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-#' generated using \link[chillR]{genSeasonList}
-#' @param Tc numeric, by default 36. Critical temperature (°C) parameter of the GDH model.
-#' @param theta_star numeric, by default 279. Optimal temperature (K) for chill accumulation of the
-#' Dynamic Model. 
-#' @param na_penalty numeric, by default 365. Penalty for the phenology
-#' prediction function when it fails return a bloom prediction
-#' @return list with two elements. First is called 'f' and contains the residual sum of squares of the model. The 
-#' second is 'g' which is the values of the additional model constraints defined in the function.
-#' If the flag for return_pred set TRUE, then it returns bloom dates
+#' Evaluate PhenoFlex parameters for three successive phenological stages
+#'
+#' Evaluate a model with a separate cumulative heat requirement for each of
+#' three successive phenological stages. All other model parameters are shared
+#' across stages; Tc and theta_star are supplied separately and held fixed.
+#'
+#' Characteristic chill parameters are converted to kinetic Dynamic Model
+#' parameters. The function compares predicted and observed stage dates and
+#' returns an objective value and constraint values for model calibration.
+#'
+#' @param x Numeric characteristic PhenoFlex parameter vector in the order
+#' yc, zc1, zc2, zc3, s1, Tu, theta_c, tau, pie_c, Tf, Tb, slope.
+#' The three zc values are cumulative heat requirements for the successive stages.
+#' Tc and theta_star are supplied separately.
+#'
+#' @param modelfn Function that returns a bloom date and accumulated chill and heat
+#' for a season, such as \code{\link{custom_PhenoFlex_GDHwrapper_v2}}.
+#'
+#' @param bloomdates_df Data frame with columns year, firstbloom, fullbloom and
+#' budbreak. Stage dates are expressed as days of the year.
+#'
+#' @param SeasonList List of hourly weather data frames, one per phenological season.
+#' Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+#' Season lists can be generated with \code{\link[chillR]{genSeasonList}}.
+#'
+#' @param Tc Numeric upper temperature threshold of the GDH model, in degrees Celsius.
+#'
+#' @param theta_star Numeric optimal temperature for chill accumulation, in Kelvin.
+#'
+#' @param na_penalty Numeric replacement for a missing bloom prediction. Defaults
+#' to 365; this value is used in place of the missing date when calculating loss.
+#'
+#' @return A list with F (the residual sum of squares) and g (the model's
+#' constraint values).
+#'
 #' @author Lars Caspersen, \email{lars.caspersen@@uni-bonn.de}
 #' @importFrom purrr map_dbl
 #' @importFrom purrr map
 #' @importFrom assertthat are_equal
 #' @importFrom nleqslv nleqslv
 #' @importFrom tidyr replace_na
-#' @examples 
+#' @examples
 #' \dontrun{
-#' 
+#'
 #' ncult <- 3
 #' #          theta_star, theta_c, pie_c, tau, Tf, slope
 #' par <-   c(40, 50, 150, 200, 0.5, 26, 281, 24, 45, 4, 1.6)
-#' 
+#'
 #' #prepare weather data
 #' weather<-fix_weather(KA_weather[which(KA_weather$Year>2004),])
 #' hourtemps<-stack_hourly_temps(weather, latitude=50.4)
 #' seasonList <- genSeasonList(hourtemps$hourtemps, year = 2006)
-#' 
+#'
 #' eval_phenoflex_three_stages(x = par, par = SeasonList)
 #' }
 #' @export eval_phenoflex_three_stages

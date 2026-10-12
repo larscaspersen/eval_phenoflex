@@ -25,8 +25,9 @@
 #' @param population Optional list with positive `yc_pop` and `zc_pop` vectors
 #' of length `n`. Supplying it bypasses sampling, useful for calibration.
 #' @return A list with `bloomindex`, `yc_pop`, and `zc_pop`. Detailed output adds
-#' shared chill vectors `x`, `y`, an hours-by-buds heat matrix `z`, cutting-days-by-buds
-#' matrices `exp` and `z_effec`, and the potential forcing increment `exp_force_inc`.
+#' shared chill vectors `x` and `y`, a heat matrix `z` with one row per hour
+#' and one column per bud, matrices with one row per cutting day and one column
+#' per bud named `exp` and `z_effec`, and the potential forcing increment `exp_force_inc`.
 #' @examples
 #' weather <- data.frame(Temp = rep(15, 240), JDay = rep(1:10, each = 24))
 #' par <- c(40, 190, 0.5, 25, 3372.8, 9900.3, 6319.5, 5.939917e13,

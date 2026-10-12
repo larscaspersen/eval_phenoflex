@@ -2,7 +2,7 @@
 % Please edit documentation in R/evaluation_function_meigo_vns.R
 \name{evaluation_function_meigo_vns}
 \alias{evaluation_function_meigo_vns}
-\title{Function used in the optimization process to generate bloom data}
+\title{Evaluate PhenoFlex parameters for the MEIGO VNS optimizer}
 \usage{
 evaluation_function_meigo_vns(
   x,
@@ -15,24 +15,26 @@ evaluation_function_meigo_vns(
 \arguments{
 \item{x}{traditional model parameters of PhenoFlex in the order yc, zc, s1, Tu, E0, E1, A0, A1, Tf, Tc, Tb, slope.}
 
-\item{modelfn}{function used within the evaluation function to calculate the actual bloomday, often we use
-the 'custom_GDH_wrapper' function for that}
+\item{modelfn}{Function that predicts a bloom date from a season's weather
+and model parameters, such as \code{\link{custom_PhenoFlex_GDHwrapper}}.}
 
-\item{bloomJDays}{numeric containing the days of the year witht the observed bloom}
+\item{bloomJDays}{Numeric vector of observed bloom dates, expressed as days of
+the year and ordered to match SeasonList.}
 
-\item{SeasonList}{list of hourly temperatures for the individual phenological seasons. Each element should contain a data.frame
-with the columns "Temp" (for the hourly temperature) and "JDay" for the corresponding Julian day. Is usually
-generated using \link[chillR]{genSeasonList}}
+\item{SeasonList}{List of hourly weather data frames, one per phenological season.
+Each data frame contains Temp (hourly temperature) and JDay (day of the year).
+Season lists can be generated with \code{\link[chillR]{genSeasonList}}.}
 
-\item{na_penalty}{numeric, value which is used when the model fails to generate a prediction
-for the bloom date. By default 365}
+\item{na_penalty}{Numeric replacement for a missing bloom prediction. Defaults
+to 365; this value is used in place of the missing date when calculating loss.}
 }
 \value{
-list with one element, which is called 'f' and contains the residual sum of squares of the model.
+Numeric residual sum of squares between predicted and observed bloom dates.
 }
 \description{
-This function works like \code{\link{evaluation_function_meigo}} with some minor differences in
-the model output to be compatible with the VNS optimizer of the MEIGO package.
+Like \code{\link{evaluation_function_meigo}}, this function evaluates
+PhenoFlex predictions during calibration. It returns the objective
+value as a numeric scalar for the MEIGO VNS optimizer.
 }
 \author{
 Lars Caspersen

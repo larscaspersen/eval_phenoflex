@@ -12,7 +12,7 @@ sample_population_parameters(model, parameters = default_parameters(model))
 \item{parameters}{Named population means and shared submodel parameters.}
 }
 \value{
-A numeric buds-by-structure-parameters matrix. Column names are the
+A numeric matrix with one row per bud and one column per structure parameter. Column names are the
 structure parameter names; row order identifies buds.
 }
 \description{
