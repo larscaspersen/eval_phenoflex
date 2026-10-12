@@ -58,6 +58,7 @@ rsconnect/
 /development/regression-results/
 /climate_data/
 /temp_data/
-/data/
+/data/*
+!/data/cka_weather.rda
 /experimental/
 /development/

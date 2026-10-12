@@ -1,7 +1,7 @@
 Package: evalpheno
 Type: Package
-Title: Custom Evaluation functions for PhenoFlex
-Version: 0.0.2.0
+Title: Modular Phenology Models and Calibration
+Version: 0.1.0
 Encoding: UTF-8
 License: GPL (>= 3)
 Authors@R: 
@@ -11,7 +11,26 @@ Authors@R:
              role = c("aut", "cre"),
              email = "lcaspers@uni-bonn.de",
              comment = c(ORCID = "0009-0000-3057-7327")))
-Description: Contains evaluation functions and wrapper functions for calibrating the PhenoFlex model.
+Description: Construct, calibrate and run temperature-driven phenology
+    models for temperate trees, including 
+    sequential (Ashcroft et al. (1977) <doi:10.21273/HORTSCI.12.4.347>),
+    parallel (Hänninen and Kramer (2007) <doi:10.14214/sf.313>), 
+    PhenoFlex (Luedeling et al. (2021) <doi:10.1016/j.agrformet.2021.108491>)
+    and partial overlap (Pope et al. (2014) <doi:10.1016/j.agrformet.2014.07.009>)
+    structures. Combine chill and heat accumulation
+    submodels with alternative model structures. Simulate variation among
+    individual buds using population models, including budbreak timing
+    and the proportion of buds breaking under artificial forcing
+    conditions. Calibrate the Dynamic Model 
+    (Erez et al. (1990) <doi:10.17660/ActaHortic.1990.276.18>) of chill accumulation using
+    interpretable characteristic parameters as suggested by 
+    Egea et al. (2021) <doi:10.1093/treephys/tpaa054> and implemented for PhenoFlex by
+    Caspersen et al. (2024) <doi:10.17660/ActaHortic.2024.1406.64>. Additional tools support
+    cross-validation and weighted ensemble predictions
+    (Caspersen et al. (2025) <doi:10.1016/j.agrformet.2025.110859>), 
+    modelling successive phenological stages (Caspersen et al. (2025) <doi:10.1016/j.agrformet.2025.110824>), and joint calibration across cultivars with
+    shared chill and heat accumulation submodels and cultivar-specific
+    requirements (Caspersen et al. (2026) <doi:10.1007/s00484-025-03068-2>).
 Imports: 
     assertthat,
     chillR,
@@ -29,8 +48,11 @@ Suggests:
     doParallel,
     foreach,
     jsonlite,
+    knitr,
     parallelly,
+    rmarkdown,
     sn,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0

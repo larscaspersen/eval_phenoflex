@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: evalpheno
+title: 'evalpheno: Modular Phenology Models and Calibration'
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -18,12 +18,27 @@ identifiers:
     value: 10.5281/zenodo.15174551
 repository-code: 'https://github.com/larscaspersen/eval_phenoflex'
 abstract: >-
-  A collection of wrapper function for phenology modeling
-  framework PhenoFlex. Allows to customize calculation of
-  bloom dates, fixing or pooling model parameters. Contains
-  also wrapper functions that can be used to calibrate the
-  model with global optimization algorithms.
+Construct, calibrate and run temperature-driven phenology
+    models for temperate trees, including 
+    sequential (Ashcroft et al. (1977) <doi:10.21273/HORTSCI.12.4.347>),
+    parallel (Hänninen and Kramer (2007) <doi:10.14214/sf.313>), 
+    PhenoFlex (Luedeling et al. (2021) <doi:10.1016/j.agrformet.2021.108491>)
+    and partial overlap (Pope et al. (2014) <doi:10.1016/j.agrformet.2014.07.009>)
+    structures. Combine chill and heat accumulation
+    submodels with alternative model structures. Simulate variation among
+    individual buds using population models, including budbreak timing
+    and the proportion of buds breaking under artificial forcing
+    conditions. Calibrate the Dynamic Model 
+    (Erez et al. (1990) <doi:10.17660/ActaHortic.1990.276.18>) of chill accumulation using
+    interpretable characteristic parameters as suggested by 
+    Egea et al. (2021) <doi:10.1093/treephys/tpaa054> and implemented for PhenoFlex by
+    Caspersen et al. (2024) <doi:10.17660/ActaHortic.2024.1406.64>. Additional tools support
+    cross-validation and weighted ensemble predictions
+    (Caspersen et al. (2025) <doi:10.1016/j.agrformet.2025.110859>), 
+    modelling successive phenological stages (Caspersen et al. (2025) <doi:10.1016/j.agrformet.2025.110824>), and joint calibration across cultivars with
+    shared chill and heat accumulation submodels and cultivar-specific
+    requirements (Caspersen et al. (2026) <doi:10.1007/s00484-025-03068-2>).
 keywords:
   - phenology
   - dormancy
-version: v0.0.2
+version: v0.1.0

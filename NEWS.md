@@ -1,3 +1,9 @@
+# evalpheno 0.1.0
+
+* Add the CKA daily temperature dataset and a getting-started vignette covering
+  model settings, bud sampling and cutting, calibration, cross-validation and
+  weighted ensemble predictions. Calibration dates in the vignette are synthetic.
+
 # evalpheno 0.0.2.0
 
 * Support parallel DEoptim fitting through native parallel controls and supplied
