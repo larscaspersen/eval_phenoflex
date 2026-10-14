@@ -5,14 +5,14 @@
 #' restarts and retain the fit with the lowest training loss. Predict assessment
 #' seasons using that fitted model and record held-out date errors.
 #'
-#' @param model A single pheno_model, combined_pheno_model, pheno_model_list,
+#' @param model A single pheno_model, combined_pheno_model, stage_pheno_model, pheno_model_list,
 #'   or plain list of simple models. Population models are unsupported because
 #'   matching population predictions to observed dates needs a separate scorer.
 #' @param data Prepared phenology_cv_data from prepare_phenology_cv().
 #' @param evaluation Explicit training loss, accepting parameters, model,
 #'   seasons, observed and any arguments in ... . Use phenology_rss(),
 #'   phenology_rss_combined() or phenology_rss_stages() for the corresponding layout.
-#' @param lower,upper,optimizer,control,max_iterations,max_seconds,parameters
+#' @param lower,upper,optimizer,control,max_iterations,max_seconds,parameters,parameterization
 #'   Passed to fit_phenology(). Parameters omitted from bounds remain fixed.
 #' @param restarts Number of optimizer restarts per prepared split.
 #' @param seed Non-negative integer or NULL; seeds individual fitting runs.
@@ -49,12 +49,23 @@ fit_phenology_cv <- function(model, data, evaluation, lower = NULL, upper = NULL
                              weighting = c("equal", "inverse_mse"), weights = NULL,
                              failure_threshold = 0.5, failure_vote = c("count", "weight"),
                              max_weight = NULL, epsilon = 1,
-                             keep_diagnostics = FALSE, keep_training_predictions = FALSE) {
+                             keep_diagnostics = FALSE, keep_training_predictions = FALSE,
+                             parameterization = NULL) {
+  supplied_parameters <- !missing(parameters)
+  if (supplied_parameters) force(parameters)
   .validate_cv_data(data)
   if (is.list(model) && !inherits(model, "pheno_model_list") && length(model) &&
       all(vapply(model, inherits, logical(1), what = "pheno_model")))
     model <- pheno_model_list(model)
   .cv_check_model(model, data)
+  inferred <- .dynamic_parameterization(if (supplied_parameters) names(parameters),
+    names(lower), names(upper), fallback = NULL)
+  if (!is.null(parameterization)) {
+    parameterization <- match.arg(parameterization, c("kinetic", "characteristic"))
+    if (!is.null(inferred) && inferred != parameterization)
+      stop("parameterization conflicts with the supplied parameter or bound names.", call. = FALSE)
+  } else parameterization <- if (is.null(inferred)) "kinetic" else inferred
+  if (!supplied_parameters) parameters <- model_parameters(model, parameterization)
   if (missing(evaluation) || !is.function(evaluation))
     stop("evaluation must be supplied as a function.", call. = FALSE)
   .fit_positive_scalar(restarts, "restarts", integer = TRUE)
@@ -91,7 +102,8 @@ fit_phenology_cv <- function(model, data, evaluation, lower = NULL, upper = NULL
       fit <- tryCatch(do.call(fit_phenology, c(list(model = model, evaluation = evaluation,
         lower = lower, upper = upper, optimizer = optimizer, seed = seeds[[run_id]],
         control = control, max_iterations = max_iterations, max_seconds = max_seconds,
-        parameters = parameters, seasons = subset$seasons, observed = subset$observed,
+        parameters = parameters, parameterization = parameterization,
+        seasons = subset$seasons, observed = subset$observed,
         prediction = FALSE), dots)),
         error = function(e) stop("Split ", id, ", restart ", r, ": ", conditionMessage(e), call. = FALSE))
       if (keep_diagnostics) restart_metrics[[run_id]] <<- data.frame(split_id = id, restart = r,
@@ -132,7 +144,8 @@ fit_phenology_cv <- function(model, data, evaluation, lower = NULL, upper = NULL
                     restarts = restarts, seed = seed, optimizer = optimizer,
                     lower = lower, upper = upper, control = control,
                     max_iterations = max_iterations, max_seconds = max_seconds,
-                    parameters = parameters, evaluation = evaluation, refit = refit,
+                    parameters = parameters, parameterization = parameterization,
+                    evaluation = evaluation, refit = refit,
                     keep_diagnostics = keep_diagnostics,
                     keep_training_predictions = keep_training_predictions),
                     scores = do.call(rbind, metrics))
@@ -166,6 +179,7 @@ fit_phenology_cv <- function(model, data, evaluation, lower = NULL, upper = NULL
     return(invisible(TRUE))
   }
   if (inherits(model, "phenology_fit")) model <- model$model
+  if (inherits(model, "stage_pheno_model")) model <- .stage_model_list(model)
   valid <- if (data$layout == "single") inherits(model, "pheno_model") else
     inherits(model, "pheno_model_list") ||
       (data$layout == "combined" && inherits(model, "combined_pheno_model"))
@@ -177,6 +191,9 @@ fit_phenology_cv <- function(model, data, evaluation, lower = NULL, upper = NULL
   if (inherits(model, "pheno_model_list") && data$explicit_member_names && !is.null(names(model)) &&
       !identical(names(model), data$member_names))
     stop("Named model members must match the prepared data's member order.", call. = FALSE)
+  if (inherits(model, "combined_pheno_model") && data$explicit_member_names &&
+      !is.null(model$cultivar_names) && !identical(model$cultivar_names, data$member_names))
+    stop("Named model cultivars must match the prepared data's member order.", call. = FALSE)
   invisible(TRUE)
 }
 

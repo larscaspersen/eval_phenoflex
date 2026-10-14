@@ -11,7 +11,7 @@
 #' model's parameter domains are excluded before evaluation.
 #'
 #' @param model A [pheno_model()], [population_pheno_model()] or
-#'   [combined_pheno_model()] specification, or a [pheno_model_list()]. A plain
+#'   [combined_pheno_model()] or [stage_pheno_models()] specification, or a [pheno_model_list()]. A plain
 #'   list of single models is wrapped with pheno_model_list()'s default sharing.
 #' @param evaluation Function accepting parameters as its first argument and
 #'   model as its second argument, followed by any arguments supplied in `...`.
@@ -80,7 +80,14 @@
 #'   starting point and evaluated as a baseline for both optimizers. DEoptim
 #'   initializes its population using its native controls.
 #'   Initial theta_star and theta_c values also accept the automatic Celsius
-#'   convention; evaluators and fitted parameters receive Kelvin values.
+#'   convention; evaluators and calibration parameters receive Kelvin values.
+#' @param parameterization Optional Dynamic Model calibration representation,
+#'   "characteristic" or "kinetic". NULL infers it from initial parameter names
+#'   and bounds, falling back to kinetic when neither set is named. Mixing sets
+#'   or conflicting with an explicit choice is an error. Characteristic fitting
+#'   uses equivalent stored kinetic values as its start unless explicit starting
+#'   values are supplied. The returned model always stores kinetic parameters;
+#'   par and calibration_settings retain the optimizer's representation.
 #' @md
 #' @param ... Additional arguments passed to `evaluation`, such as `seasons`.
 #'   Use a closure to adapt evaluation functions with other interfaces.
@@ -99,6 +106,8 @@
 #'   For model lists, `model[[i]]` is an ordinary single model with its fitted
 #'   parameters. [model_parameters()] returns the flat vector and [as_pheno_models()]
 #'   extracts a plain list of single models from a fitted result.
+#'   Multistage specifications retain their compact form with fitted shared
+#'   parameters and updated stage heat requirements in `model$stages`.
 #' @examples
 #' require(DEoptim)
 #' model <- pheno_model()
@@ -126,14 +135,26 @@ fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
                           control = list(), max_iterations = NULL,
                           max_seconds = NULL,
                           parameters = model_parameters(model), ..., observed = NULL,
-                          prediction = NULL) {
+                          prediction = NULL, parameterization = NULL) {
+  supplied_parameters <- !missing(parameters)
+  if (supplied_parameters) force(parameters)
   if (is.list(model) && !inherits(model, "pheno_model_list") && length(model) &&
       all(vapply(model, inherits, logical(1), what = "pheno_model")))
     model <- pheno_model_list(model)
   if (!inherits(model, "pheno_model") && !inherits(model, "population_pheno_model") &&
-      !inherits(model, "combined_pheno_model") && !inherits(model, "pheno_model_list"))
-    stop("model must be a pheno_model, population_pheno_model, combined_pheno_model or pheno_model_list.",
+      !inherits(model, "combined_pheno_model") && !inherits(model, "pheno_model_list") &&
+      !inherits(model, "stage_pheno_model"))
+    stop("model must be a pheno_model, population_pheno_model, combined_pheno_model, stage_pheno_model or pheno_model_list.",
          call. = FALSE)
+  inferred <- .dynamic_parameterization(if (supplied_parameters) names(parameters),
+                                        names(lower), names(upper), fallback = NULL)
+  if (!is.null(parameterization)) {
+    parameterization <- match.arg(parameterization, c("kinetic", "characteristic"))
+    if (!is.null(inferred) && inferred != parameterization)
+      stop("parameterization conflicts with the supplied parameter or bound names.", call. = FALSE)
+  } else parameterization <- if (is.null(inferred)) "kinetic" else inferred
+  model <- .with_dynamic_parameterization(model, parameterization, use_defaults = supplied_parameters)
+  if (!supplied_parameters) parameters <- model_parameters(model)
   parameters <- .normalize_characteristic_temperatures(parameters)
   validate_parameters(model, parameters)
   if (missing(evaluation) || !is.function(evaluation))
@@ -145,7 +166,7 @@ fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
   parameter_names <- parameter_schema(model)$name
   parameters <- parameters[parameter_names]
   if (is.null(lower) || is.null(upper)) {
-    defaults <- default_bounds(model)
+    defaults <- default_bounds(model, parameterization = parameterization)
     if (is.null(lower) && is.null(upper)) {
       lower <- defaults$lower
       upper <- defaults$upper
@@ -269,11 +290,24 @@ fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
   if (!is.finite(best_value))
     stop("No candidate produced a finite evaluation loss.", call. = FALSE)
   fitted_model <- model
-  if (inherits(model, "pheno_model_list")) {
-    fitted_model <- as_pheno_models(model, best_par)
-    attributes(fitted_model) <- attributes(model)
-  } else if (inherits(model, "population_pheno_model")) fitted_model$model$parameters <- best_par
-  else fitted_model$parameters <- best_par
+  if (inherits(model, "stage_pheno_model")) {
+    fitted_model <- .stage_with_parameters(model, best_par)
+  } else if (inherits(model, "pheno_model_list")) {
+    for (i in seq_along(model)) {
+      p <- .model_list_member_parameters(model, best_par, i)
+      if (identical(model[[i]]$chill$parameterization, "characteristic")) {
+        fitted_model[[i]]$parameters <- p
+      } else fitted_model[[i]] <- .store_pheno_parameters(model[[i]], p)
+    }
+  } else if (inherits(model, "population_pheno_model"))
+    fitted_model$model <- .store_pheno_parameters(model$model, best_par)
+  else if (inherits(model, "combined_pheno_model")) {
+    fitted_model$parameters <- best_par
+    fitted_model$model <- .store_pheno_parameters(model$model,
+      .combined_cultivar_parameters(model, best_par, 1L, parameter_schema(model$model)$name))
+    fitted_model$parameters <- .convert_dynamic_parameters(best_par, "kinetic")
+  } else fitted_model <- .store_pheno_parameters(model, best_par)
+  fitted_model <- .canonical_pheno_model(fitted_model)
   optimization_elapsed <- elapsed()
   dates <- if (is.function(prediction)) prediction(fitted_model) else
     if (is.null(prediction) && has_observed)
@@ -281,7 +315,7 @@ fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
   structure(list(par = best_par, value = best_value, model = fitted_model,
                  predictions = list(predicted = dates, observed = if (has_observed) observed else NULL),
                  calibration_settings = list(optimizer = optimizer, lower = lower, upper = upper,
-                   seed = seed, control = control, max_iterations = max_iterations,
+                   seed = seed, control = control, parameterization = parameterization, max_iterations = max_iterations,
                    max_seconds = max_seconds, parameters = parameters, evaluation = evaluation),
                  diagnostics = list(evaluations = evaluations, elapsed = optimization_elapsed,
                    termination = termination, optimizer_result = optimizer_result)), class = "phenology_fit")
