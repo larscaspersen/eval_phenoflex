@@ -31,6 +31,8 @@ Description: Construct, calibrate and run temperature-driven phenology
     modelling successive phenological stages (Caspersen et al. (2025) <doi:10.1016/j.agrformet.2025.110824>), and joint calibration across cultivars with
     shared chill and heat accumulation submodels and cultivar-specific
     requirements (Caspersen et al. (2026) <doi:10.1007/s00484-025-03068-2>).
+Depends:
+    R (>= 3.5.0)
 Imports: 
     assertthat,
     chillR,
@@ -47,9 +49,11 @@ Suggests:
     DEoptim,
     doParallel,
     foreach,
+    ggplot2 (>= 3.4.0),
     jsonlite,
     knitr,
     parallelly,
+    patchwork,
     rmarkdown,
     sn,
     testthat (>= 3.0.0)
