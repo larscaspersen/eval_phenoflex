@@ -13,7 +13,11 @@
 #' the two rectangular search boxes are not exactly equivalent at every candidate.
 #' Supply another reference difference, or edit the returned heat bounds.
 #'
-#' Other structure ranges are yc = 10--80, s1 = 0.1--1.5, kmin = 0--1,
+#' Chill requirement ranges are yc = 10--80 for the Dynamic Model, 250--2000
+#' for chill hours, and 300--2400 for Utah and positive Utah. These illustrative
+#' boxes span one-quarter to twice each submodel's default requirement and are
+#' not conversions between chill units.
+#' Other structure ranges are s1 = 0.1--1.5, kmin = 0--1,
 #' b3 = 0--0.1 and ol = 0--1. b3 has inverse chill units and is not heat-scaled.
 #' Heat temperature ranges are Tb = 0--10, Tu = 10--30, Tc = 20--40;
 #' chill conversion ranges are Tf = 0--10 and slope = 0.1--5.
@@ -32,8 +36,15 @@
 #' Model constraints still apply inside these boxes, including Tb < Tu < Tc
 #' and ordered stage requirements. Characteristic-to-kinetic conversion may fail
 #' for some candidates; fit_phenology() excludes these with an infinite loss.
+#' Chill-hours thresholds have exploratory bounds -5--5 Celsius for CH_lower and
+#' 5--15 Celsius for CH_upper. Utah zone weights have exploratory bounds -2--2.
+#' For heat-only models, heat_start_index stays fixed at its stored value (row 1
+#' by default); supply explicit bounds to fit the start. The yc range is not a conversion between
+#' chill units; supply suitable bounds when changing chill submodels.
+#' Custom chill parameters use bounds supplied to chill_custom(); parameters
+#' without bounds remain fixed at their stored values.
 #'
-#' @param model A single, population, combined or model-list specification.
+#' @param model A single, population, combined, multistage or model-list specification.
 #'   An ordinary list is converted with [pheno_model_list()], using its default
 #'   parameter sharing.
 #' @param parameter_names Optional character vector selecting parameters to fit.
@@ -45,11 +56,14 @@
 #' @param temperature_unit "K" (default) or "C" for returned theta_star and
 #'   theta_c bounds, including indexed names. Celsius output subtracts the native
 #'   kernels' legacy offset 273; all other temperatures remain Celsius.
+#' @param parameterization Optional "characteristic" or "kinetic" calibration
+#'   representation. NULL infers it from parameter_names, otherwise uses kinetic.
 #' @return A list with complete or selected named numeric vectors `lower` and
 #'   `upper`, in model schema order. Modify these vectors for your data and stage.
 #' @seealso [parameter_schema()], [fit_phenology()]
 #' @references
-#' \url{https://cran.r-project.org/web/packages/chillR/vignettes/PhenoFlex.html}
+#' PhenoFlex vignette in the chillR package:
+#' \url{https://CRAN.R-project.org/package=chillR}
 #'
 #' Pope and DeJong (2017), Modeling spring phenology and chilling requirements
 #' using the chill overlap framework. doi:10.17660/ActaHortic.2017.1160.26.
@@ -68,8 +82,16 @@
 #' @md
 #' @export
 default_bounds <- function(model, parameter_names = NULL, heat_scale = 21,
-                            temperature_unit = c("K", "C")) {
+                            temperature_unit = c("K", "C"), parameterization = NULL) {
+  inferred <- .dynamic_parameterization(parameter_names, fallback = NULL)
+  if (!is.null(parameterization)) {
+    parameterization <- match.arg(parameterization, c("kinetic", "characteristic"))
+    if (!is.null(inferred) && inferred != parameterization)
+      stop("parameterization conflicts with parameter_names.", call. = FALSE)
+  } else parameterization <- if (is.null(inferred)) "kinetic" else inferred
+  model <- .with_dynamic_parameterization(model, parameterization, use_defaults = TRUE)
   temperature_unit <- match.arg(temperature_unit)
+  if (inherits(model, "stage_pheno_model")) model <- .stage_model_list(model)
   if (is.list(model) && !inherits(model, "pheno_model_list") && length(model) &&
       all(vapply(model, inherits, logical(1), what = "pheno_model")))
     model <- pheno_model_list(model)
@@ -85,12 +107,30 @@ default_bounds <- function(model, parameter_names = NULL, heat_scale = 21,
     lower = c(yc = 10, zc = 150, s1 = 0.1, kmin = 0, b1 = 20, b2 = 0,
               b3 = 0, ol = 0, theta_star = 279, theta_c = 286, tau = 16,
               pie_c = 24, E0 = 2500, E1 = 8000, A0 = 1e3, A1 = 1e13,
-              Tf = 0, slope = 0.1, Tb = 0, Tu = 10, Tc = 20),
+              Tf = 0, slope = 0.1, Tb = 0, Tu = 10, Tc = 20,
+              CH_lower = -5, CH_upper = 5, heat_start_index = 1),
     upper = c(yc = 80, zc = 400, s1 = 1.5, kmin = 1, b1 = 200, b2 = 800,
               b3 = 0.1, ol = 1, theta_star = 281, theta_c = 287, tau = 48,
               pie_c = 50, E0 = 5500, E1 = 16000, A0 = 1e6, A1 = 1e19,
-              Tf = 10, slope = 5, Tb = 10, Tu = 30, Tc = 40)
+              Tf = 10, slope = 5, Tb = 10, Tu = 30, Tc = 40,
+              CH_lower = 5, CH_upper = 15, heat_start_index = 1)
   )
+  if (base_model$chill$name %in% c("chill_hours", "utah", "positive_utah")) {
+    yc_scale <- default_parameters(base_model)[["yc"]] / 40
+    ranges$lower["yc"] <- ranges$lower[["yc"]] * yc_scale
+    ranges$upper["yc"] <- ranges$upper[["yc"]] * yc_scale
+  }
+  weight_names <- c(paste0("utah_w", 1:7), paste0("pos_utah_w", 1:7))
+  ranges$lower <- c(ranges$lower, stats::setNames(rep(-2, 14), weight_names))
+  ranges$upper <- c(ranges$upper, stats::setNames(rep(2, 14), weight_names))
+  custom <- if (identical(base_model$chill$name, "custom")) base_model$chill else NULL
+  if (!is.null(custom)) {
+    for (side in c("lower", "upper")) {
+      values <- custom$defaults
+      values[names(custom[[side]])] <- custom[[side]]
+      ranges[[side]] <- c(ranges[[side]][!names(ranges[[side]]) %in% names(values)], values)
+    }
+  }
   selected <- rep(TRUE, nrow(schema))
   if (!is.null(parameter_names)) {
     if (!is.character(parameter_names) || !is.null(dim(parameter_names)) ||
@@ -101,8 +141,18 @@ default_bounds <- function(model, parameter_names = NULL, heat_scale = 21,
   }
   if (!any(selected)) return(list(lower = numeric(), upper = numeric()))
   heat <- base_names %in% c("zc", "b1", "b2")
+  start <- base_names == "heat_start_index"
+  stored_start <- if (any(start)) model_parameters(model)[schema$name[start]] else numeric()
+  if (any(start) && !length(stored_start)) stored_start <- rep(1, sum(start))
+  fixed_custom <- if (!is.null(custom)) schema$component == "chill" &
+    !base_names %in% names(custom$lower) else rep(FALSE, nrow(schema))
+  stored_custom <- if (any(fixed_custom)) model_parameters(model)[schema$name[fixed_custom]] else numeric()
+  if (any(fixed_custom) && !length(stored_custom))
+    stored_custom <- custom$defaults[base_names[fixed_custom]]
   lapply(ranges, function(values) {
     bounds <- stats::setNames(unname(values[base_names]), schema$name)
+    bounds[start] <- stored_start
+    bounds[fixed_custom] <- stored_custom
     if (identical(base_model$heat$scaling, "scaled")) bounds[heat] <- bounds[heat] * heat_scale
     if (temperature_unit == "C") {
       temperatures <- base_names %in% c("theta_star", "theta_c")
