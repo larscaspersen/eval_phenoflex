@@ -7,41 +7,56 @@
 #' This wrapper is optional: [pheno_model_list()] can calibrate a list of simple
 #' models directly, and [as_pheno_models()] extracts ordinary models from this
 #' specification or its fitted result.
+#' Printing separates shared parameters from a table of cultivar-specific values.
 #'
 #' @param model A single [pheno_model()] specification, including its initial values.
-#' @param n_cultivars Positive integer number of cultivars.
+#' @param n_cultivars Positive integer number of cultivars. NULL infers the count
+#'   from `cultivar_names`.
+#' @param cultivar_names Optional character vector of non-empty, distinct cultivar
+#'   names in data order. Names label printing and unpacked models, and allow
+#'   selection by name in [cultivar_parameters()]. Data still match by position;
+#'   named nested weather lists retain their own output labels.
+#'   Named CV data must use the same cultivar names in the same order.
 #' @param cultivar_specific Character vector of structure parameter names to
 #'   expand. NULL expands all structure parameters. For example, `c("yc", "zc")`
 #'   keeps PhenoFlex's `s1` shared. `character()` shares all parameters.
 #' @param parameters Optional complete named vector in the expanded schema.
 #'   Named theta_star and theta_c values in 0--20 are interpreted as Celsius
-#'   using the convention in pheno_model(); stored characteristic temperatures use Kelvin.
+#'   using the convention in pheno_model(); input representation is inferred and
+#'   stored parameters use kinetic coefficients.
 #'   NULL repeats the base model's stored values for cultivar-specific parameters
 #'   and retains its remaining values. Explicit names are required even for one
 #'   cultivar: an expanded `yc` is always called `yc1`.
 #' @return A `combined_pheno_model` specification with `model`, `n_cultivars`,
-#'   `cultivar_specific` and `parameters`. [parameter_schema()] also records
+#'   `cultivar_specific`, `cultivar_names` and `parameters`. [parameter_schema()] also records
 #'   `base_name` and `cultivar` (NA for shared parameters). [default_parameters()]
 #'   supplies schema defaults; the constructor initializes from stored base values.
 #' @examples
-#' model <- combined_pheno_model(pheno_model(), n_cultivars = 3,
-#'                               cultivar_specific = c("yc", "zc"))
-#' model$parameters
+#' model <- combined_pheno_model(pheno_model(), cultivar_specific = c("yc", "zc"),
+#'                               cultivar_names = c("Gala", "Fuji", "Elstar"))
+#' model
 #' parameter_schema(model)
-#' cultivar_parameters(model, 2)
+#' cultivar_parameters(model, "Fuji")
+#' as_pheno_models(model)$Gala
 #' @md
 #' @export
-combined_pheno_model <- function(model = pheno_model(), n_cultivars,
-                                 cultivar_specific = NULL, parameters = NULL) {
+combined_pheno_model <- function(model = pheno_model(), n_cultivars = NULL,
+                                 cultivar_specific = NULL, parameters = NULL,
+                                 cultivar_names = NULL) {
   if (!inherits(model, "pheno_model"))
     stop("Use a single pheno_model as the base model.", call. = FALSE)
+  representation <- .dynamic_parameterization(names(parameters), fallback = NULL)
+  if (!is.null(representation)) model <- .with_dynamic_parameterization(model, representation, use_defaults = TRUE)
   validate_parameters(model, model$parameters)
+  if (is.null(n_cultivars) && !is.null(cultivar_names)) n_cultivars <- length(cultivar_names)
+  if (!is.null(cultivar_names)) cultivar_names <- unname(cultivar_names)
   if (is.null(cultivar_specific)) {
     schema <- parameter_schema(model)
     cultivar_specific <- schema$name[schema$component == "structure"]
   }
   combined <- structure(list(model = model, n_cultivars = n_cultivars,
-                             cultivar_specific = cultivar_specific),
+                             cultivar_specific = cultivar_specific,
+                             cultivar_names = cultivar_names),
                         class = "combined_pheno_model")
   validate_model_spec(combined)
   schema <- parameter_schema(combined)
@@ -50,14 +65,17 @@ combined_pheno_model <- function(model = pheno_model(), n_cultivars,
   parameters <- .normalize_characteristic_temperatures(parameters)
   validate_parameters(combined, parameters)
   combined$parameters <- parameters[schema$name]
-  combined
+  if (identical(model$chill$name, "dynamic") && identical(representation, "characteristic"))
+    combined$model$parameters <- .combined_cultivar_parameters(combined, combined$parameters, 1L,
+      parameter_schema(model)$name)
+  .with_dynamic_parameterization(combined, "kinetic")
 }
 
 .validate_combined_model_spec <- function(model) {
   required <- c("model", "n_cultivars", "cultivar_specific")
   if (!is.list(model) ||
-      !(identical(sort(names(model)), sort(required)) ||
-        identical(sort(names(model)), sort(c(required, "parameters")))) ||
+      anyDuplicated(names(model)) || !all(required %in% names(model)) ||
+      !all(names(model) %in% c(required, "parameters", "cultivar_names")) ||
       !inherits(model$model, "pheno_model"))
     stop("Use combined_pheno_model() with a single pheno_model.", call. = FALSE)
   validate_model_spec(model$model)
@@ -65,6 +83,10 @@ combined_pheno_model <- function(model = pheno_model(), n_cultivars,
   if (!is.numeric(n) || length(n) != 1L || !is.null(dim(n)) ||
       !is.finite(n) || n < 1 || n != floor(n) || n > .Machine$integer.max)
     stop("n_cultivars must be a positive integer.", call. = FALSE)
+  labels <- model$cultivar_names
+  if (!is.null(labels) && (!is.character(labels) || !is.null(dim(labels)) ||
+      length(labels) != n || anyNA(labels) || any(!nzchar(trimws(labels))) || anyDuplicated(labels)))
+    stop("cultivar_names must contain one non-empty, distinct name per cultivar.", call. = FALSE)
   schema <- parameter_schema(model$model)
   structure_names <- schema$name[schema$component == "structure"]
   specific <- model$cultivar_specific
@@ -72,6 +94,31 @@ combined_pheno_model <- function(model = pheno_model(), n_cultivars,
       !all(specific %in% structure_names))
     stop("cultivar_specific must contain distinct structure parameter names.", call. = FALSE)
   invisible(TRUE)
+}
+
+#' @rdname combined_pheno_model
+#' @param x A combined model specification.
+#' @param ... Additional arguments passed to print() for parameter values.
+#' @export
+print.combined_pheno_model <- function(x, ...) {
+  schema <- parameter_schema(x)
+  cat("Mode:           combined\n")
+  .print_pheno_components(x$model)
+  cat("Cultivars:      ", x$n_cultivars, "\n", sep = "")
+  cat("Shared parameters:\n")
+  shared <- schema$name[is.na(schema$cultivar)]
+  if (length(shared)) print(x$parameters[shared], ...) else cat("  (none)\n")
+  cat("Cultivar-specific parameters:\n")
+  specific <- unique(schema$base_name[!is.na(schema$cultivar)])
+  if (length(specific)) {
+    keys <- outer(seq_len(x$n_cultivars), specific, function(i, name) paste0(name, i))
+    labels <- x$cultivar_names
+    if (is.null(labels)) labels <- paste0("cultivar", seq_len(x$n_cultivars))
+    values <- matrix(x$parameters[keys], nrow = x$n_cultivars,
+      dimnames = list(labels, specific))
+    print(values, ...)
+  } else cat("  (none)\n")
+  invisible(x)
 }
 
 .combined_parameter_schema <- function(model) {
@@ -97,6 +144,8 @@ combined_pheno_model <- function(model = pheno_model(), n_cultivars,
 }
 
 .validate_combined_parameters <- function(model, parameters) {
+  representation <- .dynamic_parameterization(names(parameters), fallback = model$model$chill$parameterization)
+  if (!is.null(representation)) model <- .with_dynamic_parameterization(model, representation, use_defaults = TRUE)
   schema <- parameter_schema(model)
   if (!is.numeric(parameters) || !is.null(dim(parameters)) || is.null(names(parameters)) ||
       anyNA(names(parameters)) || anyDuplicated(names(parameters)) ||
@@ -117,22 +166,33 @@ combined_pheno_model <- function(model = pheno_model(), n_cultivars,
 #' Extract one cultivar's parameters from a combined model
 #'
 #' @param model A [combined_pheno_model()] specification.
-#' @param cultivar One-based cultivar index, matching the outer data-list position.
+#' @param cultivar One-based cultivar index, matching the outer data-list position,
+#'   or a name supplied as `cultivar_names` in [combined_pheno_model()].
 #' @param parameters Complete expanded parameter vector, defaulting to stored values.
 #' @return Complete named parameter vector for the base single model, containing
 #'   the selected cultivar's values and all shared values.
 #' @md
 #' @export
 cultivar_parameters <- function(model, cultivar, parameters = model$parameters) {
+  force(parameters)
   parameters <- .normalize_characteristic_temperatures(parameters)
   if (!inherits(model, "combined_pheno_model"))
     stop("Use a combined_pheno_model specification.", call. = FALSE)
+  representation <- .dynamic_parameterization(names(parameters), fallback = NULL)
+  if (!is.null(representation)) model <- .with_dynamic_parameterization(model, representation, use_defaults = TRUE)
   validate_parameters(model, parameters)
+  if (is.character(cultivar)) {
+    if (length(cultivar) != 1L || !is.null(dim(cultivar)) || is.na(cultivar) ||
+        is.null(model$cultivar_names) || !cultivar %in% model$cultivar_names)
+      stop("cultivar must match a name in cultivar_names.", call. = FALSE)
+    cultivar <- match(cultivar, model$cultivar_names)
+  }
   if (!is.numeric(cultivar) || length(cultivar) != 1L || !is.null(dim(cultivar)) ||
       !is.finite(cultivar) || cultivar != floor(cultivar) ||
       cultivar < 1 || cultivar > model$n_cultivars)
     stop("cultivar must be a valid one-based cultivar index.", call. = FALSE)
-  .combined_cultivar_parameters(model, parameters, cultivar, parameter_schema(model$model)$name)
+  .store_pheno_parameters(model$model,
+    .combined_cultivar_parameters(model, parameters, cultivar, parameter_schema(model$model)$name))$parameters
 }
 
 .validate_combined_seasons <- function(model, seasons) {
@@ -148,7 +208,7 @@ cultivar_parameters <- function(model, cultivar, parameters = model$parameters) 
 
 #' Predict nested season lists with a combined cultivar model
 #'
-#' @param model A [combined_pheno_model()] or [pheno_model_list()] specification.
+#' @param model A [combined_pheno_model()], [stage_pheno_models()] or [pheno_model_list()] specification.
 #' @param seasons Nested list: one seasonlist of hourly weather data frames per
 #'   cultivar. Cultivars are matched by outer position, not by list names.
 #' @param parameters Complete expanded vector, defaulting to stored values.
@@ -160,6 +220,7 @@ cultivar_parameters <- function(model, cultivar, parameters = model$parameters) 
 #' @export
 predict_combined_phenology <- function(model, seasons, parameters = model_parameters(model),
                                        stopatzc = TRUE, basic_output = TRUE) {
+  if (inherits(model, "stage_pheno_model")) model <- .stage_model_list(model)
   if (inherits(model, "pheno_model_list")) {
     .validate_combined_seasons(model, seasons)
     return(.predict_pheno_model_list(model, seasons, parameters, stopatzc, basic_output))
@@ -172,14 +233,14 @@ predict_combined_phenology <- function(model, seasons, parameters = model_parame
     if (!is.logical(flag) || length(flag) != 1L || is.na(flag))
       stop("Output flags must be single non-missing logical values.", call. = FALSE)
   }
-  base_names <- parameter_schema(model$model)$name
-  predictions <- lapply(seq_len(model$n_cultivars), function(i) {
-    p <- .combined_cultivar_parameters(model, parameters, i, base_names)
-    predict <- function(weather) predict_phenology(model$model, weather, p,
-                                                    stopatzc = stopatzc,
-                                                    basic_output = basic_output)
-    if (basic_output) vapply(seasons[[i]], predict, numeric(1)) else lapply(seasons[[i]], predict)
-  })
-  names(predictions) <- names(seasons)
+  simple <- as_pheno_models(model, parameters)
+  predictions <- vector("list", length(simple))
+  for (i in seq_along(simple)) {
+    predict <- function(weather) predict_phenology(simple[[i]], weather,
+      stopatzc = stopatzc, basic_output = basic_output)
+    predictions[[i]] <- if (basic_output) vapply(seasons[[i]], predict, numeric(1)) else
+      lapply(seasons[[i]], predict)
+  }
+  names(predictions) <- if (!is.null(names(seasons))) names(seasons) else model$cultivar_names
   predictions
 }
