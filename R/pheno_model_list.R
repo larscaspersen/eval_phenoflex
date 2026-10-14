@@ -42,7 +42,12 @@ pheno_model_list <- function(models, shared = NULL, ordered = character()) {
   base <- model[[1]]
   for (m in model) {
     validate_parameters(m, m$parameters)
-    if (!identical(m$structure, base$structure) || !identical(m$chill, base$chill) ||
+    chill <- m$chill; base_chill <- base$chill
+    if (identical(chill$name, "dynamic")) {
+      chill$characteristic <- NULL
+      base_chill$characteristic <- NULL
+    }
+    if (!identical(m$structure, base$structure) || !identical(chill, base_chill) ||
         !identical(m$heat, base$heat))
       stop("All models must have identical structure, chill and heat specifications.", call. = FALSE)
   }
@@ -86,6 +91,9 @@ pheno_model_list <- function(models, shared = NULL, ordered = character()) {
 }
 
 .validate_model_list_parameters <- function(model, parameters) {
+  representation <- .dynamic_parameterization(names(parameters),
+    fallback = model[[1]]$chill$parameterization)
+  if (!is.null(representation)) model <- .with_dynamic_parameterization(model, representation, use_defaults = TRUE)
   schema <- parameter_schema(model)
   if (!is.numeric(parameters) || !is.null(dim(parameters)) || is.null(names(parameters)) ||
       anyNA(names(parameters)) || anyDuplicated(names(parameters)) ||
@@ -108,14 +116,18 @@ pheno_model_list <- function(models, shared = NULL, ordered = character()) {
 
 #' Get stored parameters for calibration
 #'
-#' @param model A single, population, combined or model-list specification, or a
+#' @param model A single, population, combined, multistage or model-list specification, or a
 #'   result from [fit_phenology()].
-#' @return Complete named vector of stored calibration parameters. For model
+#' @return Complete named vector of stored kinetic parameters by default. For model
 #'   lists this combines indexed member values and shared values.
+#' @param parameterization Optional "characteristic" or "kinetic" representation
+#'   for calibration starting values. NULL returns the stored kinetic values.
 #' @md
 #' @export
-model_parameters <- function(model) {
-  if (inherits(model, "phenology_fit")) return(model$par)
+model_parameters <- function(model, parameterization = NULL) {
+  if (inherits(model, "phenology_fit")) model <- model$model
+  if (!is.null(parameterization)) model <- .with_dynamic_parameterization(model, parameterization)
+  if (inherits(model, "stage_pheno_model")) model <- .stage_model_list(model)
   if (inherits(model, "population_pheno_model")) return(model$model$parameters)
   if (inherits(model, "pheno_model_list")) {
     schema <- parameter_schema(model)
@@ -132,11 +144,16 @@ model_parameters <- function(model) {
 
 #' Convert calibration specifications to ordinary single models
 #'
-#' @param model A single model, [combined_pheno_model()], [pheno_model_list()],
+#' Unpack a multistage specification into one ordinary model per stage, preserving
+#' stage names and supplying each stage's heat requirement and all shared values.
+#' Named combined specifications likewise retain their cultivar names.
+#'
+#' @param model A single model, [combined_pheno_model()], [stage_pheno_models()], [pheno_model_list()],
 #'   or a fitted result from [fit_phenology()]. Population models are unsupported.
 #' @param parameters Complete calibration vector, defaulting to stored/fitted values.
 #'   Named theta_star and theta_c values in 0--20 are interpreted as Celsius
-#'   using +273; the returned single models store Kelvin values.
+#'   using +273. Returned single models store kinetic coefficients, with supplied
+#'   characteristic values retained in chill$characteristic in Kelvin.
 #' @return A plain list of independent `pheno_model` objects, each storing a
 #'   complete parameter vector including shared values. Calibration attributes
 #'   are removed. Explicit parameters do not modify the supplied specification.
@@ -145,6 +162,9 @@ model_parameters <- function(model) {
 as_pheno_models <- function(model, parameters = model_parameters(model)) {
   force(parameters)
   if (inherits(model, "phenology_fit")) model <- model$model
+  representation <- .dynamic_parameterization(names(parameters), fallback = NULL)
+  if (!is.null(representation)) model <- .with_dynamic_parameterization(model, representation, use_defaults = TRUE)
+  if (inherits(model, "stage_pheno_model")) model <- .stage_model_list(model)
   parameters <- .normalize_characteristic_temperatures(parameters)
   if (!inherits(model, "pheno_model") && !inherits(model, "combined_pheno_model") &&
       !inherits(model, "pheno_model_list"))
@@ -153,41 +173,48 @@ as_pheno_models <- function(model, parameters = model_parameters(model)) {
   if (inherits(model, "pheno_model_list")) {
     result <- lapply(seq_along(model), function(i) {
       m <- model[[i]]
-      m$parameters <- .model_list_member_parameters(model, parameters, i)
-      m
+      .store_pheno_parameters(m, .model_list_member_parameters(model, parameters, i))
     })
     names(result) <- names(model)
     return(result)
   }
   if (inherits(model, "combined_pheno_model")) {
     base_names <- parameter_schema(model$model)$name
-    return(lapply(seq_len(model$n_cultivars), function(i) {
+    result <- lapply(seq_len(model$n_cultivars), function(i) {
       m <- model$model
-      m$parameters <- .combined_cultivar_parameters(model, parameters, i, base_names)
-      m
-    }))
+      .store_pheno_parameters(m, .combined_cultivar_parameters(model, parameters, i, base_names))
+    })
+    names(result) <- model$cultivar_names
+    return(result)
   }
-  model$parameters <- parameters
-  list(model)
+  list(.store_pheno_parameters(model, parameters))
 }
 
-#' Create simple models for successive stages of one cultivar
+#' Specify successive stages of one cultivar
 #'
-#' Each stage is the same ordinary single model with a different cumulative
-#' heat requirement. All other parameters, including chill requirement, are
-#' shared. Heat accumulation starts from the same season for every stage;
+#' Store shared model settings and parameters once, with a named vector of
+#' cumulative heat requirements in `stages` and `mode = "multistage"`.
+#' All other parameters, including chill requirement, are shared.
+#' Use [as_pheno_models()] to unpack the specification into ordinary single models.
+#' Heat accumulation starts from the same season for every stage;
 #' requirements are cumulative thresholds, not increments reset after each stage.
 #' Requirements must remain non-decreasing during fitting.
 #'
 #' @param model Single [pheno_model()] containing a `zc` heat requirement
 #'   (sequential, parallel or PhenoFlex). Its stored values initialize shared parameters.
 #' @param heat_requirements Finite positive vector in stage order. Optional names
-#'   label the models; otherwise labels are `stage1`, `stage2`, etc.
-#' @return A [pheno_model_list()] of ordinary models sharing every parameter except
-#'   `zc`. Calibration names are `zc1`, `zc2`, etc., even for one stage.
+#'   label the stages and must be non-empty and distinct; otherwise labels are
+#'   `stage1`, `stage2`, etc.
+#' @return A `stage_pheno_model` S3 object containing `mode`, `structure`, `chill`,
+#'   `heat`, shared `parameters` (excluding `zc`) and named `stages` heat requirements.
+#'   Fitting and prediction accept this object directly. [model_parameters()]
+#'   supplies calibration names `zc1`, `zc2`, etc., even for one stage.
 #' @examples
 #' models <- stage_pheno_models(pheno_model(), c(budbreak = 50, bloom = 100))
-#' models[[2]]$parameters
+#' models
+#' models$stages
+#' individual_models <- as_pheno_models(models)
+#' individual_models$bloom
 #' model_parameters(models)
 #' @md
 #' @export
@@ -196,17 +223,77 @@ stage_pheno_models <- function(model = pheno_model(), heat_requirements) {
   validate_parameters(model, model$parameters)
   if (!"zc" %in% names(model$parameters))
     stop("Stage heat requirements need a model with a zc parameter.", call. = FALSE)
+  .validate_stage_heat_requirements(heat_requirements)
+  if (is.null(names(heat_requirements)))
+    names(heat_requirements) <- paste0("stage", seq_along(heat_requirements))
+  model$parameters <- .normalize_characteristic_temperatures(model$parameters)
+  result <- structure(list(mode = "multistage", structure = model$structure,
+    chill = model$chill, heat = model$heat,
+    parameters = model$parameters[setdiff(names(model$parameters), "zc")],
+    stages = heat_requirements), class = "stage_pheno_model")
+  validate_model_spec(result)
+  result
+}
+
+.validate_stage_heat_requirements <- function(heat_requirements) {
   if (!is.numeric(heat_requirements) || !is.null(dim(heat_requirements)) ||
       !length(heat_requirements) || any(!is.finite(heat_requirements)) ||
       any(heat_requirements <= 0) || any(diff(heat_requirements) < 0))
     stop("heat_requirements must be positive, finite and non-decreasing in stage order.", call. = FALSE)
-  models <- lapply(heat_requirements, function(zc) {
-    m <- model
+  labels <- names(heat_requirements)
+  if (!is.null(labels) && (anyNA(labels) || any(!nzchar(trimws(labels))) || anyDuplicated(labels)))
+    stop("Stage names must be non-empty and distinct.", call. = FALSE)
+  invisible(TRUE)
+}
+
+# Adapt to the existing ordered-calibration machinery only when needed.
+.stage_model_list <- function(model) {
+  required <- c("mode", "structure", "chill", "heat", "parameters", "stages")
+  if (!is.list(model) || !identical(sort(names(model)), sort(required)) ||
+      !identical(model$mode, "multistage"))
+    stop("Use a multistage specification from stage_pheno_models().", call. = FALSE)
+  .validate_stage_heat_requirements(model$stages)
+  if (is.null(names(model$stages)))
+    stop("Multistage heat requirements must have stage names.", call. = FALSE)
+  base <- structure(list(structure = model$structure, chill = model$chill,
+    heat = model$heat), class = "pheno_model")
+  parameter_names <- parameter_schema(base)$name
+  shared <- setdiff(parameter_names, "zc")
+  p <- model$parameters
+  if (!"zc" %in% parameter_names)
+    stop("Stage heat requirements need a model with a zc parameter.", call. = FALSE)
+  if (!is.numeric(p) || !is.null(dim(p)) || is.null(names(p)) || anyNA(names(p)) ||
+      anyDuplicated(names(p)) || length(p) != length(shared) || !setequal(names(p), shared))
+    stop("Multistage parameters must contain exactly the shared schema names, excluding zc.", call. = FALSE)
+  base$parameters <- c(p, zc = unname(model$stages[1]))
+  base$parameters <- .normalize_characteristic_temperatures(base$parameters[parameter_names])
+  models <- lapply(model$stages, function(zc) {
+    m <- base
     m$parameters["zc"] <- zc
     m
   })
-  if (is.null(names(models))) names(models) <- paste0("stage", seq_along(models))
-  pheno_model_list(models, shared = setdiff(names(model$parameters), "zc"), ordered = "zc")
+  # The calling schema, validation or prediction function validates this view.
+  structure(models, class = c("pheno_model_list", "list"), shared = shared, ordered = "zc")
+}
+
+.stage_with_parameters <- function(model, parameters) {
+  validate_parameters(model, parameters)
+  parameters <- .normalize_characteristic_temperatures(parameters)
+  model$parameters <- parameters[names(model$parameters)]
+  model$stages[] <- parameters[paste0("zc", seq_along(model$stages))]
+  model
+}
+
+#' @rdname stage_pheno_models
+#' @param x A multistage model specification.
+#' @param ... Additional arguments passed to print() for parameters and stages.
+#' @export
+print.stage_pheno_model <- function(x, ...) {
+  cat("Mode:           multistage\n")
+  print.pheno_model(x, ...)
+  cat("Stages (cumulative heat requirements):\n")
+  print(x$stages, ...)
+  invisible(x)
 }
 
 .predict_pheno_model_list <- function(model, seasons, parameters, stopatzc, basic_output) {
