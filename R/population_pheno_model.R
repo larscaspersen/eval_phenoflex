@@ -13,6 +13,9 @@
 #' Cutting and constant-temperature forcing are supported by
 #' [predict_population_phenology()]. The legacy [phenoflex_population()] retains
 #' its own forcing index conventions.
+#' Printing shows the population size, model components, parameter means and
+#' non-zero standard deviations. Seed and default distribution/skew settings
+#' are omitted from the compact display.
 #' @param structure,chill,heat Components passed to [pheno_model()].
 #' @param n Positive integer number of buds.
 #' @param sd Named numeric vector of non-negative structure-parameter standard deviations.
@@ -49,6 +52,32 @@ population_pheno_model <- function(structure = "phenoflex", chill = chill_dynami
   structure(list(model = model, n = as.integer(n), sd = sd,
                  distribution = distribution, skew = skew, seed = seed),
             class = "population_pheno_model")
+}
+
+#' @rdname population_pheno_model
+#' @param x A population model specification.
+#' @param ... Additional arguments passed to print() for parameter values.
+#' @export
+print.population_pheno_model <- function(x, ...) {
+  cat("Population model (", x$n, if (x$n == 1L) " bud)\n" else " buds)\n", sep = "")
+  .print_pheno_components(x$model)
+  cat("Mean parameters:\n")
+  print(x$model$parameters, ...)
+  sd <- x$sd[x$sd != 0]
+  if (length(sd)) {
+    cat("Standard deviations:\n")
+    print(sd, ...)
+  } else cat("Standard deviations: 0\n")
+  skew <- x$skew[x$skew != 0]
+  if (x$distribution != "normal" || length(skew)) {
+    distribution <- if (x$distribution == "normal_skewed") "Skew normal" else "Normal"
+    cat("Distribution:   ", distribution, "\n", sep = "")
+  }
+  if (length(skew)) {
+    cat("Skew:\n")
+    print(skew, ...)
+  }
+  invisible(x)
 }
 
 .population_trait_settings <- function(x, traits, name, nonnegative = FALSE) {
@@ -212,6 +241,9 @@ predict_population_phenology <- function(model, weather,
     cut <- cuts[j]
     chill <- rbind(inputs$chill[seq_len(cut), , drop = FALSE],
                    inputs$chill[rep(cut, hours), , drop = FALSE])
+    # A heat-only activation date is not a chill state to freeze at cutting.
+    if (model$model$chill$name == "none")
+      chill[, ncol(chill)] <- as.numeric(seq_len(nrow(chill)) >= parameters[["heat_start_index"]])
     heat <- c(inputs$heat[seq_len(cut - 1)], forcing_heat)
     if (!basic_output) trajectories[[j]] <- matrix(0, hours + 1, model$n)
     for (i in seq_len(model$n)) {
