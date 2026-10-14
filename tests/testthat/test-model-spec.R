@@ -3,7 +3,7 @@ test_that("sequential specifications expose exact, validated parameter names", {
   expect_s3_class(model, "pheno_model")
   expect_true(validate_model_spec(model))
   p <- default_parameters(model)
-  expect_identical(names(p), c("yc", "zc", "theta_star", "theta_c", "tau", "pie_c",
+  expect_identical(names(p), c("yc", "zc", "E0", "E1", "A0", "A1",
                                "Tf", "slope", "Tb", "Tu", "Tc"))
   expect_identical(parameter_schema(model)$component,
                    c(rep("structure", 2), rep("chill", 6), rep("heat", 3)))
@@ -20,7 +20,7 @@ test_that("sequential specifications expose exact, validated parameter names", {
   ##
   
   
-  expect_error(pheno_model(chill = list(name = "utah")), "chill_dynamic")
+  expect_error(pheno_model(chill = list(name = "unsupported")), "chill_dynamic")
   expect_error(pheno_model(heat = list(name = "gdd")), "heat_gdh")
   expect_error(validate_parameters(model, unname(p)), "schema names")
   expect_error(validate_parameters(model, p[-1]), "schema names")
@@ -33,7 +33,7 @@ test_that("sequential specifications expose exact, validated parameter names", {
   }
   bad <- p; bad["Tu"] <- bad["Tb"]
   expect_error(validate_parameters(model, bad), "Tb < Tu < Tc")
-  bad <- p; bad["theta_c"] <- 300
+  bad <- model_parameters(model, "characteristic"); bad["theta_c"] <- 300
   expect_error(validate_parameters(model, bad), "theta_c")
   bad <- p; bad[1] <- Inf
   expect_error(validate_parameters(model, bad), "finite")
@@ -51,7 +51,7 @@ test_that("named sequential predictions reproduce every frozen sequential case",
   for (representation in c("characteristic", "kinetic")) {
     model <- pheno_model("sequential", chill = chill_dynamic(representation),
                          heat = heat_gdh("scaled"))
-    p <- default_parameters(model)
+    p <- default_parameters(model, representation)
     p[c("yc", "zc")] <- c(20, 100)
     if (representation == "kinetic")
       p[c("E0", "E1", "A0", "A1")] <- fixtures$parameters$kinetic[5:8]

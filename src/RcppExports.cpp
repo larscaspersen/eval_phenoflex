@@ -10,6 +10,64 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// calculate_chill_hours
+Rcpp::NumericMatrix calculate_chill_hours(Rcpp::NumericVector temp, Rcpp::NumericVector times, double CH_lower, double CH_upper, bool deg_celsius);
+RcppExport SEXP _evalpheno_calculate_chill_hours(SEXP tempSEXP, SEXP timesSEXP, SEXP CH_lowerSEXP, SEXP CH_upperSEXP, SEXP deg_celsiusSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< double >::type CH_lower(CH_lowerSEXP);
+    Rcpp::traits::input_parameter< double >::type CH_upper(CH_upperSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_chill_hours(temp, times, CH_lower, CH_upper, deg_celsius));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_chill_utah
+Rcpp::NumericMatrix calculate_chill_utah(Rcpp::NumericVector temp, Rcpp::NumericVector times, Rcpp::NumericVector weights, bool deg_celsius);
+RcppExport SEXP _evalpheno_calculate_chill_utah(SEXP tempSEXP, SEXP timesSEXP, SEXP weightsSEXP, SEXP deg_celsiusSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_chill_utah(temp, times, weights, deg_celsius));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_chill_positive_utah
+Rcpp::NumericMatrix calculate_chill_positive_utah(Rcpp::NumericVector temp, Rcpp::NumericVector times, Rcpp::NumericVector weights, Rcpp::Nullable<Rcpp::NumericVector> day_group, bool deg_celsius);
+RcppExport SEXP _evalpheno_calculate_chill_positive_utah(SEXP tempSEXP, SEXP timesSEXP, SEXP weightsSEXP, SEXP day_groupSEXP, SEXP deg_celsiusSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericVector> >::type day_group(day_groupSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_chill_positive_utah(temp, times, weights, day_group, deg_celsius));
+    return rcpp_result_gen;
+END_RCPP
+}
+// calculate_chill_none
+Rcpp::NumericMatrix calculate_chill_none(Rcpp::NumericVector temp, Rcpp::NumericVector times, double heat_start_index, bool deg_celsius);
+RcppExport SEXP _evalpheno_calculate_chill_none(SEXP tempSEXP, SEXP timesSEXP, SEXP heat_start_indexSEXP, SEXP deg_celsiusSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type temp(tempSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type times(timesSEXP);
+    Rcpp::traits::input_parameter< double >::type heat_start_index(heat_start_indexSEXP);
+    Rcpp::traits::input_parameter< bool >::type deg_celsius(deg_celsiusSEXP);
+    rcpp_result_gen = Rcpp::wrap(calculate_chill_none(temp, times, heat_start_index, deg_celsius));
+    return rcpp_result_gen;
+END_RCPP
+}
 // calculate_chill_dynamic
 Rcpp::NumericMatrix calculate_chill_dynamic(Rcpp::NumericVector temp, Rcpp::NumericVector times, double A0, double A1, double E0, double E1, double slope, double Tf, bool deg_celsius);
 RcppExport SEXP _evalpheno_calculate_chill_dynamic(SEXP tempSEXP, SEXP timesSEXP, SEXP A0SEXP, SEXP A1SEXP, SEXP E0SEXP, SEXP E1SEXP, SEXP slopeSEXP, SEXP TfSEXP, SEXP deg_celsiusSEXP) {
@@ -215,6 +273,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// apply_heat_only_structure
+Rcpp::List apply_heat_only_structure(Rcpp::NumericMatrix chill, Rcpp::NumericVector heat, double zc, bool stopatzc, bool basic_output);
+RcppExport SEXP _evalpheno_apply_heat_only_structure(SEXP chillSEXP, SEXP heatSEXP, SEXP zcSEXP, SEXP stopatzcSEXP, SEXP basic_outputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type chill(chillSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type heat(heatSEXP);
+    Rcpp::traits::input_parameter< double >::type zc(zcSEXP);
+    Rcpp::traits::input_parameter< bool >::type stopatzc(stopatzcSEXP);
+    Rcpp::traits::input_parameter< bool >::type basic_output(basic_outputSEXP);
+    rcpp_result_gen = Rcpp::wrap(apply_heat_only_structure(chill, heat, zc, stopatzc, basic_output));
+    return rcpp_result_gen;
+END_RCPP
+}
 // apply_parallel_structure
 Rcpp::List apply_parallel_structure(Rcpp::NumericMatrix chill, Rcpp::NumericVector heat, double yc, double zc, double kmin, bool stopatzc, bool basic_output);
 RcppExport SEXP _evalpheno_apply_parallel_structure(SEXP chillSEXP, SEXP heatSEXP, SEXP ycSEXP, SEXP zcSEXP, SEXP kminSEXP, SEXP stopatzcSEXP, SEXP basic_outputSEXP) {
@@ -303,6 +376,10 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_evalpheno_calculate_chill_hours", (DL_FUNC) &_evalpheno_calculate_chill_hours, 5},
+    {"_evalpheno_calculate_chill_utah", (DL_FUNC) &_evalpheno_calculate_chill_utah, 4},
+    {"_evalpheno_calculate_chill_positive_utah", (DL_FUNC) &_evalpheno_calculate_chill_positive_utah, 5},
+    {"_evalpheno_calculate_chill_none", (DL_FUNC) &_evalpheno_calculate_chill_none, 4},
     {"_evalpheno_calculate_chill_dynamic", (DL_FUNC) &_evalpheno_calculate_chill_dynamic, 9},
     {"_evalpheno_calculate_heat_gdh", (DL_FUNC) &_evalpheno_calculate_heat_gdh, 6},
     {"_evalpheno_calculate_heat_gdh_unscaled", (DL_FUNC) &_evalpheno_calculate_heat_gdh_unscaled, 6},
@@ -311,6 +388,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_evalpheno_PhenoFlex_pop", (DL_FUNC) &_evalpheno_PhenoFlex_pop, 25},
     {"_evalpheno_PhenoFlex_pop_slim", (DL_FUNC) &_evalpheno_PhenoFlex_pop_slim, 24},
     {"_evalpheno_seq_model", (DL_FUNC) &_evalpheno_seq_model, 17},
+    {"_evalpheno_apply_heat_only_structure", (DL_FUNC) &_evalpheno_apply_heat_only_structure, 5},
     {"_evalpheno_apply_parallel_structure", (DL_FUNC) &_evalpheno_apply_parallel_structure, 7},
     {"_evalpheno_apply_parallel_landsberg_structure", (DL_FUNC) &_evalpheno_apply_parallel_landsberg_structure, 7},
     {"_evalpheno_apply_partial_overlap_structure", (DL_FUNC) &_evalpheno_apply_partial_overlap_structure, 9},

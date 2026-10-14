@@ -7,9 +7,10 @@
 phenology_rss_stages(parameters, model, seasons, observed)
 }
 \arguments{
-\item{parameters}{Complete model-list calibration vector.}
+\item{parameters}{Complete indexed calibration vector.}
 
-\item{model}{A model list returned by \code{\link[=stage_pheno_models]{stage_pheno_models()}}.}
+\item{model}{A multistage specification returned by \code{\link[=stage_pheno_models]{stage_pheno_models()}},
+or an ordered \code{\link[=pheno_model_list]{pheno_model_list()}}.}
 
 \item{seasons}{Non-empty seasonlist of hourly weather data frames.}
 

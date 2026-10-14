@@ -9,7 +9,8 @@ cultivar_parameters(model, cultivar, parameters = model$parameters)
 \arguments{
 \item{model}{A \code{\link[=combined_pheno_model]{combined_pheno_model()}} specification.}
 
-\item{cultivar}{One-based cultivar index, matching the outer data-list position.}
+\item{cultivar}{One-based cultivar index, matching the outer data-list position,
+or a name supplied as \code{cultivar_names} in \code{\link[=combined_pheno_model]{combined_pheno_model()}}.}
 
 \item{parameters}{Complete expanded parameter vector, defaulting to stored values.}
 }

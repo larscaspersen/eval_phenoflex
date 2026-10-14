@@ -150,3 +150,81 @@ test_that("expanded bounds can fix only part of a cultivar-specific parameter gr
   expect_equal(fit$value, 0)
   expect_identical(fit$model, x$model)
 })
+
+test_that("cultivar names are inferred, unpacked and selectable by name", {
+  x <- combined_example()
+  labels <- c("Gala", "Fuji", "Elstar")
+  model <- combined_pheno_model(x$base, cultivar_names = labels, parameters = x$parameters)
+  expect_identical(model$n_cultivars, 3L)
+  expect_identical(model$cultivar_names, labels)
+  expect_identical(model$parameters, x$parameters)
+  expect_identical(parameter_schema(model), parameter_schema(x$model))
+  expect_identical(default_bounds(model), default_bounds(x$model))
+  simple <- as_pheno_models(model)
+  expect_named(simple, labels)
+  for (i in seq_along(labels)) {
+    expect_identical(cultivar_parameters(model, labels[i]), cultivar_parameters(model, i))
+    expect_identical(simple[[i]]$parameters, cultivar_parameters(model, labels[i]))
+  }
+  common <- predict_phenology(model, x$seasons[[1]])
+  expect_named(common, labels)
+  expected <- predict_combined_phenology(x$model, unname(x$seasons), x$parameters)
+  predicted <- predict_combined_phenology(model, unname(x$seasons))
+  expect_named(predicted, labels)
+  expect_identical(unname(predicted), expected)
+  expect_identical(predict_phenology(model, unname(x$seasons)), predicted)
+  expect_named(predict_combined_phenology(model, x$seasons), names(x$seasons))
+  fit <- fit_phenology(model, phenology_rss_combined, numeric(), numeric(),
+    seasons = unname(x$seasons), observed = predicted)
+  expect_identical(fit$model$cultivar_names, labels)
+  expect_named(as_pheno_models(fit), labels)
+  expect_named(fit$predictions$predicted, labels)
+  expect_equal(fit$value, 0)
+  expect_identical(model$parameters, x$parameters)
+})
+
+test_that("combined printing separates shared parameters from a cultivar table", {
+  model <- combined_pheno_model(pheno_model(), cultivar_specific = c("yc", "zc"),
+    cultivar_names = c("Gala", "Fuji", "Elstar"))
+  model$parameters[paste0("yc", 1:3)] <- c(10, 20, 30)
+  model$parameters[paste0("zc", 1:3)] <- c(40, 50, 60)
+  original <- model
+  out <- capture.output(result <- withVisible(print(model)))
+  text <- paste(out, collapse = "\n")
+  expect_identical(result$value, model)
+  expect_false(result$visible)
+  expect_identical(model, original)
+  expect_match(text, "Shared parameters:")
+  expect_match(text, "Cultivar-specific parameters:")
+  expect_match(text, "Gala +10 +40")
+  expect_match(text, "Fuji +20 +50")
+  expect_match(text, "Elstar +30 +60")
+  expect_false(any(grepl("[$]|unscaled|parameterization|yc1|zc1", out)))
+  shared <- out[seq_len(match("Cultivar-specific parameters:", out) - 1L)]
+  expect_false(any(grepl("\\byc\\b|\\bzc\\b", shared)))
+  expect_match(text, "\\bs1\\b")
+  expect_equal(sum(grepl("\\bE0\\b", out)), 1L)
+  for (specific in list(character(), "yc")) {
+    one <- combined_pheno_model(pheno_model(), 1, cultivar_specific = specific)
+    expect_output(print(one), "Cultivar-specific parameters:")
+    expect_true(validate_parameters(one, one$parameters))
+  }
+  expect_output(print(combined_pheno_model(pheno_model(), 2)), "cultivar1")
+})
+
+test_that("invalid cultivar names and unknown cultivar selections fail clearly", {
+  for (labels in list(c("Gala", "Gala"), c("Gala", ""), c("Gala", " "),
+                      c("Gala", NA_character_), 1:2, matrix(c("Gala", "Fuji")), "Gala"))
+    expect_error(combined_pheno_model(pheno_model(), 2, cultivar_names = labels), "cultivar_names")
+  expect_error(combined_pheno_model(), "positive integer")
+  expect_error(combined_pheno_model(cultivar_names = character()), "positive integer")
+  named <- combined_pheno_model(cultivar_names = c("Gala", "Fuji"))
+  for (label in list("unknown", NA_character_, c("Gala", "Fuji"), matrix("Gala")))
+    expect_error(cultivar_parameters(named, label), "cultivar_names")
+  unnamed <- combined_pheno_model(n_cultivars = 2)
+  expect_error(cultivar_parameters(unnamed, "Gala"), "cultivar_names")
+  # Specifications constructed before cultivar names were supported still work.
+  unnamed$cultivar_names <- NULL
+  expect_true(validate_model_spec(unnamed))
+  expect_length(as_pheno_models(unnamed), 2)
+})

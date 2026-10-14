@@ -7,12 +7,13 @@
 as_pheno_models(model, parameters = model_parameters(model))
 }
 \arguments{
-\item{model}{A single model, \code{\link[=combined_pheno_model]{combined_pheno_model()}}, \code{\link[=pheno_model_list]{pheno_model_list()}},
+\item{model}{A single model, \code{\link[=combined_pheno_model]{combined_pheno_model()}}, \code{\link[=stage_pheno_models]{stage_pheno_models()}}, \code{\link[=pheno_model_list]{pheno_model_list()}},
 or a fitted result from \code{\link[=fit_phenology]{fit_phenology()}}. Population models are unsupported.}
 
 \item{parameters}{Complete calibration vector, defaulting to stored/fitted values.
 Named theta_star and theta_c values in 0--20 are interpreted as Celsius
-using +273; the returned single models store Kelvin values.}
+using +273. Returned single models store kinetic coefficients, with supplied
+characteristic values retained in chill$characteristic in Kelvin.}
 }
 \value{
 A plain list of independent \code{pheno_model} objects, each storing a
@@ -20,5 +21,7 @@ complete parameter vector including shared values. Calibration attributes
 are removed. Explicit parameters do not modify the supplied specification.
 }
 \description{
-Convert calibration specifications to ordinary single models
+Unpack a multistage specification into one ordinary model per stage, preserving
+stage names and supplying each stage's heat requirement and all shared values.
+Named combined specifications likewise retain their cultivar names.
 }

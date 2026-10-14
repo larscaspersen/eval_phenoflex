@@ -9,7 +9,7 @@ test_that("each structure exposes its own schema under both heat scalings", {
     for (representation in c("kinetic", "characteristic")) {
       for (scaling in c("scaled", "unscaled")) {
         model <- pheno_model(structure, chill_dynamic(representation), heat_gdh(scaling))
-        schema <- parameter_schema(model)
+        schema <- parameter_schema(model, representation)
         chill_names <- if (representation == "kinetic")
           c("E0", "E1", "A0", "A1", "Tf", "slope") else
           c("theta_star", "theta_c", "tau", "pie_c", "Tf", "slope")
@@ -20,7 +20,7 @@ test_that("each structure exposes its own schema under both heat scalings", {
                            rep("chill", 6), rep("heat", 3)))
         expect_identical(schema$representation[schema$component == "chill"],
                          c(rep(representation, 4), "native", "native"))
-        p <- default_parameters(model)
+        p <- default_parameters(model, representation)
         expect_identical(names(p), schema$name)
         expect_equal(unname(p), schema$default)
         expect_true(validate_parameters(model, p))
@@ -103,7 +103,7 @@ test_that("named predictions dispatch all modules, representations and output fl
     for (scaling in c("scaled", "unscaled")) {
       for (structure in c("sequential", "parallel", "partial_overlap", "phenoflex")) {
         model <- pheno_model(structure, chill_dynamic(representation), heat_gdh(scaling))
-        p <- default_parameters(model)
+        p <- default_parameters(model, representation)
         p["yc"] <- 20
         if (structure == "partial_overlap") {
           p[c("b1", "b2", "b3", "ol")] <- c(150, 100, .1, .5)

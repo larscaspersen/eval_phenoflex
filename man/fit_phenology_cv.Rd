@@ -27,13 +27,14 @@ fit_phenology_cv(
   max_weight = NULL,
   epsilon = 1,
   keep_diagnostics = FALSE,
-  keep_training_predictions = FALSE
+  keep_training_predictions = FALSE,
+  parameterization = NULL
 )
 
 \method{summary}{phenology_cv}(object, ...)
 }
 \arguments{
-\item{model}{A single pheno_model, combined_pheno_model, pheno_model_list,
+\item{model}{A single pheno_model, combined_pheno_model, stage_pheno_model, pheno_model_list,
 or plain list of simple models. Population models are unsupported because
 matching population predictions to observed dates needs a separate scorer.}
 
@@ -43,7 +44,7 @@ matching population predictions to observed dates needs a separate scorer.}
 seasons, observed and any arguments in ... . Use phenology_rss(),
 phenology_rss_combined() or phenology_rss_stages() for the corresponding layout.}
 
-\item{lower, upper, optimizer, control, max_iterations, max_seconds, parameters}{Passed to fit_phenology(). Parameters omitted from bounds remain fixed.}
+\item{lower, upper, optimizer, control, max_iterations, max_seconds, parameters, parameterization}{Passed to fit_phenology(). Parameters omitted from bounds remain fixed.}
 
 \item{restarts}{Number of optimizer restarts per prepared split.}
 

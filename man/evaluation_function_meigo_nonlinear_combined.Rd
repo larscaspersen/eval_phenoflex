@@ -53,7 +53,7 @@ heat submodel parameters. Characteristic chill parameters (theta_star,
 theta_c, tau and pie_c) are converted to kinetic parameters before prediction.
 }
 \details{
-Use this objective function with \link[MEIGOR]{MEIGO}. Cultivars in
+Use this objective function with \code{MEIGO}. Cultivars in
 bloomJDays and SeasonList must appear in the same order as their parameter
 values; seasons must also appear in matching order within each cultivar.
 }

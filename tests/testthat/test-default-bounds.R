@@ -93,8 +93,8 @@ test_that("fitter defaults use the full schema or the explicitly supplied subset
 
 test_that("numerical conversion failures are excluded without hiding evaluation bugs", {
   skip_if_not_installed("GenSA")
-  model <- pheno_model()
-  bad <- model$parameters
+  model <- pheno_model(parameters = c(theta_star = 6))
+  bad <- model_parameters(model, "characteristic")
   bad[c("theta_star", "theta_c", "tau", "pie_c")] <- c(279, 286.5, 16, 50)
   weather <- data.frame(Temp = rep(8, 480), Year = 2008, JDay = rep(50:69, each = 24))
   expect_true(validate_parameters(model, bad))
@@ -106,9 +106,10 @@ test_that("numerical conversion failures are excluded without hiding evaluation 
   fit <- fit_phenology(model, function(p, m) {
     predict_phenology(m, weather, p)
     (p[["yc"]] - 40)^2
-  }, optimizer = "GenSA")
+  }, optimizer = "GenSA", parameterization = "characteristic")
   expect_identical(fit$value, 0)
   expect_identical(fit$diagnostics$evaluations, 3L)
-  expect_error(fit_phenology(model, function(p, m) stop("broken evaluator"), optimizer = "GenSA"),
+  expect_error(fit_phenology(model, function(p, m) stop("broken evaluator"), optimizer = "GenSA",
+                             parameterization = "characteristic"),
                 "broken evaluator")
 })

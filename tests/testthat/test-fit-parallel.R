@@ -1,3 +1,11 @@
+# Keep one PSOCK comparison in the default suite. Run the broader worker checks
+# with Sys.setenv(EVALPHENO_EXTENDED_PARALLEL_TESTS = "true") before testing.
+skip_extended_parallel_tests <- function() {
+  if (!identical(Sys.getenv("EVALPHENO_EXTENDED_PARALLEL_TESTS"), "true")) {
+    skip("Set EVALPHENO_EXTENDED_PARALLEL_TESTS=true for extended worker tests")
+  }
+}
+
 test_that("DEoptim uses its returned optimum and counts without reevaluating it", {
   skip_if_not_installed("DEoptim")
   model <- pheno_model()
@@ -53,6 +61,7 @@ test_that("PSOCK DEoptim matches serial fitting and preserves caller clusters an
 })
 
 test_that("parallel DEoptim retains a better baseline and handles infinite losses", {
+  skip_extended_parallel_tests()
   skip_if_not_installed("DEoptim")
   cl <- parallel::makePSOCKcluster(2)
   on.exit(parallel::stopCluster(cl))
@@ -74,6 +83,7 @@ test_that("parallel DEoptim retains a better baseline and handles infinite losse
 })
 
 test_that("PSOCK workers execute the native phenology evaluator and predictions", {
+  skip_extended_parallel_tests()
   skip_if_not_installed("DEoptim")
   cl <- parallel::makePSOCKcluster(2)
   on.exit(parallel::stopCluster(cl))
@@ -92,6 +102,7 @@ test_that("PSOCK workers execute the native phenology evaluator and predictions"
 })
 
 test_that("parallel workers exclude invalid domains and propagate evaluator errors", {
+  skip_extended_parallel_tests()
   skip_if_not_installed("DEoptim")
   cl <- parallel::makePSOCKcluster(2)
   on.exit(parallel::stopCluster(cl))
@@ -120,6 +131,7 @@ test_that("parallel workers exclude invalid domains and propagate evaluator erro
 })
 
 test_that("automatic parallel clusters are stopped on success and worker errors", {
+  skip_extended_parallel_tests()
   skip_if_not_installed("DEoptim")
   skip_if_not_installed("parallelly")
   cl <- NULL
@@ -149,6 +161,7 @@ test_that("automatic parallel clusters are stopped on success and worker errors"
 })
 
 test_that("PSOCK controls load custom packages and export global evaluator dependencies", {
+  skip_extended_parallel_tests()
   skip_if_not_installed("DEoptim")
   cl <- parallel::makePSOCKcluster(2)
   on.exit(parallel::stopCluster(cl))
@@ -175,6 +188,7 @@ test_that("PSOCK controls load custom packages and export global evaluator depen
 })
 
 test_that("foreach DEoptim uses a registered PSOCK backend", {
+  skip_extended_parallel_tests()
   skip_if_not_installed("DEoptim")
   skip_if_not_installed("doParallel")
   cl <- parallel::makePSOCKcluster(2)

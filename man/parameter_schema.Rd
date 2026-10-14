@@ -6,9 +6,9 @@
 \alias{validate_parameters}
 \title{Named parameters for a model specification}
 \usage{
-parameter_schema(model)
+parameter_schema(model, parameterization = NULL)
 
-default_parameters(model)
+default_parameters(model, parameterization = NULL)
 
 validate_parameters(model, parameters)
 }
@@ -16,10 +16,18 @@ validate_parameters(model, parameters)
 \item{model}{Model specification from pheno_model(), [population_pheno_model()]
 or [combined_pheno_model()]. Combined specifications expand selected structure
 parameters by cultivar while leaving other parameters shared.
-A pheno_model_list() stores ordinary simple models and their parameter sharing.}
+A pheno_model_list() stores ordinary simple models and their parameter sharing.
+A stage_pheno_models() specification stores shared parameters and stage heat
+requirements once, expanding zc to indexed calibration names.}
+
+\item{parameterization}{Optional Dynamic Model representation for a calibration
+schema or defaults. NULL uses the model's representation (kinetic for constructed
+models); "characteristic" exposes characteristic calibration names.}
 
 \item{parameters}{Named numeric vector with exactly the names in the schema;
 order is arbitrary. Matrices and arrays are not parameter vectors.
+Complete Dynamic Model vectors may use either representation; names select
+it automatically and mixing characteristic and kinetic names is an error.
 Named theta_star and theta_c values in 0--20 are interpreted as Celsius
 using the legacy +273 offset; Kelvin values remain supported. Validation
 checks the converted values without modifying the supplied vector.}

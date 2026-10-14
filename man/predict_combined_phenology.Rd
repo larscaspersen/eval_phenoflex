@@ -13,7 +13,7 @@ predict_combined_phenology(
 )
 }
 \arguments{
-\item{model}{A \code{\link[=combined_pheno_model]{combined_pheno_model()}} or \code{\link[=pheno_model_list]{pheno_model_list()}} specification.}
+\item{model}{A \code{\link[=combined_pheno_model]{combined_pheno_model()}}, \code{\link[=stage_pheno_models]{stage_pheno_models()}} or \code{\link[=pheno_model_list]{pheno_model_list()}} specification.}
 
 \item{seasons}{Nested list: one seasonlist of hourly weather data frames per
 cultivar. Cultivars are matched by outer position, not by list names.}

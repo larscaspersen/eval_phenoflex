@@ -2,6 +2,7 @@
 % Please edit documentation in R/pheno_model.R
 \name{pheno_model}
 \alias{pheno_model}
+\alias{print.pheno_model}
 \alias{chill_dynamic}
 \alias{heat_gdh}
 \alias{validate_model_spec}
@@ -14,7 +15,9 @@ pheno_model(
   parameters = NULL
 )
 
-chill_dynamic(parameterization = c("characteristic", "kinetic"))
+\method{print}{pheno_model}(x, ...)
+
+chill_dynamic(parameterization = NULL)
 
 heat_gdh(scaling = c("unscaled", "scaled"))
 
@@ -23,7 +26,8 @@ validate_model_spec(model)
 \arguments{
 \item{structure}{One of "sequential", "parallel", "partial_overlap" or "phenoflex".}
 
-\item{chill}{Chill specification returned by chill_dynamic().}
+\item{chill}{Chill specification returned by chill_dynamic(), chill_hours(),
+chill_utah(), chill_positive_utah(), chill_none() or chill_custom().}
 
 \item{heat}{Heat specification returned by heat_gdh().}
 
@@ -31,12 +35,25 @@ validate_model_spec(model)
 parameter names. Omitted parameters use default_parameters() for the selected
 structure, chill and heat specifications. NULL uses all defaults. The complete
 vector is validated after filling defaults.
+Dynamic Model input names select the representation automatically: theta_star,
+theta_c, tau or pie_c select characteristic input; E0, E1, A0 or A1 select
+kinetic input. Mixing the two sets is an error. With neither set supplied,
+the original kinetic coefficients are used. Characteristic inputs are converted
+at construction and retained in chill$characteristic; parameters always stores
+kinetic coefficients. Missing characteristic values use characteristic defaults.
 For theta_star and theta_c, each value in 0--20 is interpreted as Celsius
 and converted using the native kernels' legacy offset K = Celsius + 273.
 Other values are interpreted as Kelvin. Stored values are always Kelvin;
 all other temperature parameters remain Celsius.}
 
-\item{parameterization}{Dynamic Model representation: "characteristic" or "kinetic".}
+\item{x}{A model specification returned by pheno_model().}
+
+\item{...}{Additional arguments passed to print() for the parameter vector.}
+
+\item{parameterization}{Legacy optional representation argument for
+chill_dynamic(). Construction now infers the representation from parameter
+names, so this argument does not select stored parameters. Select the fitting
+representation in fit_phenology() instead.}
 
 \item{scaling}{"unscaled" returns Growing Degree Hour (GDH) units without scaling via (Tu-Tb).
 "scaled" returns units multiplied by (Tu-Tb). The standard implementation of PhenoFlex
@@ -51,8 +68,10 @@ lists; validate_model_spec() invisibly returns TRUE or raises an error.
 \description{
 A model specification is an S3 list storing algorithms and named parameter
 values. It supports sequential, linear parallel,
-partial-overlap and PhenoFlex coupling with the Dynamic Model and GDH.
-Other combinations are not supported by this interface.
+partial-overlap and PhenoFlex coupling with the Dynamic Model, chill hours,
+Utah or positive Utah chill and GDH heat. With chill_none(), only heat is
+accumulated and the chosen coupling is bypassed.
+Printing shows the structure, submodel names and parameters in a compact form.
 }
 \examples{
 model <- pheno_model()

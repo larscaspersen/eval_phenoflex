@@ -10,7 +10,7 @@ phenology_rss_combined(parameters, model, seasons, observed)
 \item{parameters}{Complete expanded named parameter vector.}
 
 \item{model}{A \code{\link[=combined_pheno_model]{combined_pheno_model()}} specification or a \code{\link[=pheno_model_list]{pheno_model_list()}}
-of ordinary cultivar/stage models.}
+of ordinary cultivar/stage models, or a \code{\link[=stage_pheno_models]{stage_pheno_models()}} specification.}
 
 \item{seasons}{Nested list with one seasonlist per cultivar.}
 

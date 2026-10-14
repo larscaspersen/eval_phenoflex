@@ -8,11 +8,12 @@ default_bounds(
   model,
   parameter_names = NULL,
   heat_scale = 21,
-  temperature_unit = c("K", "C")
+  temperature_unit = c("K", "C"),
+  parameterization = NULL
 )
 }
 \arguments{
-\item{model}{A single, population, combined or model-list specification.
+\item{model}{A single, population, combined, multistage or model-list specification.
 An ordinary list is converted with \code{\link[=pheno_model_list]{pheno_model_list()}}, using its default
 parameter sharing.}
 
@@ -27,6 +28,9 @@ requirement bounds to scaled GDH units. Ignored for unscaled GDH.}
 \item{temperature_unit}{"K" (default) or "C" for returned theta_star and
 theta_c bounds, including indexed names. Celsius output subtracts the native
 kernels' legacy offset 273; all other temperatures remain Celsius.}
+
+\item{parameterization}{Optional "characteristic" or "kinetic" calibration
+representation. NULL infers it from parameter_names, otherwise uses kinetic.}
 }
 \value{
 A list with complete or selected named numeric vectors \code{lower} and
@@ -47,7 +51,11 @@ For scaled GDH these ranges are multiplied by \code{heat_scale}, defaulting to
 the two rectangular search boxes are not exactly equivalent at every candidate.
 Supply another reference difference, or edit the returned heat bounds.
 
-Other structure ranges are yc = 10--80, s1 = 0.1--1.5, kmin = 0--1,
+Chill requirement ranges are yc = 10--80 for the Dynamic Model, 250--2000
+for chill hours, and 300--2400 for Utah and positive Utah. These illustrative
+boxes span one-quarter to twice each submodel's default requirement and are
+not conversions between chill units.
+Other structure ranges are s1 = 0.1--1.5, kmin = 0--1,
 b3 = 0--0.1 and ol = 0--1. b3 has inverse chill units and is not heat-scaled.
 Heat temperature ranges are Tb = 0--10, Tu = 10--30, Tc = 20--40;
 chill conversion ranges are Tf = 0--10 and slope = 0.1--5.
@@ -66,6 +74,13 @@ easier to interpret. Bounds alone do not guarantee plausible chill responses.
 Model constraints still apply inside these boxes, including Tb < Tu < Tc
 and ordered stage requirements. Characteristic-to-kinetic conversion may fail
 for some candidates; fit_phenology() excludes these with an infinite loss.
+Chill-hours thresholds have exploratory bounds -5--5 Celsius for CH_lower and
+5--15 Celsius for CH_upper. Utah zone weights have exploratory bounds -2--2.
+For heat-only models, heat_start_index stays fixed at its stored value (row 1
+by default); supply explicit bounds to fit the start. The yc range is not a conversion between
+chill units; supply suitable bounds when changing chill submodels.
+Custom chill parameters use bounds supplied to chill_custom(); parameters
+without bounds remain fixed at their stored values.
 }
 \examples{
 model <- pheno_model("parallel")
@@ -76,7 +91,8 @@ default_bounds(stages, "zc")
 default_bounds(model, c("theta_star", "theta_c"), temperature_unit = "C")
 }
 \references{
-\url{https://cran.r-project.org/web/packages/chillR/vignettes/PhenoFlex.html}
+PhenoFlex vignette in the chillR package:
+\url{https://CRAN.R-project.org/package=chillR}
 
 Pope and DeJong (2017), Modeling spring phenology and chilling requirements
 using the chill overlap framework. doi:10.17660/ActaHortic.2017.1160.26.

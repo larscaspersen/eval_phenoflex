@@ -2,19 +2,24 @@
 % Please edit documentation in R/combined_pheno_model.R
 \name{combined_pheno_model}
 \alias{combined_pheno_model}
+\alias{print.combined_pheno_model}
 \title{Specify a model for combined fitting of cultivars}
 \usage{
 combined_pheno_model(
   model = pheno_model(),
-  n_cultivars,
+  n_cultivars = NULL,
   cultivar_specific = NULL,
-  parameters = NULL
+  parameters = NULL,
+  cultivar_names = NULL
 )
+
+\method{print}{combined_pheno_model}(x, ...)
 }
 \arguments{
 \item{model}{A single \code{\link[=pheno_model]{pheno_model()}} specification, including its initial values.}
 
-\item{n_cultivars}{Positive integer number of cultivars.}
+\item{n_cultivars}{Positive integer number of cultivars. NULL infers the count
+from \code{cultivar_names}.}
 
 \item{cultivar_specific}{Character vector of structure parameter names to
 expand. NULL expands all structure parameters. For example, \code{c("yc", "zc")}
@@ -22,14 +27,25 @@ keeps PhenoFlex's \code{s1} shared. \code{character()} shares all parameters.}
 
 \item{parameters}{Optional complete named vector in the expanded schema.
 Named theta_star and theta_c values in 0--20 are interpreted as Celsius
-using the convention in pheno_model(); stored characteristic temperatures use Kelvin.
+using the convention in pheno_model(); input representation is inferred and
+stored parameters use kinetic coefficients.
 NULL repeats the base model's stored values for cultivar-specific parameters
 and retains its remaining values. Explicit names are required even for one
 cultivar: an expanded \code{yc} is always called \code{yc1}.}
+
+\item{cultivar_names}{Optional character vector of non-empty, distinct cultivar
+names in data order. Names label printing and unpacked models, and allow
+selection by name in \code{\link[=cultivar_parameters]{cultivar_parameters()}}. Data still match by position;
+named nested weather lists retain their own output labels.
+Named CV data must use the same cultivar names in the same order.}
+
+\item{x}{A combined model specification.}
+
+\item{...}{Additional arguments passed to print() for parameter values.}
 }
 \value{
 A \code{combined_pheno_model} specification with \code{model}, \code{n_cultivars},
-\code{cultivar_specific} and \code{parameters}. \code{\link[=parameter_schema]{parameter_schema()}} also records
+\code{cultivar_specific}, \code{cultivar_names} and \code{parameters}. \code{\link[=parameter_schema]{parameter_schema()}} also records
 \code{base_name} and \code{cultivar} (NA for shared parameters). \code{\link[=default_parameters]{default_parameters()}}
 supplies schema defaults; the constructor initializes from stored base values.
 }
@@ -41,11 +57,13 @@ refer to the outer positions in nested season and observation lists.
 This wrapper is optional: \code{\link[=pheno_model_list]{pheno_model_list()}} can calibrate a list of simple
 models directly, and \code{\link[=as_pheno_models]{as_pheno_models()}} extracts ordinary models from this
 specification or its fitted result.
+Printing separates shared parameters from a table of cultivar-specific values.
 }
 \examples{
-model <- combined_pheno_model(pheno_model(), n_cultivars = 3,
-                              cultivar_specific = c("yc", "zc"))
-model$parameters
+model <- combined_pheno_model(pheno_model(), cultivar_specific = c("yc", "zc"),
+                              cultivar_names = c("Gala", "Fuji", "Elstar"))
+model
 parameter_schema(model)
-cultivar_parameters(model, 2)
+cultivar_parameters(model, "Fuji")
+as_pheno_models(model)$Gala
 }

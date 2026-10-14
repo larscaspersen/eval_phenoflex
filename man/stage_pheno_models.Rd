@@ -2,30 +2,45 @@
 % Please edit documentation in R/pheno_model_list.R
 \name{stage_pheno_models}
 \alias{stage_pheno_models}
-\title{Create simple models for successive stages of one cultivar}
+\alias{print.stage_pheno_model}
+\title{Specify successive stages of one cultivar}
 \usage{
 stage_pheno_models(model = pheno_model(), heat_requirements)
+
+\method{print}{stage_pheno_model}(x, ...)
 }
 \arguments{
 \item{model}{Single \code{\link[=pheno_model]{pheno_model()}} containing a \code{zc} heat requirement
 (sequential, parallel or PhenoFlex). Its stored values initialize shared parameters.}
 
 \item{heat_requirements}{Finite positive vector in stage order. Optional names
-label the models; otherwise labels are \code{stage1}, \code{stage2}, etc.}
+label the stages and must be non-empty and distinct; otherwise labels are
+\code{stage1}, \code{stage2}, etc.}
+
+\item{x}{A multistage model specification.}
+
+\item{...}{Additional arguments passed to print() for parameters and stages.}
 }
 \value{
-A \code{\link[=pheno_model_list]{pheno_model_list()}} of ordinary models sharing every parameter except
-\code{zc}. Calibration names are \code{zc1}, \code{zc2}, etc., even for one stage.
+A \code{stage_pheno_model} S3 object containing \code{mode}, \code{structure}, \code{chill},
+\code{heat}, shared \code{parameters} (excluding \code{zc}) and named \code{stages} heat requirements.
+Fitting and prediction accept this object directly. \code{\link[=model_parameters]{model_parameters()}}
+supplies calibration names \code{zc1}, \code{zc2}, etc., even for one stage.
 }
 \description{
-Each stage is the same ordinary single model with a different cumulative
-heat requirement. All other parameters, including chill requirement, are
-shared. Heat accumulation starts from the same season for every stage;
+Store shared model settings and parameters once, with a named vector of
+cumulative heat requirements in \code{stages} and \code{mode = "multistage"}.
+All other parameters, including chill requirement, are shared.
+Use \code{\link[=as_pheno_models]{as_pheno_models()}} to unpack the specification into ordinary single models.
+Heat accumulation starts from the same season for every stage;
 requirements are cumulative thresholds, not increments reset after each stage.
 Requirements must remain non-decreasing during fitting.
 }
 \examples{
 models <- stage_pheno_models(pheno_model(), c(budbreak = 50, bloom = 100))
-models[[2]]$parameters
+models
+models$stages
+individual_models <- as_pheno_models(models)
+individual_models$bloom
 model_parameters(models)
 }

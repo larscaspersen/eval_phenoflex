@@ -106,11 +106,17 @@ predict_phenology(ensemble, season)
 stages. This can be helpfull to model successive phenological stages such as budbreak, first flowering and full flowering [@caspersen_spring_2025] Heat does not restart at each stage. The ordering of stages is separate
 from the choice of model structure; here the underlying structure is PhenoFlex.
 All parameters except `zc1`, `zc2`, etc. are shared.
+The returned S3 specification stores `mode = "multistage"`, shared parameters
+once, and named cumulative heat requirements in `$stages`. Use
+`as_pheno_models(stages)` to unpack it into ordinary models for individual stages.
 
 ```{r stage-fit}
 stages <- stage_pheno_models(
   phenoflex_model, c(budbreak = 180, first_bloom = 250, full_bloom = 300)
 )
+stages
+individual_stages <- as_pheno_models(stages)
+individual_stages$budbreak
 stage_observed <- list(
   budbreak = c(115, 105),
   first_bloom = c(125, 117),
@@ -137,17 +143,23 @@ developed by @caspersen_combining_2026.
 For combined fitting, choose cultivar-specific structure parameters. All other
 parameters are shared. Data are nested by cultivar, then season, and their
 order must agree with the cultivar indices in the parameter names.
+Optional `cultivar_names` label the compact parameter table and the models
+returned by `as_pheno_models()`. Supplying names also allows the constructor to
+infer the cultivar count and `cultivar_parameters()` to select a cultivar by name.
 
 ```{r combined-fit}
 combined <- combined_pheno_model(
-  phenoflex_model, n_cultivars = 2, cultivar_specific = c("yc", "zc")
+  phenoflex_model, cultivar_names = c("cultivar_a", "cultivar_b"),
+  cultivar_specific = c("yc", "zc")
 )
 combined_parameters <- model_parameters(combined)
 combined_parameters[c("yc1", "yc2")] <- c(35, 45)
 combined <- combined_pheno_model(
   phenoflex_model, n_cultivars = 2, cultivar_specific = c("yc", "zc"),
-  parameters = combined_parameters
+  parameters = combined_parameters, cultivar_names = c("cultivar_a", "cultivar_b")
 )
+combined
+as_pheno_models(combined)$cultivar_a
 combined_seasons <- list(cultivar_a = seasons, cultivar_b = seasons)
 combined_observed <- list(cultivar_a = observed, cultivar_b = c(130, 123))
 combined_bounds <- default_bounds(combined, c("zc", "tau"))

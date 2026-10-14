@@ -17,12 +17,13 @@ fit_phenology(
   parameters = model_parameters(model),
   ...,
   observed = NULL,
-  prediction = NULL
+  prediction = NULL,
+  parameterization = NULL
 )
 }
 \arguments{
 \item{model}{A \code{\link[=pheno_model]{pheno_model()}}, \code{\link[=population_pheno_model]{population_pheno_model()}} or
-\code{\link[=combined_pheno_model]{combined_pheno_model()}} specification, or a \code{\link[=pheno_model_list]{pheno_model_list()}}. A plain
+\code{\link[=combined_pheno_model]{combined_pheno_model()}} or \code{\link[=stage_pheno_models]{stage_pheno_models()}} specification, or a \code{\link[=pheno_model_list]{pheno_model_list()}}. A plain
 list of single models is wrapped with pheno_model_list()'s default sharing.}
 
 \item{evaluation}{Function accepting parameters as its first argument and
@@ -85,7 +86,7 @@ omitted from the bounds. Bounded parameters must lie within the bounds. Used as 
 starting point and evaluated as a baseline for both optimizers. DEoptim
 initializes its population using its native controls.
 Initial theta_star and theta_c values also accept the automatic Celsius
-convention; evaluators and fitted parameters receive Kelvin values.}
+convention; evaluators and calibration parameters receive Kelvin values.}
 
 \item{...}{Additional arguments passed to \code{evaluation}, such as \code{seasons}.
 Use a closure to adapt evaluation functions with other interfaces.}
@@ -105,6 +106,14 @@ calibration dates for the three supplied RSS evaluators when seasons are
 supplied. Other evaluators store predicted = NULL unless a callback is given.
 FALSE disables date prediction. A callback can capture custom calibration
 data; observations and callback results are retained without reshaping.}
+
+\item{parameterization}{Optional Dynamic Model calibration representation,
+"characteristic" or "kinetic". NULL infers it from initial parameter names
+and bounds, falling back to kinetic when neither set is named. Mixing sets
+or conflicting with an explicit choice is an error. Characteristic fitting
+uses equivalent stored kinetic values as its start unless explicit starting
+values are supplied. The returned model always stores kinetic parameters;
+par and calibration_settings retain the optimizer's representation.}
 }
 \value{
 A \code{phenology_fit} list with \code{par} (best complete named parameters),
@@ -122,6 +131,8 @@ finite loss is found. Termination does not assert global optimality.
 For model lists, \code{model[[i]]} is an ordinary single model with its fitted
 parameters. \code{\link[=model_parameters]{model_parameters()}} returns the flat vector and \code{\link[=as_pheno_models]{as_pheno_models()}}
 extracts a plain list of single models from a fitted result.
+Multistage specifications retain their compact form with fitted shared
+parameters and updated stage heat requirements in \code{model$stages}.
 }
 \description{
 Minimize a user-supplied evaluation function using DEoptim or GenSA. The
@@ -135,6 +146,7 @@ other errors in the evaluation function propagate. Candidates outside the
 model's parameter domains are excluded before evaluation.
 }
 \examples{
+require(DEoptim)
 model <- pheno_model()
 lower <- c(yc = 10)
 upper <- c(yc = 80)

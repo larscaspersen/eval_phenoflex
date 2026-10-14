@@ -4,14 +4,17 @@
 \alias{model_parameters}
 \title{Get stored parameters for calibration}
 \usage{
-model_parameters(model)
+model_parameters(model, parameterization = NULL)
 }
 \arguments{
-\item{model}{A single, population, combined or model-list specification, or a
+\item{model}{A single, population, combined, multistage or model-list specification, or a
 result from \code{\link[=fit_phenology]{fit_phenology()}}.}
+
+\item{parameterization}{Optional "characteristic" or "kinetic" representation
+for calibration starting values. NULL returns the stored kinetic values.}
 }
 \value{
-Complete named vector of stored calibration parameters. For model
+Complete named vector of stored kinetic parameters by default. For model
 lists this combines indexed member values and shared values.
 }
 \description{

@@ -16,7 +16,7 @@ pheno_ensemble(
 }
 \arguments{
 \item{models}{A phenology_cv result, or a non-empty list of phenology_fit or
-pheno_model/combined_pheno_model/pheno_model_list objects. Entries must have
+pheno_model/combined_pheno_model/stage_pheno_model/pheno_model_list objects. Entries must have
 the same number and order of cultivar/stage outputs. Names identify ensemble
 members, not cultivars/stages.}
 

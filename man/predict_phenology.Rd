@@ -14,7 +14,8 @@ predict_phenology(
 }
 \arguments{
 \item{model}{Model specification from pheno_model(), a non-empty ordinary list
-of these models, or a pheno_model_list() calibration collection.
+of these models, a stage_pheno_models() multistage specification,
+or a pheno_model_list() calibration collection.
 Also accepts population_pheno_model() and combined_pheno_model() specifications.
 A pheno_ensemble() uses its stored member parameters and aggregation policy;
 explicit parameter overrides are unsupported for ensembles.
@@ -32,6 +33,8 @@ Combined models also accept these formats, with nested lists matched to cultivar
 
 \item{parameters}{Named numeric vector; defaults to the model's stored parameters.
 An explicit vector overrides stored values for this prediction only.
+Complete Dynamic Model vectors may use either representation; input names
+select it automatically and mixing the two sets is an error.
 Named theta_star and theta_c values in 0--20 are interpreted as Celsius
 using the same +273 convention as pheno_model(); other values are Kelvin.
 For an ordinary model list, supply a list of complete parameter vectors in

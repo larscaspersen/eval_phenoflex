@@ -2,6 +2,7 @@
 % Please edit documentation in R/population_pheno_model.R
 \name{population_pheno_model}
 \alias{population_pheno_model}
+\alias{print.population_pheno_model}
 \title{Specify a modular bud population model}
 \usage{
 population_pheno_model(
@@ -14,6 +15,8 @@ population_pheno_model(
   skew = numeric(),
   seed = 12345
 )
+
+\method{print}{population_pheno_model}(x, ...)
 }
 \arguments{
 \item{structure, chill, heat}{Components passed to [pheno_model()].}
@@ -28,6 +31,10 @@ population_pheno_model(
 
 \item{seed}{Optional non-negative integer seed. Sampling with a seed preserves
 the caller's random-number state.}
+
+\item{x}{A population model specification.}
+
+\item{...}{Additional arguments passed to print() for parameter values.}
 }
 \value{
 A population_pheno_model specification containing `model`, `n`, `sd`,
@@ -49,6 +56,9 @@ Supplied populations can represent correlated traits. Sampling is independent.
 Cutting and constant-temperature forcing are supported by
 [predict_population_phenology()]. The legacy [phenoflex_population()] retains
 its own forcing index conventions.
+Printing shows the population size, model components, parameter means and
+non-zero standard deviations. Seed and default distribution/skew settings
+are omitted from the compact display.
 }
 \examples{
 model <- population_pheno_model(

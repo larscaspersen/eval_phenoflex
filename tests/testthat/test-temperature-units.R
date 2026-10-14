@@ -3,9 +3,10 @@ temperature_unit_weather <- function() {
 }
 
 test_that("model constructors normalize Celsius independently and preserve Kelvin", {
-  reference <- pheno_model()
+  reference <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
   integer_parameters <- pheno_model("sequential")$parameters
   integer_parameters[] <- round(integer_parameters)
+  integer_parameters["A1"] <- 1e8
   integer_parameters <- setNames(as.integer(integer_parameters), names(integer_parameters))
   expect_identical(pheno_model("sequential", parameters = integer_parameters)$parameters,
                    integer_parameters)
@@ -15,14 +16,14 @@ test_that("model constructors normalize Celsius independently and preserve Kelvi
     model <- pheno_model(parameters = values)
     expect_identical(model, reference)
   }
-  supplied <- rev(reference$parameters)
+  supplied <- rev(model_parameters(reference, "characteristic"))
   supplied[c("theta_star", "theta_c")] <- c(6, 13.1)
   expect_identical(pheno_model(parameters = supplied)$parameters, rev(reference$parameters))
   expect_identical(supplied[c("theta_star", "theta_c")], c(theta_star = 6, theta_c = 13.1))
-  expect_identical(pheno_model(parameters = c(theta_star = 0))$parameters[["theta_star"]], 273)
-  expect_identical(pheno_model(parameters = c(theta_star = 19, theta_c = 20))$parameters[c("theta_star", "theta_c")],
+  expect_identical(.normalize_characteristic_temperatures(c(theta_star = 0)), c(theta_star = 273))
+  expect_identical(.normalize_characteristic_temperatures(c(theta_star = 19, theta_c = 20)),
                    c(theta_star = 292, theta_c = 293))
-  expect_identical(pheno_model(parameters = c(theta_star = 21))$parameters[["theta_star"]], 21)
+  expect_identical(.normalize_characteristic_temperatures(c(theta_star = 21)), c(theta_star = 21))
   expect_error(pheno_model(parameters = c(theta_star = 14, theta_c = 13)), "theta_star < theta_c")
   expect_error(pheno_model(parameters = c(theta_star = -1)), "theta_star")
   expect_error(pheno_model(parameters = c(theta_c = 300)), "theta_c")
@@ -36,8 +37,8 @@ test_that("model constructors normalize Celsius independently and preserve Kelvi
 test_that("validation and predictions accept Celsius overrides without mutation", {
   weather <- temperature_unit_weather()
   for (structure in c("sequential", "parallel", "partial_overlap", "phenoflex")) {
-    model <- pheno_model(structure)
-    p <- model$parameters
+    model <- pheno_model(structure, parameters = c(theta_star = 6, theta_c = 13.1))
+    p <- model_parameters(model, "characteristic")
     p[c("theta_star", "theta_c")] <- c(6, 13.1)
     before <- p
     expect_true(validate_parameters(model, p))
@@ -51,46 +52,47 @@ test_that("validation and predictions accept Celsius overrides without mutation"
     expect_identical(p, before)
   }
   population <- population_pheno_model(n = 2)
-  p <- model_parameters(population)
+  population$model <- pheno_model(parameters = c(theta_star = 6))
+  p <- model_parameters(population, "characteristic")
   p[c("theta_star", "theta_c")] <- c(6, 13.1)
   expect_identical(predict_phenology(population, weather, p), predict_phenology(population, weather))
 })
 
 test_that("collections normalize shared and indexed characteristic temperatures", {
-  base <- pheno_model()
+  base <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
   combined <- combined_pheno_model(base, 2)
-  p <- model_parameters(combined)
+  p <- model_parameters(combined, "characteristic")
   p[c("theta_star", "theta_c")] <- c(6, 13.1)
   expect_identical(combined_pheno_model(base, 2, parameters = p), combined)
   expect_identical(cultivar_parameters(combined, 1, p), base$parameters)
   expect_identical(as_pheno_models(combined, p), as_pheno_models(combined))
   expect_identical(predict_phenology(combined, temperature_unit_weather(), p),
                    predict_phenology(combined, temperature_unit_weather()))
-  shared <- setdiff(names(base$parameters), c("theta_star", "theta_c"))
-  models <- pheno_model_list(list(a = base, b = base), shared = shared, ordered = "theta_star")
-  p <- model_parameters(models)
+  shared <- setdiff(names(base$parameters), c("E0", "E1", "A0", "A1"))
+  models <- pheno_model_list(list(a = base, b = base), shared = shared)
+  p <- model_parameters(models, "characteristic")
   p[c("theta_star1", "theta_c1", "theta_star2", "theta_c2")] <- c(6, 286.1, 279, 13.1)
   expect_true(validate_parameters(models, p))
   expect_identical(as_pheno_models(models, p), as_pheno_models(models))
   input <- list(base, base)
-  input[[2]]$parameters[c("theta_star", "theta_c")] <- c(6, 13.1)
+  input[[2]] <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
   expect_identical(pheno_model_list(input), pheno_model_list(list(base, base)))
-  expect_identical(input[[2]]$parameters[["theta_star"]], 6)
+  expect_identical(input[[2]]$chill$characteristic[["theta_star"]], 279)
 })
 
 test_that("default bounds optionally display Celsius without changing other units", {
   for (model in list(pheno_model(), pheno_model(chill = chill_dynamic("kinetic")),
                      combined_pheno_model(pheno_model(), 2),
                      pheno_model_list(list(pheno_model(), pheno_model()), shared = character()))) {
-    kelvin <- default_bounds(model)
-    celsius <- default_bounds(model, temperature_unit = "C")
+    kelvin <- default_bounds(model, parameterization = "characteristic")
+    celsius <- default_bounds(model, temperature_unit = "C", parameterization = "characteristic")
     expected <- lapply(kelvin, function(p) {
       temps <- grepl("^(theta_star|theta_c)[0-9]*$", names(p))
       p[temps] <- p[temps] - 273
       p
     })
     expect_identical(celsius, expected)
-    expect_identical(default_bounds(model, temperature_unit = "K"), kelvin)
+    expect_identical(default_bounds(model, temperature_unit = "K", parameterization = "characteristic"), kelvin)
   }
   bounds <- default_bounds(pheno_model(), c("theta_star", "theta_c"), temperature_unit = "C")
   expect_identical(bounds, list(lower = c(theta_star = 6, theta_c = 13),
@@ -99,8 +101,8 @@ test_that("default bounds optionally display Celsius without changing other unit
 })
 
 test_that("both optimizer interfaces receive Kelvin for Celsius bounds and starts", {
-  model <- pheno_model()
-  initial <- model$parameters
+  model <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
+  initial <- model_parameters(model, "characteristic")
   initial[c("theta_star", "theta_c")] <- c(6, 13.1)
   bounds <- default_bounds(model, c("theta_star", "theta_c"), temperature_unit = "C")
   expected <- default_bounds(model, c("theta_star", "theta_c"))
@@ -126,12 +128,12 @@ test_that("both optimizer interfaces receive Kelvin for Celsius bounds and start
     max_iterations = 1)
     expect_identical(received, expected)
     expect_identical(fit$par[["theta_star"]], 280)
-    expect_identical(fit$model$parameters, fit$par)
+    expect_identical(model_parameters(fit, "characteristic"), fit$par)
     expect_identical(fit$calibration_settings$lower[names(expected$lower)], expected$lower)
   }
   fit <- fit_phenology(model, function(p, m) sum(p), lower = c(theta_star = 6), upper = c(theta_star = 279))
   expect_identical(fit$diagnostics$termination, "fixed")
-  expect_identical(fit$par, model$parameters)
+  expect_identical(fit$par, model_parameters(model, "characteristic"))
 })
 
 test_that("partial default bounds and indexed fit bounds normalize before comparison", {
@@ -141,7 +143,7 @@ test_that("partial default bounds and indexed fit bounds normalize before compar
     received <<- list(lower = lower, upper = upper)
     list(value = fn(par))
   }, .package = "GenSA")
-  model <- pheno_model()
+  model <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
   loss <- function(p, m) sum(p)
   fit_phenology(model, loss, upper = c(theta_c = 14), optimizer = "GenSA")
   expect_identical(received, list(lower = c(theta_c = 286), upper = c(theta_c = 287)))
@@ -152,7 +154,7 @@ test_that("partial default bounds and indexed fit bounds normalize before compar
                        upper = c(theta_c1 = 287, theta_c2 = 14), optimizer = "GenSA")
   expect_identical(received, list(lower = c(theta_c1 = 286, theta_c2 = 286),
                                  upper = c(theta_c1 = 287, theta_c2 = 287)))
-  expect_identical(fit$par, model_parameters(models))
+  expect_identical(fit$par, model_parameters(models, "characteristic"))
   expect_error(fit_phenology(model, loss, lower = c(theta_c = 14), upper = c(theta_c = 13)),
                 "lower must not exceed")
 })

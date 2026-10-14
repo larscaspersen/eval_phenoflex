@@ -113,9 +113,14 @@ as a fraction of the season or of the final heat requirement.
 
 ### Chill and heat submodels
 
-The package currently supports the Dynamic Model for chill accumulation
-[@erez_dynamic_1990] and the Growing Degree Hours (GDH) model for heat
-accumulation [@anderson_validation_1986]. Printing a model shows its structure,
+The package supports the Dynamic Model for chill accumulation
+[@erez_dynamic_1990], chill hours, Utah and positive Utah, and the Growing Degree
+Hours (GDH) model for heat accumulation [@anderson_validation_1986]. Select the
+alternatives with `chill_hours()`, `chill_utah()` or `chill_positive_utah()`.
+Positive Utah adds only non-negative daily totals; ordinary Utah retains signed
+totals in `y_raw` and clips the coupling state `y` at zero. `chill_none()`
+bypasses the selected coupling and accumulates heat alone from the specified
+`heat_start_index`. Printing a model shows its structure,
 submodels and parameter values:
 
 ```{r structure}
@@ -132,7 +137,7 @@ GDH by `Tu - Tb`. With the standard parameters
 the unscaled values. Heat requirements must use the same scaling as the
 heat submodel.
 
-The chill submodel uses the `"characteristic"` parameterization by default.
+The default Dynamic Model uses the original kinetic coefficients.
 The Dynamic Model has six parameters. In the kinetic parameterization, four of them
 (`E0`, `E1`, `A0` and `A1`) have values on very different scales.
 This can make parameter adjustment during calibration cumbersome. The characteristic
@@ -141,7 +146,21 @@ parameterization replaces these four parameters with more interpretable quantiti
 describe times in hours. Running model calibration on the `"characteristic"` parameters
 of the Dynamic Model has shown to be benefitial [@egea_reducing_2021]. For
 PhenoFlex this approach has been implemented by @caspersen_projecting_2024. Internally, the model converts these values to the
-kinetic parameters needed to calculate chill portions.
+kinetic parameters needed to calculate chill portions. Construction infers
+characteristic input from `theta_star`, `theta_c`, `tau` or `pie_c`, and kinetic
+input from `E0`, `E1`, `A0` or `A1`; the two sets cannot be mixed. Constructed
+models always store kinetic values in `parameters`, retaining supplied
+characteristic values in `chill$characteristic`.
+
+Chill hours uses `CH_lower` and `CH_upper` (default 0 and 7.2 Celsius, both
+inclusive). Utah uses `utah_w1` through `utah_w7`; positive Utah uses
+`pos_utah_w1` through `pos_utah_w7`. The seven temperature zones and default
+weights are documented in `help("chill_hours")`. Set these values through the
+`parameters` argument to `pheno_model()`. The chill requirement `yc` uses the
+selected submodel's units. Its default is 1000 for chill hours, 1200 for Utah
+and positive Utah, and 40 for the Dynamic Model. Choose suitable starting values and bounds when
+changing submodels. A heat-only model has `zc`, `heat_start_index` and GDH
+temperature parameters, with no unused chill-coupling parameters.
 
 ## Specify model parameters
 
@@ -229,13 +248,13 @@ so you do not need to supply them in a particular order. You can also
 specify only a subset of the parameters and leave the remaining values
 at their defaults.
 
-The following example selects kinetic chill parameters and scaled GDH, and
+The following example uses the default kinetic chill parameters and scaled GDH, and
 sets three structure parameters:
 
 ```{r specified-arguments}
 phenoflex_model_2 <- pheno_model(
   structure = "phenoflex",
-  chill = chill_dynamic("kinetic"),
+  chill = chill_dynamic(),
   heat = heat_gdh("scaled"),
   parameters = c(yc = 20, zc = 5000, s1 = 0.15)
 )
@@ -299,6 +318,25 @@ relative to the end of that year: `0` corresponds to 31 December at noon,
 and `-1` to 30 December at noon.
 
 ## Calibrate a single model
+
+The model's temperature responses and transition can also be inspected before
+calibration, or after fitting through `plot_pheno_model(fit)`:
+
+```{r model-visualization, eval=FALSE}
+plot(phenoflex_model)
+plot_model_structure(phenoflex_model)
+overlap <- pheno_model("partial_overlap")
+plot(overlap)
+plot_model_structure(overlap, weather = season)
+```
+
+The partial-overlap plot marks minimum chilling and its initial heat requirement,
+and shades the region where insufficient chill prevents the event. The `b1 * ol` line is the accumulated-heat threshold at
+which chill stops changing the requirement; optional weather locates that
+cutoff on the season's path. The temperature panels use native submodels in
+their own units. Dynamic Model chill is averaged over a 1200-hour exposure at
+each constant temperature. Component plots are ggplot objects and the overview
+is a patchwork composition; both optional packages must be installed for the overview.
 
 ### Fit selected parameters
 
@@ -364,13 +402,14 @@ random seeds. The two-iteration runs here are deliberately short.
 
 ### Use kinetic chill parameters
 
-Select `chill_dynamic("kinetic")` to work directly with `E0`, `E1`, `A0` and
-`A1`. These defaults are a separate starting set, not a conversion of the
-characteristic defaults. The fitting interface is unchanged. The following
+Models work directly with `E0`, `E1`, `A0` and `A1` by default. These original
+coefficients are a separate starting set from the characteristic defaults.
+The fitter detects kinetic calibration from these names in its bounds or
+starting values. The following
 example fits `E0` and `zc`, keeping all other parameters constant:
 
 ```{r kinetic-fit}
-kinetic <- pheno_model(chill = chill_dynamic("kinetic"))
+kinetic <- pheno_model()
 kinetic_bounds <- default_bounds(kinetic, c("E0", "zc"))
 kinetic_bounds$lower["E0"] <- 4000
 kinetic_bounds$upper["E0"] <- 4300
@@ -383,5 +422,16 @@ kinetic_fit <- fit_phenology(
 )
 kinetic_fit$par[c("E0", "zc")]
 ```
+
+For characteristic calibration, name the characteristic parameters in the
+bounds or use `parameterization = "characteristic"` in `fit_phenology()`.
+`default_bounds(model, parameterization = "characteristic")` returns the full
+characteristic search box. `model_parameters(model, "characteristic")` returns
+equivalent starting values, while `default_parameters(model, "characteristic")`
+returns the illustrative characteristic starting set. Check that your chosen
+initial values lie inside the bounds. `fit$par` and calibration settings retain
+the optimizer's representation; `fit$model$parameters` and
+`model_parameters(fit)` contain kinetic coefficients. This also applies to
+collections, populations, multistage models and CV fold models.
 
 ## References

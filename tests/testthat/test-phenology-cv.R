@@ -127,6 +127,7 @@ test_that("stage and combined fits preserve within-fit sharing and separate outp
   obs <- predict_phenology(stages, x$seasons)
   p <- prepare_phenology_cv(x$seasons, obs, layout = "stages", v = 2, validation_indices = 8)
   cv <- fit_phenology_cv(stages, p, phenology_rss_stages, numeric(), numeric())
+  expect_true(all(vapply(cv$model$models, inherits, logical(1), what = "stage_pheno_model")))
   expect_equal(cv$calibration$scores$mse, c(0, 0))
   expect_equal(nrow(cv$predictions), 14)
   ensemble <- pheno_ensemble(cv)
@@ -147,6 +148,15 @@ test_that("stage and combined fits preserve within-fit sharing and separate outp
   expect_equal(cv$calibration$scores$mse, c(0, 0))
   expect_equal(predict_phenology(pheno_ensemble(cv), nested), obs)
   expect_equal(validate_phenology(pheno_ensemble(cv), p)$metrics$mse, 0)
+  named <- combined_pheno_model(x$model, cultivar_names = c("a", "b"))
+  named_cv <- fit_phenology_cv(named, p, phenology_rss_combined, numeric(), numeric())
+  expect_true(all(vapply(named_cv$model$models, function(m) {
+    identical(m$cultivar_names, c("a", "b"))
+  }, logical(1))))
+  expect_named(as_pheno_models(named_cv$model$models[[1]]), c("a", "b"))
+  reversed <- combined_pheno_model(x$model, cultivar_names = c("b", "a"))
+  expect_error(fit_phenology_cv(reversed, p, phenology_rss_combined, numeric(), numeric()),
+               "member order")
 })
 
 test_that("modified splits cannot leak assessment or independent years", {

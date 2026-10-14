@@ -9,13 +9,16 @@ stage_example <- function() {
   list(base = base, models = models, seasons = list(cold = weather, warm = warmer))
 }
 
-test_that("stage collections contain ordinary models with shared parameters", {
+test_that("multistage specifications store shared settings once and unpack to ordinary models", {
   x <- stage_example()
-  expect_s3_class(x$models, "pheno_model_list")
-  expect_named(x$models, c("early", "middle", "late"))
-  expect_true(all(vapply(x$models, inherits, logical(1), what = "pheno_model")))
-  expect_identical(vapply(x$models, function(m) m$parameters[["zc"]], numeric(1)),
-                    c(early = 5, middle = 10, late = 15))
+  expect_s3_class(x$models, "stage_pheno_model")
+  expect_named(x$models, c("mode", "structure", "chill", "heat", "parameters", "stages"))
+  expect_identical(x$models$mode, "multistage")
+  expect_identical(x$models$stages, c(early = 5, middle = 10, late = 15))
+  expect_identical(x$models$parameters, x$base$parameters[setdiff(names(x$base$parameters), "zc")])
+  simple <- as_pheno_models(x$models)
+  expect_named(simple, c("early", "middle", "late"))
+  expect_true(all(vapply(simple, inherits, logical(1), what = "pheno_model")))
   p <- model_parameters(x$models)
   expect_identical(p[c("yc", "zc1", "zc2", "zc3")], c(yc = 0.1, zc1 = 5, zc2 = 10, zc3 = 15))
   expect_true(validate_parameters(x$models, rev(p)))
@@ -23,9 +26,9 @@ test_that("stage collections contain ordinary models with shared parameters", {
   for (i in 1:3) {
     single <- x$base
     single$parameters["zc"] <- c(5, 10, 15)[i]
-    expect_identical(x$models[[i]], single)
+    expect_identical(simple[[i]], single)
   }
-  expected <- lapply(x$models, function(m) {
+  expected <- lapply(simple, function(m) {
     vapply(x$seasons, function(w) predict_phenology(m, w), numeric(1))
   })
   expect_identical(predict_phenology(x$models, x$seasons), expected)
@@ -99,7 +102,8 @@ test_that("combined specifications convert to full single models using fitted pa
   expect_identical(as_pheno_models(fit), simple)
   expect_identical(model_parameters(fit), fit$par)
   fit$model$parameters["Tb"] <- 3
-  expect_identical(as_pheno_models(fit), simple)
+  updated <- as_pheno_models(fit)
+  expect_true(all(vapply(updated, function(m) identical(m$parameters[["Tb"]], 3), logical(1))))
   expect_identical(as_pheno_models(base), list(base))
 })
 
@@ -145,8 +149,60 @@ test_that("both optimizers fit ordered stage thresholds with sparse observations
     expect_identical(model_parameters(fit$model), fit$par)
     fixed <- setdiff(names(target), c("zc1", "zc2", "zc3"))
     expect_identical(fit$par[fixed], target[fixed])
-    for (i in 1:3) expect_identical(fit$model[[i]]$parameters[["zc"]], fit$par[[paste0("zc", i)]])
+    expect_s3_class(fit$model, "stage_pheno_model")
+    for (i in 1:3) expect_identical(fit$model$stages[[i]], fit$par[[paste0("zc", i)]])
     expect_equal(predict_phenology(fit$model, x$seasons), predict_phenology(x$models, x$seasons, fit$par))
     expect_identical(as_pheno_models(fit), as_pheno_models(fit$model))
   }
+})
+
+test_that("unpacking preserves stage names, fitted overrides and the original specification", {
+  x <- stage_example()
+  original <- x$models
+  p <- model_parameters(original)
+  p[c("yc", "zc1", "zc2", "zc3", "Tb")] <- c(0.2, 6, 12, 18, 3)
+  simple <- as_pheno_models(original, rev(p))
+  expect_named(simple, names(original$stages))
+  expect_identical(vapply(simple, function(m) m$parameters[["zc"]], numeric(1)),
+                   c(early = 6, middle = 12, late = 18))
+  expect_true(all(vapply(simple, function(m) identical(m$parameters[["Tb"]], 3), logical(1))))
+  expect_identical(x$models, original)
+  simple$early$parameters["yc"] <- 0.3
+  expect_identical(simple$middle$parameters[["yc"]], 0.2)
+  expect_identical(original$parameters[["yc"]], 0.1)
+  fit <- fit_phenology(original, function(p, m) sum(p), numeric(), numeric(), parameters = p)
+  expect_s3_class(fit$model, "stage_pheno_model")
+  expect_identical(fit$model$stages, c(early = 6, middle = 12, late = 18))
+  expect_identical(fit$model$parameters[["yc"]], 0.2)
+  expect_identical(model_parameters(fit$model), fit$par)
+  expect_identical(as_pheno_models(fit), as_pheno_models(fit$model))
+  expect_identical(original, x$models)
+})
+
+test_that("single and tied stages, labels and compact printing work", {
+  for (heat in list(5, c(5, 5), c(budbreak = 5, bloom = 10))) {
+    stages <- stage_pheno_models(pheno_model(), heat)
+    expect_length(as_pheno_models(stages), length(heat))
+    expect_true(validate_parameters(stages, model_parameters(stages)))
+    if (is.null(names(heat)))
+      expect_named(as_pheno_models(stages), paste0("stage", seq_along(heat)))
+  }
+  stages <- stage_pheno_models(pheno_model(), c(budbreak = 5, bloom = 10))
+  before <- stages
+  out <- capture.output(result <- withVisible(print(stages)))
+  expect_identical(result$value, stages)
+  expect_false(result$visible)
+  expect_match(paste(out, collapse = "\n"), "Mode: +multistage")
+  expect_match(paste(out, collapse = "\n"), "Stages \\(cumulative heat requirements\\)")
+  expect_false(any(grepl("[$]|unscaled|parameterization", out)))
+  expect_identical(stages, before)
+  for (heat in list(c(a = 5, a = 10), stats::setNames(c(5, 10), c("", "b")),
+                    stats::setNames(c(5, 10), c(NA, "b"))))
+    expect_error(stage_pheno_models(pheno_model(), heat), "Stage names")
+  invalid <- stages
+  invalid$parameters["zc"] <- 20
+  expect_error(validate_model_spec(invalid), "shared schema names")
+  invalid <- stages
+  invalid$mode <- "single"
+  expect_error(as_pheno_models(invalid), "multistage specification")
 })
