@@ -9,7 +9,7 @@
 #'
 #' @param parameters Complete expanded named parameter vector.
 #' @param model A [combined_pheno_model()] specification or a [pheno_model_list()]
-#'   of ordinary cultivar/stage models.
+#'   of ordinary cultivar/stage models, or a [stage_pheno_models()] specification.
 #' @param seasons Nested list with one seasonlist per cultivar.
 #' @param observed List with one numeric observation vector per cultivar/model.
 #'   Each vector must match its seasonlist's length and order. Cultivars are
@@ -20,6 +20,7 @@
 #' @md
 #' @export
 phenology_rss_combined <- function(parameters, model, seasons, observed) {
+  if (inherits(model, "stage_pheno_model")) model <- .stage_model_list(model)
   if (!inherits(model, "combined_pheno_model") && !inherits(model, "pheno_model_list"))
     stop("Use a combined_pheno_model or pheno_model_list specification.", call. = FALSE)
   validate_model_spec(model)
