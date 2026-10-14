@@ -5,7 +5,7 @@
 #' combined/stage fit; predictions are aggregated separately for each output.
 #'
 #' @param models A phenology_cv result, or a non-empty list of phenology_fit or
-#'   pheno_model/combined_pheno_model/pheno_model_list objects. Entries must have
+#'   pheno_model/combined_pheno_model/stage_pheno_model/pheno_model_list objects. Entries must have
 #'   the same number and order of cultivar/stage outputs. Names identify ensemble
 #'   members, not cultivars/stages.
 #' @param weighting "equal" (default) or "inverse_mse". Inverse MSE requires a
@@ -46,8 +46,8 @@ pheno_ensemble <- function(models, weighting = c("equal", "inverse_mse"),
   models <- lapply(models, function(m) {
     if (inherits(m, "phenology_fit")) m <- m$model
     if (!inherits(m, "pheno_model") && !inherits(m, "combined_pheno_model") &&
-        !inherits(m, "pheno_model_list"))
-      stop("Ensemble entries must be single, combined or model-list specifications.", call. = FALSE)
+        !inherits(m, "pheno_model_list") && !inherits(m, "stage_pheno_model"))
+      stop("Ensemble entries must be single, combined, multistage or model-list specifications.", call. = FALSE)
     validate_parameters(m, model_parameters(m))
     m
   })
