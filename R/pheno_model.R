@@ -2,15 +2,24 @@
 #'
 #' A model specification is an S3 list storing algorithms and named parameter
 #' values. It supports sequential, linear parallel,
-#' partial-overlap and PhenoFlex coupling with the Dynamic Model and GDH.
-#' Other combinations are not supported by this interface.
+#' partial-overlap and PhenoFlex coupling with the Dynamic Model, chill hours,
+#' Utah or positive Utah chill and GDH heat. With chill_none(), only heat is
+#' accumulated and the chosen coupling is bypassed.
+#' Printing shows the structure, submodel names and parameters in a compact form.
 #' @param structure One of "sequential", "parallel", "partial_overlap" or "phenoflex".
-#' @param chill Chill specification returned by chill_dynamic().
+#' @param chill Chill specification returned by chill_dynamic(), chill_hours(),
+#'   chill_utah(), chill_positive_utah(), chill_none() or chill_custom().
 #' @param heat Heat specification returned by heat_gdh().
 #' @param parameters Named numeric vector specifying any subset of the model's
 #' parameter names. Omitted parameters use default_parameters() for the selected
 #' structure, chill and heat specifications. NULL uses all defaults. The complete
 #' vector is validated after filling defaults.
+#' Dynamic Model input names select the representation automatically: theta_star,
+#' theta_c, tau or pie_c select characteristic input; E0, E1, A0 or A1 select
+#' kinetic input. Mixing the two sets is an error. With neither set supplied,
+#' the original kinetic coefficients are used. Characteristic inputs are converted
+#' at construction and retained in chill$characteristic; parameters always stores
+#' kinetic coefficients. Missing characteristic values use characteristic defaults.
 #' For theta_star and theta_c, each value in 0--20 is interpreted as Celsius
 #' and converted using the native kernels' legacy offset K = Celsius + 273.
 #' Other values are interpreted as Kelvin. Stored values are always Kelvin;
@@ -31,6 +40,8 @@ pheno_model <- function(structure = "phenoflex", chill = chill_dynamic(), heat =
   model <- list(structure = structure, chill = chill, heat = heat)
   validate_model_spec(model)
   class(model) <- "pheno_model"
+  if (identical(chill$name, "dynamic"))
+    model$chill$parameterization <- .dynamic_parameterization(names(parameters))
   defaults <- default_parameters(model)
   if (is.null(parameters)) {
     parameters <- defaults
@@ -49,14 +60,40 @@ pheno_model <- function(structure = "phenoflex", chill = chill_dynamic(), heat =
   parameters <- .normalize_characteristic_temperatures(parameters)
   validate_parameters(model, parameters)
   model$parameters <- parameters
-  model
+  .with_dynamic_parameterization(model, "kinetic")
 }
 
 #' @rdname pheno_model
-#' @param parameterization Dynamic Model representation: "characteristic" or "kinetic".
+#' @param x A model specification returned by pheno_model().
+#' @param ... Additional arguments passed to print() for the parameter vector.
 #' @export
-chill_dynamic <- function(parameterization = c("characteristic", "kinetic")) {
-  list(name = "dynamic", parameterization = match.arg(parameterization))
+print.pheno_model <- function(x, ...) {
+  .print_pheno_components(x)
+  cat("Parameters:\n")
+  print(x$parameters, ...)
+  invisible(x)
+}
+
+.print_pheno_components <- function(x) {
+  structure_name <- if (identical(x$chill$name, "none")) "Heat only" else switch(x$structure,
+    phenoflex = "PhenoFlex", sequential = "Sequential",
+    parallel = "Parallel", partial_overlap = "Partial overlap")
+  cat("Structure:      ", structure_name, "\n", sep = "")
+  chill_name <- switch(x$chill$name, dynamic = "Dynamic Model", chill_hours = "Chill hours",
+    utah = "Utah", positive_utah = "Positive Utah", none = "None", custom = x$chill$label)
+  cat("Chill submodel: ", chill_name, "\n", sep = "")
+  cat("Heat submodel:  GDH\n")
+}
+
+#' @rdname pheno_model
+#' @param parameterization Legacy optional representation argument for
+#' chill_dynamic(). Construction now infers the representation from parameter
+#' names, so this argument does not select stored parameters. Select the fitting
+#' representation in fit_phenology() instead.
+#' @export
+chill_dynamic <- function(parameterization = NULL) {
+  if (!is.null(parameterization)) match.arg(parameterization, c("characteristic", "kinetic"))
+  list(name = "dynamic", parameterization = "kinetic")
 }
 
 #' @rdname pheno_model
@@ -71,6 +108,8 @@ heat_gdh <- function(scaling = c("unscaled", "scaled")) list(name = "gdh",
 #' @param model Model specification.
 #' @export
 validate_model_spec <- function(model) {
+  if (inherits(model, "stage_pheno_model"))
+    return(validate_model_spec(.stage_model_list(model)))
   if (inherits(model, "pheno_model_list"))
     return(.validate_pheno_model_list(model))
   if (inherits(model, "combined_pheno_model"))
@@ -87,12 +126,30 @@ validate_model_spec <- function(model) {
       !model$structure %in% c("sequential", "parallel", "partial_overlap", "phenoflex")) {
     stop("Supported structures are sequential, parallel, partial_overlap and phenoflex.")
   }
-  if (!is.list(model$chill) ||
-      !identical(sort(names(model$chill)), sort(c("name", "parameterization"))) ||
-      !identical(model$chill$name, "dynamic") ||
-      !(identical(model$chill$parameterization, "characteristic") ||
-        identical(model$chill$parameterization, "kinetic")))
-    stop("Use chill_dynamic() with characteristic or kinetic parameterization.", call. = FALSE)
+  chill <- model$chill
+  if (!is.list(chill) || !is.character(chill$name) || length(chill$name) != 1L ||
+      is.na(chill$name) || !chill$name %in% c("dynamic", "chill_hours", "utah", "positive_utah", "none", "custom"))
+    stop("Use chill_dynamic(), chill_hours(), chill_utah(), chill_positive_utah(), chill_none() or chill_custom().",
+         call. = FALSE)
+  if (chill$name == "dynamic") {
+    if (anyDuplicated(names(chill)) || !all(c("name", "parameterization") %in% names(chill)) ||
+        !all(names(chill) %in% c("name", "parameterization", "characteristic")) ||
+        !(identical(chill$parameterization, "characteristic") ||
+          identical(chill$parameterization, "kinetic")))
+      stop("Use chill_dynamic() with characteristic or kinetic parameterization.", call. = FALSE)
+    if (!is.null(chill$characteristic)) {
+      p <- chill$characteristic
+      if (!is.numeric(p) || !is.null(dim(p)) || length(p) != 4L ||
+          !identical(names(p), .dynamic_characteristic_names) || any(!is.finite(p)))
+        stop("chill$characteristic must contain the four finite characteristic parameters.", call. = FALSE)
+      .validate_chill_params(unname(p))
+    }
+  } else if (chill$name == "custom") {
+    .validate_custom_chill_spec(chill)
+  } else if (!identical(names(chill), "name")) {
+    stop("Alternative chill specifications must contain only name; set parameters in pheno_model().",
+         call. = FALSE)
+  }
 
   # Check the heat specification's structure
   if (!is.list(model$heat) ||
@@ -132,8 +189,12 @@ validate_model_spec <- function(model) {
 #' or [combined_pheno_model()]. Combined specifications expand selected structure
 #' parameters by cultivar while leaving other parameters shared.
 #' A pheno_model_list() stores ordinary simple models and their parameter sharing.
+#' A stage_pheno_models() specification stores shared parameters and stage heat
+#' requirements once, expanding zc to indexed calibration names.
 #' @param parameters Named numeric vector with exactly the names in the schema;
 #' order is arbitrary. Matrices and arrays are not parameter vectors.
+#' Complete Dynamic Model vectors may use either representation; names select
+#' it automatically and mixing characteristic and kinetic names is an error.
 #' Named theta_star and theta_c values in 0--20 are interpreted as Celsius
 #' using the legacy +273 offset; Kelvin values remain supported. Validation
 #' checks the converted values without modifying the supplied vector.
@@ -142,8 +203,13 @@ validate_model_spec <- function(model) {
 #' (NA for shared parameters); model lists use member instead of cultivar.
 #' default_parameters() returns a named numeric vector.
 #' validate_parameters() invisibly returns TRUE or raises an error.
+#' @param parameterization Optional Dynamic Model representation for a calibration
+#' schema or defaults. NULL uses the model's representation (kinetic for constructed
+#' models); "characteristic" exposes characteristic calibration names.
 #' @export
-parameter_schema <- function(model) {
+parameter_schema <- function(model, parameterization = NULL) {
+  if (!is.null(parameterization)) model <- .with_dynamic_parameterization(model, parameterization, use_defaults = TRUE)
+  if (inherits(model, "stage_pheno_model")) model <- .stage_model_list(model)
   if (inherits(model, "pheno_model_list"))
     return(.pheno_model_list_schema(model))
   if (inherits(model, "combined_pheno_model"))
@@ -154,22 +220,25 @@ parameter_schema <- function(model) {
   validate_model_spec(model)
   
 
-  #check the chill submodel
+  # Starting requirements are illustrative in the chosen chill model's units.
+  yc <- switch(model$chill$name, chill_hours = 1000, utah = 1200, positive_utah = 1200, 40)
   if(model$chill$name == 'dynamic'){
-    
-    #typical chill requirement 
-    yc = 40
     
     representation <- model$chill$parameterization
     chill <- if (representation == "characteristic")
-      c(theta_star = 279, theta_c = 286.1, tau = 47.7, pie_c = 28, Tf = 4, slope = 1.6)
-    else c(E0 = 4153.5, E1 = 12888.8, A0 = 139500, A1 = 2.567e18, Tf = 4, slope = 1.6)
+      c(.dynamic_characteristic_defaults, Tf = 4, slope = 1.6)
+    else c(.dynamic_kinetic_defaults, Tf = 4, slope = 1.6)
   
     # Tf and slope are native parameters in both representations.
     chill_representation <- rep("native", length(chill))
     chill_representation[1:4] <- representation
   } else {
-    stop("Unknown chill submodel.")
+    chill <- switch(model$chill$name,
+      chill_hours = c(CH_lower = 0, CH_upper = 7.2),
+      utah = stats::setNames(c(0, 0.5, 1, 0.5, 0, -0.5, -1), paste0("utah_w", 1:7)),
+      positive_utah = stats::setNames(c(0, 0.5, 1, 0.5, 0, -0.5, -1), paste0("pos_utah_w", 1:7)),
+      none = c(heat_start_index = 1), custom = model$chill$defaults)
+    chill_representation <- rep("native", length(chill))
   }
   
   #check heat
@@ -185,7 +254,7 @@ parameter_schema <- function(model) {
   }
   
   # 1. Parameters belonging to the model structure
-  structure_parameters <- switch(
+  structure_parameters <- if (model$chill$name == "none") c(zc = heat_requirements[["zc"]]) else switch(
     model$structure,
     sequential = c(yc = yc, zc = heat_requirements[["zc"]]),
     parallel   = c(yc = yc, zc = heat_requirements[["zc"]], kmin = 0.1),
@@ -223,20 +292,28 @@ parameter_schema <- function(model) {
 
 #' @rdname parameter_schema
 #' @export
-default_parameters <- function(model) {
-  schema <- parameter_schema(model)
+default_parameters <- function(model, parameterization = NULL) {
+  schema <- parameter_schema(model, parameterization)
   stats::setNames(schema$default, schema$name)
 }
 
 #' @rdname parameter_schema
 #' @export
 validate_parameters <- function(model, parameters) {
+  if (inherits(model, "stage_pheno_model")) model <- .stage_model_list(model)
   if (inherits(model, "pheno_model_list"))
     return(.validate_model_list_parameters(model, parameters))
   if (inherits(model, "combined_pheno_model"))
     return(.validate_combined_parameters(model, parameters))
   if (inherits(model, "population_pheno_model"))
     return(validate_parameters(model$model, parameters))
+  if (identical(model$chill$name, "dynamic")) {
+    representation <- .dynamic_parameterization(names(parameters), fallback = model$chill$parameterization)
+    if (!identical(representation, model$chill$parameterization)) {
+      # Validation only needs a schema; avoid converting the stored coefficients.
+      model$chill$parameterization <- representation
+    }
+  }
   schema <- parameter_schema(model)
   if (!is.numeric(parameters) || !is.null(dim(parameters)) || is.null(names(parameters)) ||
       anyNA(names(parameters)) || anyDuplicated(names(parameters)) ||
@@ -244,7 +321,11 @@ validate_parameters <- function(model, parameters) {
     stop("parameters must be a named numeric vector with exactly the schema names, without duplicates.", call. = FALSE)
   if (any(!is.finite(parameters))) stop("All parameter values must be finite.", call. = FALSE)
   p <- .normalize_characteristic_temperatures(parameters)
-  switch(
+  if (model$chill$name == "none") {
+    if (p[["zc"]] <= 0) stop("zc must be positive.", call. = FALSE)
+    if (p[["heat_start_index"]] < 1)
+      stop("heat_start_index must be at least one.", call. = FALSE)
+  } else switch(
     model$structure,
     
     sequential = {
@@ -299,6 +380,11 @@ validate_parameters <- function(model, parameters) {
                p[["A0"]] <= 0 || p[["A1"]] <= 0) {
       stop("Kinetic parameters require 0 < E0 < E1, A0 > 0 and A1 > 0.", call. = FALSE)
     }
+  } else if (model$chill$name == "chill_hours") {
+    if (p[["CH_lower"]] <= -273 || p[["CH_lower"]] >= p[["CH_upper"]])
+      stop("Chill-hours thresholds must satisfy -273 < CH_lower < CH_upper in Celsius.", call. = FALSE)
+  } else if (model$chill$name == "custom") {
+    .validate_custom_chill_parameters(model$chill, p[names(model$chill$defaults)])
   }
   
   if(model$heat$name == 'gdh'){
@@ -328,7 +414,8 @@ validate_parameters <- function(model, parameters) {
 #' With basic_output = FALSE they return date/spread summaries and individual
 #' member dates, rather than chill/heat trajectories.
 #' @param model Model specification from pheno_model(), a non-empty ordinary list
-#' of these models, or a pheno_model_list() calibration collection.
+#' of these models, a stage_pheno_models() multistage specification,
+#' or a pheno_model_list() calibration collection.
 #' Also accepts population_pheno_model() and combined_pheno_model() specifications.
 #' A pheno_ensemble() uses its stored member parameters and aggregation policy;
 #' explicit parameter overrides are unsupported for ensembles.
@@ -344,6 +431,8 @@ validate_parameters <- function(model, parameters) {
 #' Combined models also accept these formats, with nested lists matched to cultivars.
 #' @param parameters Named numeric vector; defaults to the model's stored parameters.
 #' An explicit vector overrides stored values for this prediction only.
+#' Complete Dynamic Model vectors may use either representation; input names
+#' select it automatically and mixing the two sets is an error.
 #' Named theta_star and theta_c values in 0--20 are interpreted as Celsius
 #' using the same +273 convention as pheno_model(); other values are Kelvin.
 #' For an ordinary model list, supply a list of complete parameter vectors in
@@ -388,6 +477,8 @@ predict_phenology <- function(model, weather,
   }
   if (inherits(model, "pheno_model_list"))
     return(.predict_pheno_model_list(model, weather, parameters, stopatzc, basic_output))
+  if (inherits(model, "stage_pheno_model"))
+    return(.predict_pheno_model_list(model, weather, parameters, stopatzc, basic_output))
   if (inherits(model, "combined_pheno_model"))
     return(.predict_pheno_model_list(model, weather, parameters, stopatzc, basic_output))
   if (is.list(model) && !is.data.frame(model) &&
@@ -420,21 +511,25 @@ predict_phenology <- function(model, weather,
   p <- .normalize_characteristic_temperatures(p)
   
   if(model$chill$name == 'dynamic'){
-    if (model$chill$parameterization == "characteristic") {
-      chill <- p[c("theta_star", "theta_c", "tau", "pie_c")]
-      converted <- characteristic_to_kinetic(c(rep(0, 4), unname(chill), rep(0, 4)), failure_return = "NA")
-    if (any(!is.finite(converted[5:8])))
-      stop(structure(list(message = "Characteristic-to-kinetic conversion failed for these parameters.",
-                           call = NULL),
-                      class = c("phenology_conversion_error", "error", "condition")))
-      p <- c(p, stats::setNames(converted[5:8], c("E0", "E1", "A0", "A1")))
-    }
+    .dynamic_parameterization(names(p))
+    p <- .convert_dynamic_parameters(p, "kinetic")
     
     chill_vec <- calculate_chill_dynamic(temp = weather$Temp, 
                                      times = seq_along(weather$Temp),
                                      E0 = p[["E0"]], E1 = p[["E1"]], 
                                      A0 = p[["A0"]], A1 = p[["A1"]],
                                      Tf = p[["Tf"]], slope = p[["slope"]])
+  } else {
+    times <- seq_along(weather$Temp)
+    chill_vec <- switch(model$chill$name,
+      chill_hours = calculate_chill_hours(weather$Temp, times,
+        CH_lower = p[["CH_lower"]], CH_upper = p[["CH_upper"]]),
+      utah = calculate_chill_utah(weather$Temp, times, weights = unname(p[paste0("utah_w", 1:7)])),
+      positive_utah = calculate_chill_positive_utah(weather$Temp, times,
+        weights = unname(p[paste0("pos_utah_w", 1:7)]),
+        day_group = rep(seq_len(nrow(weather) / 24L), each = 24L)),
+      none = calculate_chill_none(weather$Temp, times, heat_start_index = p[["heat_start_index"]]),
+      custom = .calculate_custom_chill(model$chill, weather, p))
   }
   
   if(model$heat$name == 'gdh'){
@@ -459,6 +554,9 @@ predict_phenology <- function(model, weather,
 
 .apply_pheno_structure <- function(model, chill_vec, heat_vec, p,
                                    stopatzc, basic_output) {
+  if (model$chill$name == "none")
+    return(apply_heat_only_structure(chill_vec, heat_vec, zc = p[["zc"]],
+      stopatzc = stopatzc, basic_output = basic_output))
   #process the chill and heat with the model structure
   switch(
     model$structure,
