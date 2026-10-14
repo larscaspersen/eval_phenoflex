@@ -40,19 +40,60 @@ library(evalpheno)
 
 model <- pheno_model(
   structure = "phenoflex",
-  chill = chill_dynamic("characteristic"),
+  chill = chill_dynamic(),
   heat = heat_gdh("unscaled")
 )
 ```
 
 Use `"sequential"`, `"parallel"` or `"partial_overlap"` for another structure,
-or `chill_dynamic("kinetic")` for kinetic chill parameters.
+with `chill_dynamic()` for Dynamic Model chill.
+Models use the original `E0`, `E1`, `A0` and `A1` coefficients by default.
+Supplying `theta_star`, `theta_c`, `tau` or `pie_c` automatically selects
+characteristic input; mixing it with kinetic input raises an error. Characteristic
+values are converted at construction and retained in `model$chill$characteristic`;
+`model$parameters` always contains kinetic values.
+Alternative chill submodels are `chill_hours()`, `chill_utah()` and
+`chill_positive_utah()`. `chill_none()` creates a heat-only model, bypassing
+chill-dependent coupling. Chill-hours thresholds and Utah zone weights appear
+in the parameter schema and can be calibrated. Positive Utah adds only positive
+daily totals. Set chill requirements and search bounds in the selected model's
+own units; they are not interchangeable with Dynamic Model portions.
+Default `yc` is 1000 for chill hours, 1200 for Utah and positive Utah, and
+40 for the Dynamic Model.
+
+User-defined chill submodels can be supplied through `chill_custom()`:
+
+```{r custom-chill}
+triangular_chill <- function(weather, parameters) {
+  temp <- head(weather$Temp, -1L)
+  increments <- pmax(0, 1 - abs(temp - parameters[["Topt"]]) / parameters[["width"]])
+  matrix(c(0, cumsum(increments)), ncol = 1, dimnames = list(NULL, "y"))
+}
+custom <- chill_custom(
+  triangular_chill, defaults = c(Topt = 5, width = 5),
+  lower = c(Topt = 0, width = 1), upper = c(Topt = 10, width = 15),
+  validate = function(p) p[["width"]] > 0, label = "Triangular chill"
+)
+custom_model <- pheno_model(chill = custom)
+```
+
+Construction checks the callback on a small hourly sample; prediction checks
+every returned trajectory. `validate_chill_custom(custom, weather)` checks
+supplied weather explicitly. See `help("chill_custom")` for the matrix contract,
+optional sample weather and parameter-domain validation.
 
 ## Parameterize and predict
 
 Set parameters by name; omitted values use the selected model's defaults.
 `parameter_schema(model)` describes its parameters and `model_parameters(model)`
 returns their current values.
+
+For characteristic calibration, request bounds with
+`default_bounds(model, parameterization = "characteristic")`, or name selected
+characteristic parameters in the bounds. The fitter infers the representation
+from the bounds or explicit starting values. `model_parameters(model,
+"characteristic")` supplies equivalent characteristic starting values. Fitted
+models store kinetic coefficients; `fit$par` retains the optimizer's coordinates.
 
 ```{r predict}
 model <- pheno_model(parameters = c(yc = 40, zc = 250))
@@ -69,6 +110,34 @@ predict_phenology(model, seasons)
 
 Predictions are fractional days of the year; `NA` means the event was not reached.
 Use `basic_output = FALSE` to inspect chill and heat trajectories.
+
+## Visualize the model
+
+Plot the chill and heat temperature responses together with their transition:
+
+```{r model-plots, eval=FALSE}
+model <- pheno_model("partial_overlap")
+plot(model)
+plot_temperature_response(model)
+plot_model_structure(model)
+
+# Overlay the season's effective chill/heat path and actual overlap cutoff.
+plot_model_structure(model, weather = seasons[[1]])
+```
+
+The partial-overlap plot marks minimum chilling `yc` and the initial heat
+requirement `b1 + b2`, with the lower heat asymptote `b1` and overlap cutoff `b1 * ol`.
+The region below minimum chilling is shaded: no amount of heat can trigger the event.
+Dynamic Model chill axes stop at 120 portions by default; `chill_range` overrides this.
+The latter is an accumulated-heat threshold; its chill coordinate depends on
+the weather. Other structures show the chill-dependent fraction of effective
+heat. Temperature responses use the native submodels and chosen heat scaling;
+Dynamic Model chill is averaged over 1200 hours at constant temperature.
+
+The component functions return editable ggplot objects, and `plot(model)`
+returns a patchwork composition. Install `ggplot2` and `patchwork` to use them.
+Observed-temperature histograms or gradients can be added with `hourtemps` and
+`weather_freq_plot` in `plot_temperature_response()` or `plot_pheno_model()`.
 
 ## Model a bud population
 

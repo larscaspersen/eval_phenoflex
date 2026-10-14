@@ -1,5 +1,58 @@
 # evalpheno 0.0.3.1
 
+* Set default chill requirements to yc = 1000 for chill hours and yc = 1200
+  for Utah and positive Utah. Keep the Dynamic Model default at 40 portions.
+  Adjust suggested yc bounds to 250--2000 hours and 300--2400 Utah units so
+  default starting values remain inside the calibration search boxes.
+
+* Add plot_pheno_model() and plot.pheno_model() to combine native chill/heat
+  temperature responses with the chill-to-heat transition. Add editable
+  plot_temperature_response() and plot_model_structure() component plots.
+  Partial overlap shows its requirement curve, defining points, baseline and
+  accumulated-heat overlap threshold, with optional native season trajectories.
+  Support alternative/custom chill, GDH scaling, fitted models and observed
+  temperature histograms/gradients. ggplot2 and patchwork are optional dependencies.
+
+* Infer Dynamic Model input from parameter names and reject mixed characteristic
+  and kinetic sets. Use the original kinetic coefficients by default and always
+  store kinetic model parameters. Convert characteristic input at construction
+  and retain it in chill$characteristic. Infer calibration representation from
+  starting parameters or bounds, with an optional parameterization argument;
+  fitted models, including CV folds, store kinetic values. Calibration par and
+  settings retain the representation used by the optimizer.
+
+* Add chill_custom() for deterministic user callbacks, declared parameters and
+  optional calibration bounds/domain validation. Check metadata and trial
+  trajectories at construction, and validate every prediction's matrix shape,
+  finite values and non-negative coupling state. Add validate_chill_custom()
+  for checks on supplied weather. Support custom chill in all modular workflows.
+
+* Print population models with a population-size heading, mean parameters and
+  non-zero standard deviations. Hide seed and default distribution/skew settings.
+
+* Add chill_hours(), chill_utah(), chill_positive_utah() and chill_none(), with
+  native hourly kernels, configurable thresholds/zone weights and model schemas.
+  Positive Utah accumulates non-negative daily totals; Utah retains signed raw
+  chill and clips only its coupling state at zero. No-chill models accumulate
+  heat from heat_start_index without unused coupling parameters. Support these
+  variants in fitting, stages, combined models, populations, CV and ensembles.
+
+* Print combined models with shared parameters once and a cultivar-specific
+  parameter table. Add optional cultivar_names, infer n_cultivars from names,
+  preserve labels when unpacking and allow cultivar_parameters() lookup by name.
+
+* Store stage_pheno_models() as a compact stage_pheno_model S3 specification
+  with mode = "multistage", shared parameters and named stage heat requirements.
+  Unpack with as_pheno_models(); fitting, prediction, CV and ensembles accept the
+  compact object directly. Replace stage-list indexing with unpacking or $stages.
+
+* Print pheno_model objects as a compact structure, chill and heat submodel
+  summary followed by their parameters, without nested list output.
+
+* Declare the minimum R version needed for modern serialized data, use
+  canonical CRAN and publisher URLs, and remove cross-references to unavailable
+  MEIGOR documentation.
+
 * Deprecate legacy optimizer evaluators, combined GenSA fitting and weather
   prediction wrappers in favor of the modular model, fitting and prediction API.
   Deprecate helper_run_pop_model() and the two conversion aliases. All retain
