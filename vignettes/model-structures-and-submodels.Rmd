@@ -1,0 +1,364 @@
+---
+title: "Model structures and submodels"
+author: "Lars Caspersen"
+date: "`r Sys.Date()`"
+csl: elsevier-harvard.csl
+bibliography: vignette_evalpheno.bib
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Model structures and submodels}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
+                     fig.width = 6, fig.height = 4)
+```
+
+`evalpheno` combines a model structure with chill and heat accumulation
+submodels. This vignette explains the available choices, their parameters,
+and how to visualize them. For a first workflow from model construction to
+calibration, see [Getting started](getting-started.html).
+
+## Choose a model
+
+The `pheno_model()` function defines a model's structure and submodels. Choose
+one of four structures using the `structure` argument:
+
+- `"phenoflex"`: PhenoFlex [@luedeling_phenoflex_2021], originally implemented
+  in the R package `chillR` [@luedelingChillRStatisticalMethods2024].
+- `"partial_overlap"`: the partial overlap model [@pope_biologically_2014].
+- `"parallel"`: the parallel model with gradual rest completion
+  [@hanninen_framework_2007].
+- `"sequential"`: the sequential model [@ashcroft_statistical_1977].
+
+```{r structures}
+library(evalpheno)
+
+# The default structure is PhenoFlex.
+phenoflex_model <- pheno_model()
+
+# Choose another structure explicitly.
+seq_model <- pheno_model(structure = "sequential")
+partial_overlap_model <- pheno_model(structure = "partial_overlap")
+parallel_model <- pheno_model(structure = "parallel")
+```
+
+### How the structures differ
+
+All four structures describe spring phenology as the result of winter dormancy
+release and subsequent development. They use chilling (cool temperatures) and
+forcing (warmer temperatures, also called heat), but differ in how these
+processes interact.
+
+The **sequential model** allows heat accumulation to contribute to development
+only after the chilling requirement, `yc`, is met. The phenological event occurs
+when accumulated heat reaches the fixed heat requirement, `zc`.
+
+For PhenoFlex and the parallel model, a competence to grow function (C~grow~)
+determines the fraction of potential heat that contributes to development.
+It ranges from 0 to 1 and depends on accumulated chill (y).
+
+Use `plot()` to visualize the chill and heat responses together with the
+model structure. The overview plots require `ggplot2` and `patchwork`.
+
+```{r plot_sequential, fig.width=6, fig.height=7}
+plot(seq_model)
+
+```
+
+**PhenoFlex** uses a sigmoidal function to calculate the competence to grow function:
+
+\[
+C_{grow} =
+\begin{cases}
+0, & y = 0, \\
+\displaystyle \frac{1}{1 + \exp\!\left[-s_1 y_c\,\frac{y-y_c}{y}\right]},
+  & y > 0.
+\end{cases}
+\]
+
+The parameter `s1` controls the steepness of this transition. At `yc`, heat effectiveness is
+50%, so additional chilling above `yc` can still increase responsiveness to
+heat. A steep transition approximates sequential behaviour; a gradual
+transition allows more overlap between chilling and forcing. The event occurs
+when effective heat accumulation reaches `zc`.
+
+```{r plot_phenoflex, fig.width=6, fig.height=7}
+plot(phenoflex_model)
+
+```
+
+The **parallel model** uses the gradual rest completion formulation of Hänninen
+and Kramer (2007, equation B4b):
+
+\[
+C_{grow} =
+\begin{cases}
+k_{\min} + (1-k_{\min})\,\displaystyle\frac{y}{y_c},
+  & 0 \leq y < y_c, \\
+1, & y \geq y_c.
+\end{cases}
+\]
+
+Heat effectiveness starts at `kmin` when
+accumulated chill is zero, then increases linearly to 100% at `yc`. Further
+chilling does not increase effectiveness. Here, `kmin` is a minimum heat
+responsiveness, not a threshold for chill accumulation. The event occurs when
+effective heat accumulation reaches `zc`.
+
+```{r plot_parallel, fig.width=6, fig.height=7}
+plot(parallel_model)
+
+```
+
+The **partial overlap model** starts counting heat when the initial chilling
+requirement, `yc`, is met. During an overlap period, additional chilling reduces
+the heat requirement according to:
+
+\[
+zc = b_1 + b_2 \exp(-b_3 * y_{extra}),
+\]
+
+where \(y_{extra}\) is additional chill accumulated after `yc` is first reached.
+The initial heat requirement is `b1 + b2`; with increasing additional chill,
+it approaches the lower limit `b1`. The parameter `b3` controls the rate of
+decline. Once accumulated heat reaches `b1 * ol`, further chilling no longer
+changes the requirement. Heat then continues accumulating until the event
+occurs. Thus, `ol` determines the extent of overlap in heat units, rather than
+as a fraction of the season or of the final heat requirement.
+
+```{r plot_partialoverlap, fig.width=6, fig.height=7}
+plot(partial_overlap_model)
+
+```
+
+### Chill and heat submodels
+
+The package supports the Dynamic Model for chill accumulation
+[@erez_dynamic_1990], chill hours, Utah and positive Utah, and the Growing Degree
+Hours (GDH) model for heat accumulation [@anderson_validation_1986]. Select the
+alternatives with `chill_hours()`, `chill_utah()` or `chill_positive_utah()`.
+Positive Utah adds only non-negative daily totals; ordinary Utah retains signed
+totals in `y_raw` and clips the coupling state `y` at zero. `chill_none()`
+bypasses the selected coupling and accumulates heat alone from the specified
+`heat_start_index`. Printing a model shows its structure,
+submodels and parameter values:
+
+```{r structure}
+phenoflex_model
+```
+
+The output shows the model's default settings: the PhenoFlex structure,
+the Dynamic Model for chill accumulation and the GDH model for heat accumulation.
+GDH accumulation can be scaled or unscaled. The default is `"unscaled"` for all
+four structures. PhenoFlex was originally developed with unscaled GDH, while
+other applications commonly use scaled GDH. Scaling multiplies accumulated
+GDH by `Tu - Tb`. With the standard parameters
+(`Tb = 4`, `Tu = 25`, `Tc = 36`), scaled GDH values are therefore 21 times
+the unscaled values. Heat requirements must use the same scaling as the
+heat submodel.
+
+The default Dynamic Model uses the original kinetic coefficients.
+The Dynamic Model has six parameters. In the kinetic parameterization, four of them
+(`E0`, `E1`, `A0` and `A1`) have values on very different scales.
+This can make parameter adjustment during calibration cumbersome. The characteristic
+parameterization replaces these four parameters with more interpretable quantities:
+`theta_star` and `theta_c` describe temperatures, while `tau` and `pie_c`
+describe times in hours. Running model calibration on the `"characteristic"` parameters
+of the Dynamic Model has been shown to be beneficial [@egea_reducing_2021]. For
+PhenoFlex this approach has been implemented by @caspersen_projecting_2024. Internally, the model converts these values to the
+kinetic parameters needed to calculate chill portions. Construction infers
+characteristic input from `theta_star`, `theta_c`, `tau` or `pie_c`, and kinetic
+input from `E0`, `E1`, `A0` or `A1`; the two sets cannot be mixed. Constructed
+models always store kinetic values in `parameters`, retaining supplied
+characteristic values in `chill$characteristic`.
+
+Chill hours uses `CH_lower` and `CH_upper` (default 0 and 7.2 Celsius, both
+inclusive). Utah uses `utah_w1` through `utah_w7`; positive Utah uses
+`pos_utah_w1` through `pos_utah_w7`. The seven temperature zones and default
+weights are documented in `help("chill_hours")`. Set these values through the
+`parameters` argument to `pheno_model()`. The chill requirement `yc` uses the
+selected submodel's units. Its default is 1000 for chill hours, 1200 for Utah
+and positive Utah, and 40 for the Dynamic Model. Choose suitable starting values and bounds when
+changing submodels. A heat-only model has `zc`, `heat_start_index` and GDH
+temperature parameters, with no unused chill-coupling parameters.
+
+## Specify model parameters
+
+Unless you supply parameter values, `pheno_model()` uses defaults for the
+selected structure and submodels. These are starting values, not calibrated
+estimates for a particular species or cultivar. Each structure has its own
+parameters in addition to those of the chill and heat submodels:
+
+<table>
+  <thead>
+    <tr>
+      <th scope="col">Structure</th>
+      <th scope="col">Parameter</th>
+      <th scope="col">Role</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="rowgroup" rowspan="2" style="vertical-align: middle; text-align: left;">Sequential</th>
+      <td><code>yc</code></td>
+      <td>Chill threshold for heat accumulation to start.</td>
+    </tr>
+    <tr>
+      <td><code>zc</code></td>
+      <td>Fixed heat requirement.</td>
+    </tr>
+  </tbody>
+  <tbody>
+    <tr>
+      <th scope="rowgroup" rowspan="3" style="vertical-align: middle; text-align: left;">PhenoFlex</th>
+      <td><code>yc</code></td>
+      <td>Chill value at 50% heat effectiveness.</td>
+    </tr>
+    <tr>
+      <td><code>zc</code></td>
+      <td>Effective heat requirement.</td>
+    </tr>
+    <tr>
+      <td><code>s1</code></td>
+      <td>Steepness of the transition in heat effectiveness.</td>
+    </tr>
+  </tbody>
+  <tbody>
+    <tr>
+      <th scope="rowgroup" rowspan="3" style="vertical-align: middle; text-align: left;">Parallel</th>
+      <td><code>yc</code></td>
+      <td>Chill value at full heat effectiveness.</td>
+    </tr>
+    <tr>
+      <td><code>zc</code></td>
+      <td>Effective heat requirement.</td>
+    </tr>
+    <tr>
+      <td><code>kmin</code></td>
+      <td>Heat effectiveness at zero accumulated chill.</td>
+    </tr>
+  </tbody>
+  <tbody>
+    <tr>
+      <th scope="rowgroup" rowspan="5" style="vertical-align: middle; text-align: left;">Partial overlap</th>
+      <td><code>yc</code></td>
+      <td>Initial chill threshold for heat accumulation to start.</td>
+    </tr>
+    <tr>
+      <td><code>b1</code></td>
+      <td>Lower limit of the heat requirement.</td>
+    </tr>
+    <tr>
+      <td><code>b2</code></td>
+      <td>Extra heat requirement at zero additional chill; the initial total is <code>b1 + b2</code>.</td>
+    </tr>
+    <tr>
+      <td><code>b3</code></td>
+      <td>Rate at which additional chill reduces the heat requirement.</td>
+    </tr>
+    <tr>
+      <td><code>ol</code></td>
+      <td>Overlap multiplier; additional chill stops affecting the requirement when heat reaches <code>b1 * ol</code>.</td>
+    </tr>
+  </tbody>
+</table>
+
+Specify parameter values in a **named** vector. Names identify the parameters,
+so you do not need to supply them in a particular order. You can also
+specify only a subset of the parameters and leave the remaining values
+at their defaults.
+
+The following example uses the default kinetic chill parameters and scaled GDH, and
+sets three structure parameters:
+
+```{r specified-arguments}
+phenoflex_model_2 <- pheno_model(
+  structure = "phenoflex",
+  chill = chill_dynamic(),
+  heat = heat_gdh("scaled"),
+  parameters = c(yc = 20, zc = 5000, s1 = 0.15)
+)
+phenoflex_model_2
+```
+
+Use `parameter_schema()` to inspect the available parameters and their defaults:
+
+```{r parameter-schema}
+knitr::kable(
+  parameter_schema(phenoflex_model),
+  format = "html",
+  row.names = FALSE
+)
+```
+
+Use `model_parameters()` to view the model's current parameter values. These
+are also stored in `phenoflex_model$parameters`.
+
+```{r parameters}
+model_parameters(phenoflex_model)
+```
+
+## Visualize a model with weather
+
+You can add a histogram of the observed weather to the temperature response plots, this can help to clearify what part the temperature processes will be informed by observation and what has little to no data. First you need to prepare the weather
+
+Prepare the two seasons from the bundled weather, as in Getting started:
+
+```{r process-weather}
+data("cka_weather", package = "evalpheno")
+hourly <- chillR::stack_hourly_temps(
+  cka_weather, latitude = attr(cka_weather, "latitude")
+)$hourtemps
+seasons <- chillR::genSeasonList(hourly, mrange = c(8, 6), years = 2008:2009)
+names(seasons) <- c("2008", "2009")
+```
+
+
+```{r model-visualization, eval=FALSE}
+plot(phenoflex_model, weather = seasons[[1]],
+     chill_months = c(11, 12, 1, 2), heat_months = 1:5)
+```
+The histogram indicates the upper part of the heat response curve is unlikely to receive any information from the weather time series. This can be especially helpfull as a test after the model calibration to judge how informed the calibrated model parameters are by the weather. 
+
+```{r model-visualization-partial, fig.width=6, fig.height=7, eval=FALSE}
+plot(partial_overlap_model, weather = seasons[[1]])
+```
+
+The partial-overlap plot marks minimum chilling and its initial heat requirement,
+and shades the region where insufficient chill prevents the event. The `b1 * ol` line is the accumulated-heat threshold at
+which chill stops changing the requirement; optional weather locates that
+cutoff on the season's path. 
+
+## Follow processes through a season
+
+`plot_processes()` shows how chill accumulates, how the transition changes, and
+how effective heat reaches the predicted bloom date. For partial overlap, the
+transition panel shows the declining heat requirement; for heat-only models,
+only heat accumulation is shown.
+
+For one season, the dot marks the predicted date:
+
+```{r single-season-processes, fig.height=8}
+plot_processes(phenoflex_model, seasons[[1]])
+```
+
+Supply the full season list to draw individual seasons in grey and their
+median in black.
+
+```{r multiple-season-processes, fig.height=8}
+plot_processes(partial_overlap_model, seasons)
+```
+
+The dot and vertical dashed line mark the median predicted bloom date. Horizontal
+whiskers span the earliest and latest predictions, describing variation among
+seasons rather than a confidence interval. A season without predicted bloom
+still contributes to the process medians.
+
+The result is an editable ggplot. `attr(p, "predictions")`,
+`attr(p, "median_processes")`, and `attr(p, "bloom_summary")` expose the plotted
+summaries after assigning the result to `p`.
+
+## References
