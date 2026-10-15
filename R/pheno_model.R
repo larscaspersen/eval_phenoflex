@@ -6,6 +6,158 @@
 #' Utah or positive Utah chill and GDH heat. With chill_none(), only heat is
 #' accumulated and the chosen coupling is bypassed.
 #' Printing shows the structure, submodel names and parameters in a compact form.
+#' @encoding UTF-8
+#' @details
+#' \subsection{Model structures}{
+#' The structure controls how accumulated chill affects heat accumulation or the
+#' heat requirement. The chill and heat submodels can be selected independently
+#' of the structure, so a combination need not reproduce the original publication.
+#' \describe{
+#'   \item{\code{sequential}}{Heat accumulation starts once the chill requirement
+#'   \code{yc} is met, following the sequential approach of Ashcroft et al. (1977).}
+#'   \item{\code{parallel}}{Heat effectiveness increases linearly with accumulated
+#'   chill, from \code{kmin} to full effectiveness at \code{yc}, following
+#'   Hänninen and Kramer (2007), equation B4b.}
+#'   \item{\code{partial_overlap}}{After \code{yc} is met, additional chill reduces
+#'   the heat requirement until the overlap threshold is reached, following
+#'   Pope et al. (2014).}
+#'   \item{\code{phenoflex}}{Heat effectiveness increases sigmoidally with
+#'   accumulated chill, following PhenoFlex (Luedeling et al., 2021).}
+#' }
+#' }
+#' \subsection{Chill models}{
+#' \describe{
+#'   \item{\code{chill_dynamic()}}{The Dynamic Model represents chill accumulation
+#'   as a two-step process and expresses chill in Chill Portions
+#'   (Fishman et al., 1987a,b; Erez et al., 1990).}
+#'   \item{\code{chill_hours()}}{The Chilling Hours Model counts hours within a
+#'   temperature range, by default 0--7.2 degrees Celsius (Weinberger, 1950).}
+#'   \item{\code{chill_utah()}}{The Utah Model assigns temperature-dependent
+#'   weights, including negative contributions at high temperatures
+#'   (Richardson et al., 1974).}
+#'   \item{\code{chill_positive_utah()}}{The Positive Utah modification adds only
+#'   positive daily chill totals (Linsley-Noakes et al., 1994).}
+#'   \item{\code{chill_none()}}{A heat-only option that bypasses chill-dependent
+#'   coupling.}
+#' }
+#' See \code{\link{chill_hours}} for implementation details of the alternative
+#' chill models, and \code{\link{chill_custom}} for user-defined chill submodels.
+#' }
+#' \subsection{Dynamic Model parameters}{
+#' The Dynamic Model has six parameters. Two, \code{Tf} and \code{slope}, control
+#' the conversion of a reversible intermediate into irreversible Chill Portions.
+#' The other four, \code{E0}, \code{E1}, \code{A0} and \code{A1}, govern the
+#' formation and destruction of the intermediate. These are referred to here as
+#' \emph{kinetic parameters} because they determine the temperature-dependent
+#' rates of these processes.
+#'
+#' \strong{Why use characteristic parameters?}
+#' Choosing values other than the defaults of Erez et al. (1990) can be difficult.
+#' The kinetic parameters do not directly describe observable quantities such as
+#' the optimal chilling temperature, and their values differ greatly in magnitude.
+#' For example, the default value of \code{A1} is \code{2.567e18}.
+#' This makes them difficult to interpret and can complicate calibration alongside
+#' structural parameters such as chill and heat requirements.
+#'
+#' The model therefore also accepts four \emph{characteristic parameters}, which
+#' describe responses to constant and alternating temperatures in the experiments
+#' underlying the Dynamic Model (Fishman et al., 1987a,b):
+#' \describe{
+#'   \item{\code{theta_star}}{Optimal temperature for chill accumulation under
+#'   constant conditions.}
+#'   \item{\code{theta_c}}{Upper critical temperature, above which no chill
+#'   accumulates under constant conditions.}
+#'   \item{\code{tau}}{Time (hours) required to accumulate one Chill Portion at
+#'   the optimal temperature.}
+#'   \item{\code{pie_c}}{Critical period (hours) of the reference alternating
+#'   temperature cycle at which chill accumulation ceases.}
+#' }
+#'
+#' \strong{Supplying and storing parameters.}
+#' Parameter names select the representation automatically. Supply either kinetic
+#' or characteristic parameters; mixing the two sets raises an error. If neither
+#' set is supplied, the original kinetic defaults are used. When characteristic
+#' parameters are supplied, omitted values use the characteristic defaults.
+#' These form a separate starting set, rather than an equivalent representation
+#' of the original kinetic defaults.
+#'
+#' Characteristic inputs are converted to kinetic coefficients when the model is
+#' constructed. The characteristic values are retained in
+#' \code{model$chill$characteristic}, while \code{model$parameters} always stores
+#' the kinetic coefficients.
+#'
+#' \strong{Temperature units.}
+#' For \code{theta_star} and \code{theta_c}, values from 0 to 20 (inclusive) are
+#' interpreted as degrees Celsius and converted to Kelvin using the native
+#' implementation's legacy offset: \code{K = Celsius + 273}. Values outside this
+#' range are interpreted as Kelvin. Both characteristic temperatures are stored
+#' in Kelvin; all other temperature parameters use degrees Celsius.
+#' }
+#' \subsection{Choosing a chill model}{
+#' Based on extensive model comparisons and a review of the relevant literature,
+#' I do not recommend using the Chilling Hours or Utah Models, especially in warm
+#' climates. The Dynamic Model (Chill Portions), although far from perfect, seems
+#' more reliable.
+#'
+#' This recommendation is consistent with the comparisons by Luedeling and Brown
+#' (2011) and Fernandez et al. (2020), which document strong differences among
+#' chill models and limitations of Chilling Hours and Utah estimates in warm
+#' climates. Model performance should still be evaluated for the species,
+#' cultivar and climate of interest.
+#' }
+#' @references
+#' Ashcroft, G. L., Richardson, E. A. and Seeley, S. D. (1977).
+#' A statistical method of determining chill unit and growing degree hour
+#' requirements for deciduous fruit trees. HortScience 12(4), 347--348.
+#' \doi{10.21273/HORTSCI.12.4.347}.
+#'
+#' Hänninen, H. and Kramer, K. (2007). A framework for modelling the annual
+#' cycle of trees in boreal and temperate regions. Silva Fennica 41(1), 167--205.
+#' \doi{10.14214/sf.313}.
+#'
+#' Pope, K. S., Da Silva, D., Brown, P. H. and DeJong, T. M. (2014).
+#' A biologically based approach to modeling spring phenology in temperate
+#' deciduous trees. Agricultural and Forest Meteorology 198--199, 15--23.
+#' \doi{10.1016/j.agrformet.2014.07.009}.
+#'
+#' Luedeling, E., Schiffers, K., Fohrmann, T. and Urbach, C. (2021).
+#' PhenoFlex -- an integrated model to predict spring phenology in temperate
+#' fruit trees. Agricultural and Forest Meteorology 307, 108491.
+#' \doi{10.1016/j.agrformet.2021.108491}.
+#'
+#' Fishman, S., Erez, A. and Couvillon, G. A. (1987a). The temperature dependence
+#' of dormancy breaking in plants: mathematical analysis of a two-step model
+#' involving a cooperative transition. Journal of Theoretical Biology 124(4),
+#' 473--483. \doi{10.1016/S0022-5193(87)80221-7}.
+#' 
+#' Fishman, S., Erez, A. and Couvillon, G. A. (1987b). The temperature dependence
+#' of dormancy breaking in plants: computer simulation studied under controlled temperatures
+#' Journal of Theoretical Biology 126(3),
+#' 473--483. \doi{10.1016/S0022-5193(87)80237-0}.
+#'
+#' Erez, A., Fishman, S., Linsley-Noakes, G. C. and Allan, P. (1990).
+#' The Dynamic Model for rest completion in peach buds. Acta Horticulturae 276,
+#' 165--174. \doi{10.17660/ActaHortic.1990.276.18}.
+#'
+#' Weinberger, J. H. (1950). Chilling requirements of peach varieties.
+#' Proceedings of the American Society for Horticultural Science 56, 122--128.
+#'
+#' Richardson, E. A., Seeley, S. D. and Walker, D. R. (1974). A model for
+#' estimating the completion of rest for 'Redhaven' and 'Elberta' peach trees.
+#' HortScience 9(4), 331--332. \doi{10.21273/HORTSCI.9.4.331}.
+#'
+#' Linsley-Noakes, G. C., Allan, P. and Matthee, G. (1994). Modification of rest
+#' completion prediction models for improved accuracy in South African stone
+#' fruit orchards. Journal of the Southern African Society for Horticultural
+#' Sciences 4, 13--15.
+#'
+#' Luedeling, E. and Brown, P. H. (2011). A global analysis of the comparability
+#' of winter chill models for fruit and nut trees. International Journal of
+#' Biometeorology 55, 411--421. \doi{10.1007/s00484-010-0352-y}.
+#'
+#' Fernandez, E., Whitney, C. and Luedeling, E. (2020). The importance of chill
+#' model selection -- a multi-site analysis. European Journal of Agronomy 119,
+#' 126103. \doi{10.1016/j.eja.2020.126103}.
 #' @param structure One of "sequential", "parallel", "partial_overlap" or "phenoflex".
 #' @param chill Chill specification returned by chill_dynamic(), chill_hours(),
 #'   chill_utah(), chill_positive_utah(), chill_none() or chill_custom().
@@ -14,26 +166,40 @@
 #' parameter names. Omitted parameters use default_parameters() for the selected
 #' structure, chill and heat specifications. NULL uses all defaults. The complete
 #' vector is validated after filling defaults.
-#' Dynamic Model input names select the representation automatically: theta_star,
-#' theta_c, tau or pie_c select characteristic input; E0, E1, A0 or A1 select
-#' kinetic input. Mixing the two sets is an error. With neither set supplied,
-#' the original kinetic coefficients are used. Characteristic inputs are converted
-#' at construction and retained in chill$characteristic; parameters always stores
-#' kinetic coefficients. Missing characteristic values use characteristic defaults.
-#' For theta_star and theta_c, each value in 0--20 is interpreted as Celsius
-#' and converted using the native kernels' legacy offset K = Celsius + 273.
-#' Other values are interpreted as Kelvin. Stored values are always Kelvin;
-#' all other temperature parameters remain Celsius.
+#' See \emph{Dynamic Model parameters} in Details for the kinetic and
+#' characteristic representations, their defaults, and temperature units.
 #' @return pheno_model() returns a pheno_model list. Component constructors return
 #' lists; validate_model_spec() invisibly returns TRUE or raises an error.
 #' @examples
+#' #construct a model (by default phenoflex)
 #' model <- pheno_model()
-#' parameters <- default_parameters(model)
-#' parameters["yc"] <- 45
-#' model <- pheno_model(parameters = parameters)
-#' model$parameters
-#' parallel <- pheno_model("parallel", parameters = c(yc = 50, zc = 180))
-#' model <- pheno_model(parameters = c(theta_star = 6, theta_c = 13.1))
+#' 
+#' #' #inspect model structure
+#' print(model)
+#' 
+#' #visualize model structure and submodels
+#' plot(model)
+#' 
+#' #inspect model parameters and their meaning
+#' parameter_schema(model)
+#' 
+#' #' #adjusting model parameters in a named vector
+#' model2 <- pheno_model(parameters = c('yc' = 70))
+#' 
+#' #choosing different model structure and chill submodel
+#' parallel <- pheno_model(structure = "parallel", chill = chill_hours() )
+#' 
+#' #prediction
+#' data("cka_weather", package = "evalpheno")
+#' hourly <- chillR::stack_hourly_temps(
+#' cka_weather, latitude = attr(cka_weather, "latitude")
+#' )$hourtemps
+#' years <- 2008:2009
+#' seasons <- chillR::genSeasonList(hourly, mrange = c(8, 6), years = years)
+#' names(seasons) <- as.character(years)
+#' season <- seasons[[1]]
+#' predict_phenology(model = model, weather = seasons)
+#' 
 #' @export
 pheno_model <- function(structure = "phenoflex", chill = chill_dynamic(), heat = heat_gdh(),
                         parameters = NULL) {
@@ -198,11 +364,27 @@ validate_model_spec <- function(model) {
 #' Named theta_star and theta_c values in 0--20 are interpreted as Celsius
 #' using the legacy +273 offset; Kelvin values remain supported. Validation
 #' checks the converted values without modifying the supplied vector.
-#' @return parameter_schema() returns a data frame of names, components, defaults
-#' and representations. Combined models also include base_name and cultivar
+#' @return parameter_schema() returns a data frame with name, component, default,
+#' description and unit columns. Combined models also include base_name and cultivar
 #' (NA for shared parameters); model lists use member instead of cultivar.
 #' default_parameters() returns a named numeric vector.
 #' validate_parameters() invisibly returns TRUE or raises an error.
+#' @details
+#' Descriptions reflect the selected model structure. Chill requirements use
+#' Chill Portions for the Dynamic Model, Chilling Hours for chill hours, and
+#' Utah Chill Units for Utah and positive Utah. Heat requirements (zc, b1 and b2)
+#' use degree C h for scaled GDH and h for unscaled GDH, which accumulates
+#' temperature-weighted hours. The units of s1 and b3 are the inverse chill unit.
+#' Dimensionless parameters are labelled explicitly.
+#'
+#' Characteristic temperatures theta_star and theta_c are reported in K, matching
+#' their stored values; the constructor also accepts Celsius values as described
+#' in pheno_model(). E0 and E1 are activation energies divided by the gas constant,
+#' expressed in K. Other temperature thresholds use degrees Celsius.
+#'
+#' For user-defined chill submodels, yc uses custom chill units. Custom parameters
+#' receive a generic description and NA units because their meaning and units
+#' cannot be inferred from the callback.
 #' @param parameterization Optional Dynamic Model representation for a calibration
 #' schema or defaults. NULL uses the model's representation (kinetic for constructed
 #' models); "characteristic" exposes characteristic calibration names.
@@ -224,21 +406,16 @@ parameter_schema <- function(model, parameterization = NULL) {
   yc <- switch(model$chill$name, chill_hours = 1000, utah = 1200, positive_utah = 1200, 40)
   if(model$chill$name == 'dynamic'){
     
-    representation <- model$chill$parameterization
-    chill <- if (representation == "characteristic")
+    chill <- if (model$chill$parameterization == "characteristic")
       c(.dynamic_characteristic_defaults, Tf = 4, slope = 1.6)
     else c(.dynamic_kinetic_defaults, Tf = 4, slope = 1.6)
   
-    # Tf and slope are native parameters in both representations.
-    chill_representation <- rep("native", length(chill))
-    chill_representation[1:4] <- representation
   } else {
     chill <- switch(model$chill$name,
       chill_hours = c(CH_lower = 0, CH_upper = 7.2),
       utah = stats::setNames(c(0, 0.5, 1, 0.5, 0, -0.5, -1), paste0("utah_w", 1:7)),
       positive_utah = stats::setNames(c(0, 0.5, 1, 0.5, 0, -0.5, -1), paste0("pos_utah_w", 1:7)),
       none = c(heat_start_index = 1), custom = model$chill$defaults)
-    chill_representation <- rep("native", length(chill))
   }
   
   #check heat
@@ -274,20 +451,76 @@ parameter_schema <- function(model, parameterization = NULL) {
     rep("heat", length(heat))
   )
   
-  representation <- c(
-    rep("native", length(structure_parameters)),
-    chill_representation,
-    rep("native", length(heat))
-  )
-  
+  metadata <- .parameter_metadata(model, names(values))
   
   data.frame(
     name = names(values),
     component = component,
     default = unname(values),
-    representation = representation,
+    description = unname(metadata$description),
+    unit = unname(metadata$unit),
     stringsAsFactors = FALSE
   )
+}
+
+.parameter_metadata <- function(model, parameter_names) {
+  chill_unit <- switch(model$chill$name,
+    dynamic = "Chill Portions", chill_hours = "Chilling Hours",
+    utah = "Utah Chill Units", positive_utah = "Utah Chill Units",
+    custom = "custom chill units", none = NA_character_)
+  heat_unit <- if (model$heat$scaling == "scaled") "degree C h" else "h"
+  inverse_chill_unit <- paste0("1 / (", chill_unit, ")")
+
+  description <- c(
+    yc = switch(model$structure,
+      phenoflex = "Chill requirement",
+      parallel = "Chill requirement",
+      "Chill requirement"),
+    zc = "Heat requirement",
+    s1 = "Slope parameter for transition from chill accumulation to heat accumulation",
+    kmin = "Minimum relative heat effectiveness at zero chill",
+    b1 = "Baseline heat requirement",
+    b2 = "Additional heat requirement at the start of overlap",
+    b3 = "Rate of heat-requirement decline with additional chill",
+    ol = "Overlap multiplier for the baseline heat requirement",
+    E0 = "time-independent activation energy of forming the precursor to the dormancy-breaking factor",
+    E1 = "time-independent activation energy of destroying the precursor to the dormancy-breaking factor",
+    A0 = "amplitude of the (hypothetical) process involved in forming the precursor to the dormancy-breaking factor",
+    A1 = "amplitude of the (hypothetical) process involved in destroying the precursor to the dormancy-breaking factor",
+    Tf = "Transition temperature for irreversible chill conversion",
+    slope = "Slope of temperature-dependent chill conversion",
+    theta_star = "Optimal temperature for chill accumulation",
+    theta_c = "Upper critical temperature for chill accumulation",
+    tau = "Time to accumulate one Chill Portion at the optimal temperature",
+    pie_c = "Critical temperature-cycle period for chill negation",
+    CH_lower = "Lower temperature threshold for Chilling Hours",
+    CH_upper = "Upper temperature threshold for Chilling Hours",
+    heat_start_index = "First hourly interval eligible for heat accumulation",
+    Tb = "Base temperature for heat accumulation",
+    Tu = "Optimal temperature for heat accumulation",
+    Tc = "Upper critical temperature for heat accumulation")
+  unit <- c(
+    yc = chill_unit, zc = heat_unit, s1 = inverse_chill_unit,
+    kmin = "dimensionless", b1 = heat_unit, b2 = heat_unit,
+    b3 = inverse_chill_unit, ol = "dimensionless",
+    E0 = "dimensionless", E1 = "dimensionless", A0 = "dimensionless", A1 = "dimensionless",
+    Tf = "degree C", slope = "K^-1", theta_star = "K", theta_c = "K",
+    tau = "h", pie_c = "h", CH_lower = "degree C", CH_upper = "degree C",
+    heat_start_index = "row index", Tb = "degree C", Tu = "degree C", Tc = "degree C")
+
+  if (model$chill$name %in% c("utah", "positive_utah")) {
+    weights <- paste0(if (model$chill$name == "utah") "utah_w" else "pos_utah_w", 1:7)
+    zones <- c("T <= 1.4", "1.4 < T <= 2.4", "2.4 < T <= 9.1",
+      "9.1 < T <= 12.4", "12.4 < T <= 15.9", "15.9 < T <= 18", "18 < T <= 1000")
+    description[weights] <- paste0("Chill weight for ", zones, " degrees C")
+    unit[weights] <- "Utah Chill Units / h"
+  } else if (model$chill$name == "custom") {
+    custom_names <- names(model$chill$defaults)
+    description[custom_names] <- paste("Custom chill parameter:", custom_names)
+    unit[custom_names] <- NA_character_
+  }
+
+  list(description = description[parameter_names], unit = unit[parameter_names])
 }
 
 #' @rdname parameter_schema
