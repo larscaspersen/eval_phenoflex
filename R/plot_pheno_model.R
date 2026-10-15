@@ -48,7 +48,9 @@
 #'   of the original PhenoFlex temperature-response plot.
 #' @param hourtemps Optional observed temperatures with Temp and Month columns.
 #'   Month may instead be derived from Year and JDay. Temperatures outside the
-#'   displayed range are omitted from the frequency overlay.
+#'   displayed range are omitted from the frequency overlay. When an overlay is
+#'   shown, panel labels identify the selected months and a caption identifies
+#'   the supplied weather time series as its source.
 #' @param chill_months,heat_months Calendar months used for each observed-temperature
 #'   overlay. Histogram height and gradient intensity are relative to the most
 #'   frequent displayed temperature bin in that panel; they are not chill or heat.
@@ -60,7 +62,8 @@
 #'   range can extend beyond that display cap.
 #' @param weather Optional complete hourly season passed to [predict_phenology()].
 #'   For partial overlap, adds its effective chill/heat trajectory and overlap/event
-#'   points. For other chill structures, marks observed chill states along the x-axis.
+#'   points. Other chill transition curves do not depend on weather. In the
+#'   overview, also supplies temperature frequencies unless hourtemps is specified.
 #' @param x A pheno_model for the S3 plot method.
 #' @param y Unused; retained for the plot generic.
 #' @param ... Arguments passed from plot() to plot_pheno_model().
@@ -130,6 +133,20 @@ plot_temperature_response <- function(model, parameters = model_parameters(model
       }, numeric(1))
     }
   }
+  panel_labels <- stats::setNames(levels(response$component), levels(response$component))
+  weather_caption <- NULL
+  if (!is.null(frequencies)) {
+    month_labels <- vapply(list(chill_months, heat_months), function(months) {
+      label <- paste("Months:", paste(month.abb[unique(months)], collapse = ", "))
+      paste(strwrap(label, width = 32), collapse = "\n")
+    }, character(1))
+    panel_labels[] <- paste(panel_labels, month_labels, sep = "\n")
+    weather_caption <- if (weather_freq_plot == "histogram")
+      paste("Background histograms: temperatures from the supplied weather time series.",
+        "Heights show relative frequency within each panel.", sep = "\n") else
+      paste("Line colour: temperature frequencies from the supplied weather time series.",
+        "Frequencies are relative to the most frequent bin in each panel.", sep = "\n")
+  }
   result <- ggplot2::ggplot(response, ggplot2::aes(x = temperature, y = response))
   if (!is.null(frequencies) && weather_freq_plot == "histogram")
     result <- result + ggplot2::geom_rect(data = frequencies,
@@ -143,8 +160,9 @@ plot_temperature_response <- function(model, parameters = model_parameters(model
     result <- result + ggplot2::geom_line(ggplot2::aes(colour = component), linewidth = 1.1) +
       ggplot2::scale_colour_manual(values = c("#287c9b", "#cf6940"), guide = "none")
   }
-  result + ggplot2::facet_wrap(ggplot2::vars(component), ncol = 2, scales = "free_y") +
-    ggplot2::labs(x = "Temperature (\u00b0C)", y = "Accumulation per hour") +
+  result + ggplot2::facet_wrap(ggplot2::vars(component), ncol = 2, scales = "free_y",
+      labeller = ggplot2::labeller(component = panel_labels)) +
+    ggplot2::labs(x = "Temperature (\u00b0C)", y = "Accumulation per hour", caption = weather_caption) +
     .pheno_plot_theme()
 }
 
@@ -207,13 +225,6 @@ plot_model_structure <- function(model, parameters = model_parameters(model),
   result <- result + ggplot2::geom_point(data = points, size = 2.8, colour = "#6d5799") +
     ggplot2::geom_text(data = points, ggplot2::aes(label = label),
       nudge_y = -0.075, nudge_x = 0.01 * diff(chill_range), hjust = 0, size = 3.5, colour = "#394956")
-  if (!is.null(weather)) {
-    native <- predict_phenology(model, weather, stopatzc = FALSE, basic_output = FALSE)
-    chill <- native$chill[, ncol(native$chill)]
-    result <- result + ggplot2::geom_rug(data = data.frame(chill = chill),
-      ggplot2::aes(x = chill), inherit.aes = FALSE, sides = "b", alpha = 0.15, colour = "#cf6940")
-    caption <- paste(caption, "Orange rug: chill states in the supplied season.")
-  }
   result + ggplot2::coord_cartesian(xlim = chill_range, ylim = c(-0.04, 1.06), clip = "off") +
     ggplot2::scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75, 1)) +
     ggplot2::labs(title = paste(.plot_structure_name(model), "transition"),
@@ -323,7 +334,7 @@ plot_model_structure <- function(model, parameters = model_parameters(model),
       weather$Temp >= breaks[1] & weather$Temp <= tail(breaks, 1)
     counts <- graphics::hist(weather$Temp[use], breaks = breaks, plot = FALSE)$counts
     frequency <- if (max(counts) > 0) counts / max(counts) else rep(0, bins)
-    data.frame(lower = head(breaks, -1), upper = tail(breaks, -1), frequency = frequency,
+    data.frame(lower = utils::head(breaks, -1), upper = tail(breaks, -1), frequency = frequency,
       component = factor(panels[i], levels = panels))
   })
   do.call(rbind, result)
@@ -419,8 +430,8 @@ plot_model_structure <- function(model, parameters = model_parameters(model),
       caption = caption) + .pheno_plot_theme()
 }
 
-.partial_overlap_plot_trajectory <- function(model, weather) {
-  native <- predict_phenology(model, weather, stopatzc = FALSE, basic_output = FALSE)
+.partial_overlap_plot_trajectory <- function(model, weather,
+    native = predict_phenology(model, weather, stopatzc = FALSE, basic_output = FALSE)) {
   p <- model$parameters
   y <- native$chill[, ncol(native$chill)]
   heat <- native$z
