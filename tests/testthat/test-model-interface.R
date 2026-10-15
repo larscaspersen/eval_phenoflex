@@ -18,8 +18,9 @@ test_that("each structure exposes its own schema under both heat scalings", {
         expect_identical(schema$component,
                          c(rep("structure", length(structure_names[[structure]])),
                            rep("chill", 6), rep("heat", 3)))
-        expect_identical(schema$representation[schema$component == "chill"],
-                         c(rep(representation, 4), "native", "native"))
+        expect_identical(names(schema), c("name", "component", "default", "description", "unit"))
+        expect_true(all(!is.na(schema$description) & nzchar(schema$description)))
+        expect_true(all(!is.na(schema$unit) & nzchar(schema$unit)))
         p <- default_parameters(model, representation)
         expect_identical(names(p), schema$name)
         expect_equal(unname(p), schema$default)

@@ -36,6 +36,7 @@ test_that("temperature responses use the selected native chill and heat kernels"
 
 test_that("transition plots agree with native heat effectiveness", {
   skip_if_not_installed("ggplot2")
+  weather <- data.frame(Temp = 8, Year = 2001, JDay = rep(1:2, each = 24))
   for (structure in c("sequential", "parallel", "phenoflex")) {
     model <- pheno_model(structure)
     plot <- plot_model_structure(model)
@@ -53,6 +54,9 @@ test_that("transition plots agree with native heat effectiveness", {
     }, numeric(1))
     expect_equal(data$effectiveness, expected, tolerance = 1e-14)
     expect_silent(ggplot2::ggplot_build(plot))
+    with_weather <- plot_model_structure(model, weather = weather)
+    expect_equal(ggplot2::ggplot_build(with_weather)$data, ggplot2::ggplot_build(plot)$data)
+    expect_identical(with_weather$labels$caption, plot$labels$caption)
   }
 })
 
@@ -131,6 +135,11 @@ test_that("histogram and gradient overlays handle boundaries, sparse months and 
       bins = 2, weather_freq_plot = type)
     expect_true(all(is.finite(plot$data$response)))
     expect_silent(ggplot2::ggplot_build(plot))
+    expect_match(plot$labels$caption, "supplied weather time series", fixed = TRUE)
+    labels <- unlist(plot$facet$params$labeller(
+      data.frame(component = c("Chill response", "Heat response"))))
+    expect_identical(unname(labels), c("Chill response\nMonths: Nov, Dec, Jan, Feb",
+      "Heat response\nMonths: Jan, Feb, Mar, Apr, May"))
     if (type == "gradient") expect_equal(plot$data$frequency[1:5], c(1, 1, 1, 0.25, 0.25))
   }
   no_month <- data.frame(Temp = c(0, 1), Year = 2001, JDay = c(1, 32))
@@ -138,6 +147,17 @@ test_that("histogram and gradient overlays handle boundaries, sparse months and 
     hourtemps = no_month, chill_months = 12, heat_months = 1, weather_freq_plot = "gradient")
   expect_true(all(plot$data$frequency[1:3] == 0))
   expect_silent(ggplot2::ggplot_build(plot))
+  labels <- unlist(plot$facet$params$labeller(
+    data.frame(component = c("Chill response", "Heat response"))))
+  expect_identical(unname(labels), c("Chill response\nMonths: Dec", "Heat response\nMonths: Jan"))
+  for (hourtemps in list(NULL, weather)) {
+    plain <- plot_temperature_response(pheno_model(), temp_values = c(0, 1, 2),
+      chill_duration = 24, hourtemps = hourtemps, weather_freq_plot = "none")
+    expect_null(plain$labels$caption)
+    labels <- unlist(plain$facet$params$labeller(
+      data.frame(component = c("Chill response", "Heat response"))))
+    expect_identical(unname(labels), c("Chill response", "Heat response"))
+  }
 })
 
 test_that("overview and component plots accept stored and characteristic fitted parameters", {
