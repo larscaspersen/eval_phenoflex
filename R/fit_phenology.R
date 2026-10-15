@@ -90,7 +90,8 @@
 #'   par and calibration_settings retain the optimizer's representation.
 #' @md
 #' @param ... Additional arguments passed to `evaluation`, such as `seasons`.
-#'   Use a closure to adapt evaluation functions with other interfaces.
+#'   Use a closure to adapt evaluation functions with other interfaces. For
+#'   print(), additional arguments are passed to parameter-vector printing.
 #' @return A `phenology_fit` list with `par` (best complete named parameters),
 #'   `value` (loss), and `model` (specification storing fitted parameters).
 #'   Pass the result directly to predict_phenology(). `predictions` contains
@@ -108,27 +109,30 @@
 #'   extracts a plain list of single models from a fitted result.
 #'   Multistage specifications retain their compact form with fitted shared
 #'   parameters and updated stage heat requirements in `model$stages`.
+#'   Printing shows the optimizer, loss and up to six estimated parameters.
+#'   Inspect `$par`, `$predictions`, `$calibration_settings` and `$diagnostics`
+#'   directly for the complete results.
 #' @examples
-#' require(DEoptim)
+#' if (requireNamespace("DEoptim", quietly = TRUE)) {
 #' model <- pheno_model()
-#' lower <- c(yc = 10)
-#' upper <- c(yc = 80)
-#' loss <- function(parameters, model, target) (parameters[["yc"]] - target)^2
-#' fit <- fit_phenology(model, loss, lower, upper, target = 45,
-#'                      seed = 17, max_iterations = 10,
-#'                      control = list(NP = 10, trace = FALSE))
-#' fit$par
-#' # Explicit observations with the example RSS evaluator:
-#' model <- pheno_model("sequential", chill_dynamic("kinetic"),
-#'                      parameters = c(yc = 0.1, zc = 5))
-#' seasons <- list(data.frame(Temp = rep(8, 480), Year = 2008,
-#'                            JDay = rep(50:69, each = 24)))
-#' observed <- predict_phenology(model, seasons)
+#' data("cka_weather", package = "evalpheno")
+#' hourly <- chillR::stack_hourly_temps(
+#'   cka_weather, latitude = attr(cka_weather, "latitude")
+#' )$hourtemps
+#' seasons <- chillR::genSeasonList(hourly, mrange = c(8, 6), years = 2008:2009)
+#' names(seasons) <- c("2008", "2009")
+#'
+#' # Synthetic observation dates for teaching; replace with measured dates.
+#' observed <- c(`2008` = 125, `2009` = 117)
 #' fit <- fit_phenology(model, evaluation = phenology_rss, observed = observed,
-#'                      seasons = seasons, lower = numeric(), upper = numeric())
-#' fit$value
+#'                      seasons = seasons, lower = c(yc = 10, zc = 180),
+#'                      upper = c(yc = 80, zc = 350), seed = 17,
+#'                      max_iterations = 2, control = list(NP = 20, trace = FALSE))
+#' # Increase the iteration limit and check convergence for a real calibration.
+#' fit
 #' predict_phenology(fit, seasons)
 #' fit$predictions
+#' }
 #' @export
 fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
                           optimizer = c("DEoptim", "GenSA"), seed = 12345,
@@ -319,6 +323,25 @@ fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
                    max_seconds = max_seconds, parameters = parameters, evaluation = evaluation),
                  diagnostics = list(evaluations = evaluations, elapsed = optimization_elapsed,
                    termination = termination, optimizer_result = optimizer_result)), class = "phenology_fit")
+}
+
+#' @rdname fit_phenology
+#' @param x A fitted phenology model returned by fit_phenology().
+#' @param digits Significant digits used when printing the loss and parameters.
+#' @export
+print.phenology_fit <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
+  cat("Calibrated phenology model (", x$calibration_settings$optimizer, ")\n", sep = "")
+  cat("Loss:", format(signif(x$value, digits), trim = TRUE), "\n")
+  lower <- x$calibration_settings$lower[names(x$par)]
+  upper <- x$calibration_settings$upper[names(x$par)]
+  estimated <- x$par[lower < upper]
+  if (length(estimated)) {
+    cat("Estimated parameters:\n")
+    print(utils::head(estimated, 6L), digits = digits, ...)
+    if (length(estimated) > 6L)
+      cat("... ", length(estimated) - 6L, " more; see $par.\n", sep = "")
+  } else cat("No parameters optimized (all fixed).\n")
+  invisible(x)
 }
 
 # Keep the worker closure separate from the fitter's tracking and cluster state.

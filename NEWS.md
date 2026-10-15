@@ -1,5 +1,10 @@
 # evalpheno 0.0.3.1
 
+* Print calibrated models as a compact optimizer, loss and estimated-parameter
+  summary. Keep the complete results accessible through the fitted object.
+  Replace the arbitrary parameter-target fitting example with an observation-
+  based calibration using bundled weather.
+
 * Add plot_processes() for native seasonal chill, transition and heat trajectories.
   Compare season lists with grey individual curves, black pointwise medians,
   and a median bloom-date marker with earliest-to-latest prediction whiskers.

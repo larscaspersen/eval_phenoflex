@@ -2,6 +2,7 @@
 % Please edit documentation in R/fit_phenology.R
 \name{fit_phenology}
 \alias{fit_phenology}
+\alias{print.phenology_fit}
 \title{Calibrate a phenology model}
 \usage{
 fit_phenology(
@@ -20,6 +21,8 @@ fit_phenology(
   prediction = NULL,
   parameterization = NULL
 )
+
+\method{print}{phenology_fit}(x, digits = max(3L, getOption("digits") - 3L), ...)
 }
 \arguments{
 \item{model}{A \code{\link[=pheno_model]{pheno_model()}}, \code{\link[=population_pheno_model]{population_pheno_model()}} or
@@ -89,7 +92,8 @@ Initial theta_star and theta_c values also accept the automatic Celsius
 convention; evaluators and calibration parameters receive Kelvin values.}
 
 \item{...}{Additional arguments passed to \code{evaluation}, such as \code{seasons}.
-Use a closure to adapt evaluation functions with other interfaces.}
+Use a closure to adapt evaluation functions with other interfaces. For
+print(), additional arguments are passed to parameter-vector printing.}
 
 \item{observed}{Observed phenology dates, passed unchanged as the named
 \code{observed} argument to the supplied evaluation function on every evaluation.
@@ -114,6 +118,10 @@ or conflicting with an explicit choice is an error. Characteristic fitting
 uses equivalent stored kinetic values as its start unless explicit starting
 values are supplied. The returned model always stores kinetic parameters;
 par and calibration_settings retain the optimizer's representation.}
+
+\item{x}{A fitted phenology model returned by fit_phenology().}
+
+\item{digits}{Significant digits used when printing the loss and parameters.}
 }
 \value{
 A \code{phenology_fit} list with \code{par} (best complete named parameters),
@@ -133,6 +141,9 @@ parameters. \code{\link[=model_parameters]{model_parameters()}} returns the flat
 extracts a plain list of single models from a fitted result.
 Multistage specifications retain their compact form with fitted shared
 parameters and updated stage heat requirements in \code{model$stages}.
+Printing shows the optimizer, loss and up to six estimated parameters.
+Inspect \verb{$par}, \verb{$predictions}, \verb{$calibration_settings} and \verb{$diagnostics}
+directly for the complete results.
 }
 \description{
 Minimize a user-supplied evaluation function using DEoptim or GenSA. The
@@ -146,24 +157,24 @@ other errors in the evaluation function propagate. Candidates outside the
 model's parameter domains are excluded before evaluation.
 }
 \examples{
-require(DEoptim)
+if (requireNamespace("DEoptim", quietly = TRUE)) {
 model <- pheno_model()
-lower <- c(yc = 10)
-upper <- c(yc = 80)
-loss <- function(parameters, model, target) (parameters[["yc"]] - target)^2
-fit <- fit_phenology(model, loss, lower, upper, target = 45,
-                     seed = 17, max_iterations = 10,
-                     control = list(NP = 10, trace = FALSE))
-fit$par
-# Explicit observations with the example RSS evaluator:
-model <- pheno_model("sequential", chill_dynamic("kinetic"),
-                     parameters = c(yc = 0.1, zc = 5))
-seasons <- list(data.frame(Temp = rep(8, 480), Year = 2008,
-                           JDay = rep(50:69, each = 24)))
-observed <- predict_phenology(model, seasons)
+data("cka_weather", package = "evalpheno")
+hourly <- chillR::stack_hourly_temps(
+  cka_weather, latitude = attr(cka_weather, "latitude")
+)$hourtemps
+seasons <- chillR::genSeasonList(hourly, mrange = c(8, 6), years = 2008:2009)
+names(seasons) <- c("2008", "2009")
+
+# Synthetic observation dates for teaching; replace with measured dates.
+observed <- c(`2008` = 125, `2009` = 117)
 fit <- fit_phenology(model, evaluation = phenology_rss, observed = observed,
-                     seasons = seasons, lower = numeric(), upper = numeric())
-fit$value
+                     seasons = seasons, lower = c(yc = 10, zc = 180),
+                     upper = c(yc = 80, zc = 350), seed = 17,
+                     max_iterations = 2, control = list(NP = 20, trace = FALSE))
+# Increase the iteration limit and check convergence for a real calibration.
+fit
 predict_phenology(fit, seasons)
 fit$predictions
+}
 }

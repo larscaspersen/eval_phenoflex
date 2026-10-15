@@ -282,3 +282,37 @@ test_that("the fitter requires an explicitly supplied evaluation function", {
   expect_error(fit_phenology(model, lower = p, upper = p),
                "evaluation must be supplied as a function")
 })
+
+test_that("fit printing is compact, invisible and omits calibration internals", {
+  skip_if_not_installed("DEoptim")
+  x <- fit_example()
+  fit <- fit_phenology(x$model, x$loss, x$lower, x$upper, target = x$target,
+    max_iterations = 1, control = list(NP = 20, trace = FALSE))
+  fit$predictions <- list(observed = seq_len(1000), predicted = seq_len(1000))
+  fit$diagnostics$optimizer_result$print_marker <- "OPTIMIZER_INTERNALS"
+  before <- fit
+  output <- capture.output(result <- withVisible(print(fit, digits = 3)))
+  expect_false(result$visible)
+  expect_identical(result$value, fit)
+  expect_identical(fit, before)
+  expect_lt(length(output), 9)
+  expect_match(output[1], "Calibrated phenology model (DEoptim)", fixed = TRUE)
+  expect_true(any(grepl("Loss:", output, fixed = TRUE)))
+  expect_true(any(grepl("yc", output, fixed = TRUE)))
+  expect_true(any(grepl("zc", output, fixed = TRUE)))
+  expect_false(any(grepl("OPTIMIZER_INTERNALS|calibration_settings|observed|A0|E0", output)))
+})
+
+test_that("fit printing handles fixed and many-parameter calibrations", {
+  x <- fit_example()
+  fixed <- fit_phenology(x$model, x$loss, numeric(), numeric(), target = x$target)
+  expect_output(print(fixed), "No parameters optimized (all fixed).", fixed = TRUE)
+  expect_length(capture.output(print(fixed)), 3L)
+  skip_if_not_installed("DEoptim")
+  many <- fit_phenology(x$model, function(p, m) sum(p), max_iterations = 1,
+    control = list(NP = 10 * length(model_parameters(x$model)), trace = FALSE))
+  output <- capture.output(print(many))
+  expect_lt(length(output), 11)
+  expect_true(any(grepl("more; see $par.", output, fixed = TRUE)))
+  expect_identical(names(many$par), parameter_schema(x$model)$name)
+})
