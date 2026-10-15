@@ -17,10 +17,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 The classic use case of spring-phenology is model to have a single calibrated model for
 each cultivar or phenological stage (budbreak, flowering). However,
-there are situations where specialized model calibration may be desired. This vignette will demonstate evalphenos function to do cross-validation, the model calibration of several successive phenological stages and the partial pooling of model structure across cultivars.
+there are situations where specialized model calibration may be desired. This vignette will demonstrate evalphenos function to do cross-validation, the model calibration of several successive phenological stages and the partial pooling of model structure across cultivars.
 
-In the first step, the phenology model is defined. In addition, the temperature data is converted to hourly format and split by season, meaning that we create a list with seperate
-data.frames, each entry contains hourly temperature from the start of the season, by default September, to the end of the season, by default June in the following year. 
+In the first step, the phenology model is defined. In addition, the temperature data is converted to hourly format and split by season, meaning that we create a list with separate
+data.frames, each entry contains hourly temperature from the start of the season, by default September, to the end of the season, by default June in the following year. For the weather handling, I recommend using the [chillR package](https://cran.r-project.org/web/packages/chillR/index.html) [@luedelingChillRStatisticalMethods2024].
 
 ```{r weather}
 library(evalpheno)
@@ -39,6 +39,79 @@ season <- seasons[[1]]
 
 phenoflex_model <- pheno_model(structure = "phenoflex")
 ```
+
+## Single-model calibration options
+
+[Getting started](getting-started.html) walks through a first fit. The examples
+below extend that workflow with fixed parameters and kinetic or characteristic
+chill parameters. All phenology dates in this vignette are synthetic teaching
+examples; the short optimizer runs demonstrate the interface.
+
+```{r single-model-bounds}
+observed <- c(`2008` = 125, `2009` = 117)
+bounds <- default_bounds(phenoflex_model, parameter_names = c("yc", "zc"))
+bounds$lower["zc"] <- 180
+bounds$upper["zc"] <- 350
+```
+
+Only parameters named in the bounds are searched. Other parameters keep their
+stored values, or values supplied through the fitter's complete `parameters`
+override. Lower and upper bounds must name the same subset, and initial
+values must lie within those ranges.
+
+### Fix parameters and control the search
+
+If both bounds are omitted, `fit_phenology()` uses the complete default search
+box. Review and adjust these suggestions for your species, model and data.
+[DEoptim](https://cran.r-project.org/web/packages/DEoptim/index.html) [@deoptim_package_2011, @ardia_differential_2011] is the default optimizer; 
+select `optimizer = "GenSA"` to use the
+alternative backend from the [GenSA package](https://cran.r-project.org/web/packages/GenSA/index.html) [@xiang_generalized_2013]. 
+`max_iterations` limits the search, `control` supplies
+optimizer-specific settings, and `seed` makes these examples reproducible.
+
+For meaningful calibration, use more observations, allow enough iterations
+for convergence, and repeat the search from different starting points or
+random seeds. The two-iteration runs here are deliberately short.
+
+### Use kinetic chill parameters
+
+Models work directly with `E0`, `E1`, `A0` and `A1` by default. These original
+coefficients are a separate starting set from the characteristic defaults.
+The fitter detects kinetic calibration from these names in its bounds or
+starting values. The following
+example fits `E0` and `zc`, keeping all other parameters constant:
+
+```{r kinetic-fit}
+kinetic <- pheno_model()
+kinetic_bounds <- default_bounds(kinetic, c("E0", "zc"))
+kinetic_bounds$lower["E0"] <- 4000
+kinetic_bounds$upper["E0"] <- 4300
+kinetic_fit <- fit_phenology(
+  kinetic, evaluation = phenology_rss,
+  seasons = seasons, observed = observed,
+  lower = kinetic_bounds$lower, upper = kinetic_bounds$upper,
+  optimizer = "DEoptim", max_iterations = 2,
+  control = list(NP = 20, trace = FALSE), seed = 18
+)
+kinetic_fit$par[c("E0", "zc")]
+```
+
+For characteristic calibration of the Dynamic Model, name the characteristic parameters in the
+bounds or use `parameterization = "characteristic"` in `fit_phenology()`.
+This can be helpful, because defining the search range is easier, as the parameters
+are measured in temperature and hours instead of activation energies (which can have dozens of digits,
+making the optimization hard). Using the characteristic model parameters for calibrating
+the Dynamic Model was suggested by @egea_reducing_2021 and implemented for
+PhenoFlex by @caspersen_projecting_2024.
+
+`default_bounds(model, parameterization = "characteristic")` returns the full
+characteristic search box. `model_parameters(model, "characteristic")` returns
+equivalent starting values, while `default_parameters(model, "characteristic")`
+returns the illustrative characteristic starting set. Check that your chosen
+initial values lie inside the bounds. `fit$par` and calibration settings retain
+the optimizer's representation; `fit$model$parameters` and
+`model_parameters(fit)` contain kinetic coefficients. This also applies to
+collections, populations, multistage models and CV fold models.
 
 ## Cross-validation and weighted mean predictions
 
