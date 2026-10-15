@@ -118,6 +118,9 @@ plot_model_structure(model)
 
 # Overlay the season's effective chill/heat path and actual overlap cutoff.
 plot_model_structure(model, weather = seasons[[1]])
+plot_processes(model, seasons[[1]])
+plot_processes(model, seasons)
+plot_processes(model, seasons, ribbon = TRUE)
 ```
 
 The partial-overlap plot marks minimum chilling `yc` and the initial heat
@@ -133,6 +136,17 @@ The component functions return editable ggplot objects, and `plot(model)`
 returns a patchwork composition. Install `ggplot2` and `patchwork` to use them.
 Observed-temperature histograms or gradients can be added with `hourtemps` and
 `weather_freq_plot` in `plot_temperature_response()` or `plot_pheno_model()`.
+In `plot(model, weather = seasons[[1]])`, the supplied season is used automatically.
+Panel labels show the selected `chill_months` and `heat_months`, and the caption
+identifies the weather source and relative frequencies.
+
+`plot_processes()` follows chill accumulation, the transition, and effective heat
+through time. With a season list, grey curves show individual seasons and black
+curves show pointwise medians. A dot marks the median bloom date, with whiskers
+spanning the earliest and latest successful predictions. Set `ribbon = TRUE`
+to replace the individual curves with a shaded min-max range. Partial overlap shows
+its changing heat requirement in the transition panel; heat-only models show
+just heat accumulation.
 
 ## Model a bud population
 
@@ -157,6 +171,7 @@ Population models also support cutting and constant-temperature forcing
 experiments.
 
 For full workflows, see [Getting
-started](vignettes/getting-started.Rmd), [Model
+started](vignettes/getting-started.Rmd),
+[Model structures and submodels](vignettes/model-structures-and-submodels.Rmd), [Model
 calibration](vignettes/model-calibration_special-cases.Rmd), and [Bud
 populations](vignettes/bud-population.Rmd).

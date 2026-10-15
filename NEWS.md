@@ -1,5 +1,24 @@
 # evalpheno 0.0.3.1
 
+* Add plot_processes() for native seasonal chill, transition and heat trajectories.
+  Compare season lists with grey individual curves, black pointwise medians,
+  and a median bloom-date marker with earliest-to-latest prediction whiskers.
+  Align seasons by fractional day of year, with abbreviated month labels from
+  a reference calendar. Preserve all available seasons around leap day instead
+  of restricting February 29 summaries to leap years.
+  Set ribbon = TRUE to replace individual seasonal curves with a min-max range.
+
+* Remove weather rugs from transition plots. Label temperature-frequency overlays
+  with their supplied weather source and selected months in each response panel.
+
+* Replace the representation column in parameter_schema() with brief parameter
+  descriptions and units. Adapt chill and heat requirement units to the selected
+  submodels and GDH scaling, including indexed parameters in model collections.
+
+* Organize pheno_model() and chill submodel help into Details subsections, with
+  citations for model structures and chill algorithms and guidance favoring the
+  Dynamic Model over Chilling Hours and Utah, especially in warm climates.
+
 * Set default chill requirements to yc = 1000 for chill hours and yc = 1200
   for Utah and positive Utah. Keep the Dynamic Model default at 40 portions.
   Adjust suggested yc bounds to 250--2000 hours and 300--2400 Utah units so
