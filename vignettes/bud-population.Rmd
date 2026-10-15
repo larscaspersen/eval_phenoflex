@@ -23,7 +23,7 @@ for example full bloom, which defined accoridng to the BBCH scale as the time po
 
 ## Preparation
 
-First the temperature observation needs to be processed into a list of seasons 
+First the temperature observation needs to be processed into a list of seasons. For the weather handling, I recommend using the [chillR package](https://cran.r-project.org/web/packages/chillR/index.html) [@luedelingChillRStatisticalMethods2024].
 
 ```{r weather}
 library(evalpheno)
@@ -78,17 +78,43 @@ head(field$bloom_jday)
 mean(is.finite(field$bloom_jday)) # proportion reaching the event this season
 ```
 
+Inspect the sampled chill and heat requirements.
+
+```{r plot_samples}
+library(ggplot2)
+
+field$population |> 
+  as.data.frame() |> 
+  dplyr::select(-s1) |> 
+  tidyr::pivot_longer(tidyselect::everything()) |> 
+  ggplot(aes(x = value)) +
+  geom_histogram() +
+  facet_grid(~name, scales = 'free') +
+  theme_bw(base_size = 15)
+```
+
+Inspect the predicted flowering dates
+
+```{r plot_bloom}
+data.frame(bloom = field$bloom_jday) |> 
+  ggplot(aes(x = bloom)) +
+  stat_ecdf() +
+  xlab('Day of the year' ) +
+  ylab('Predicted share of open flowers (%)') +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw(base_size = 15)
+```
 
 
 ## Forcing experiment
 
-Temperate fruit trees and their different cultivars vary in their chill and heat requirement. Next to modeling or statistical analaysis, the chill requirement is determined by so-called forcing experiments. Branches of the fruit tree are sampled through the winter period and placed under warm conditions. The share of ope flower bud is counted after a fixed amount of days, sometimes it is monitored continuously. It is observed, tha the share of budbreak gradually increases throught winter with progress of winter. This varying response of different buds on the same branch can be modeled with a bud-population approach. 
+Temperate fruit trees and their different cultivars vary in their chill and heat requirement. Next to modeling or statistical analysis, the chill requirement is determined by so-called forcing experiments. Branches of the fruit tree are sampled through the winter period and placed under warm conditions. The share of ope flower bud is counted after a fixed amount of days, sometimes it is monitored continuously. It is observed, that the share of budbreak gradually increases through winter with progress of winter. This varying response of different buds on the same branch can be modeled with a bud-population approach. 
 
 For a cutting experiment, identify the hourly row at each cutting date, then
 specify a constant forcing temperature and duration.
 
 ```{r cutting}
-cut_dates <- as.Date(c("2008-01-15", "2008-02-15", "2008-03-15"))
+cut_dates <- as.Date(c("2007-11-15", "2007-12-15", "2008-01-15", "2008-02-15", "2008-03-15"))
 weather_dates <- as.Date(paste0(season$Year, "-01-01")) + season$JDay - 1
 cut_indices <- match(cut_dates, weather_dates)
 cutting <- predict_population_phenology(
@@ -110,17 +136,24 @@ remain in the denominator when calculating proportions. Under this model's
 forcing assumptions, chill pools stay fixed at cutting, while accumulated
 field heat and structure history are retained.
 
-```{r cutting-plot, fig.cap="Simulated proportion reaching budbreak after cutting; all cuts reuse the same sampled buds."}
+```{r plot_budbreak}
 days <- 0:21
 proportion <- sapply(days, function(day) {
   rowMeans(is.finite(hours) & hours <= day * 24)
-})
-matplot(days, t(proportion), type = "l", lty = 1, col = 1:3,
-        ylim = c(0, 1), xlab = "Days after cutting",
-        ylab = "Proportion reaching budbreak")
-legend("topleft", legend = as.character(cut_dates), col = 1:3,
-       lty = 1, bty = "n")
+}) |> 
+  t() |> 
+  as.data.frame()
+
+proportion$days <- 0:21
+
+tidyr::pivot_longer(proportion, cols = -days) |> 
+  dplyr::mutate(name = factor(name, levels = paste0('V', 1:length(cut_dates)), 
+                       labels = as.character(cut_dates))) |> 
+  ggplot(aes(x = days, y = value, col = name)) +
+  geom_line()+
+  xlab('Day of the year' ) +
+  ylab('Predicted share of open flowers (%)') +
+  labs(col="Cutting date") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw(base_size = 15) 
 ```
-
-
-
