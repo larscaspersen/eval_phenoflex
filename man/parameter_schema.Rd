@@ -33,8 +33,8 @@ using the legacy +273 offset; Kelvin values remain supported. Validation
 checks the converted values without modifying the supplied vector.}
 }
 \value{
-parameter_schema() returns a data frame of names, components, defaults
-and representations. Combined models also include base_name and cultivar
+parameter_schema() returns a data frame with name, component, default,
+description and unit columns. Combined models also include base_name and cultivar
 (NA for shared parameters); model lists use member instead of cultivar.
 default_parameters() returns a named numeric vector.
 validate_parameters() invisibly returns TRUE or raises an error.
@@ -46,4 +46,21 @@ values, not calibrated estimates or optimization bounds. The kinetic defaults
 use the original Dynamic Model coefficients; characteristic defaults are a
 separate starting set, not an equivalent representation of those defaults.
 Validation checks model domains, not experiment-specific calibration bounds.
+}
+\details{
+Descriptions reflect the selected model structure. Chill requirements use
+Chill Portions for the Dynamic Model, Chilling Hours for chill hours, and
+Utah Chill Units for Utah and positive Utah. Heat requirements (zc, b1 and b2)
+use degree C h for scaled GDH and h for unscaled GDH, which accumulates
+temperature-weighted hours. The units of s1 and b3 are the inverse chill unit.
+Dimensionless parameters are labelled explicitly.
+
+Characteristic temperatures theta_star and theta_c are reported in K, matching
+their stored values; the constructor also accepts Celsius values as described
+in pheno_model(). E0 and E1 are activation energies divided by the gas constant,
+expressed in K. Other temperature thresholds use degrees Celsius.
+
+For user-defined chill submodels, yc uses custom chill units. Custom parameters
+receive a generic description and NA units because their meaning and units
+cannot be inferred from the callback.
 }

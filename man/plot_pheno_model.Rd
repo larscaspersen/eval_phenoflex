@@ -58,7 +58,9 @@ of the original PhenoFlex temperature-response plot.}
 
 \item{hourtemps}{Optional observed temperatures with Temp and Month columns.
 Month may instead be derived from Year and JDay. Temperatures outside the
-displayed range are omitted from the frequency overlay.}
+displayed range are omitted from the frequency overlay. When an overlay is
+shown, panel labels identify the selected months and a caption identifies
+the supplied weather time series as its source.}
 
 \item{chill_months, heat_months}{Calendar months used for each observed-temperature
 overlay. Histogram height and gradient intensity are relative to the most
@@ -75,7 +77,8 @@ range can extend beyond that display cap.}
 
 \item{weather}{Optional complete hourly season passed to \code{\link[=predict_phenology]{predict_phenology()}}.
 For partial overlap, adds its effective chill/heat trajectory and overlap/event
-points. For other chill structures, marks observed chill states along the x-axis.}
+points. Other chill transition curves do not depend on weather. In the
+overview, also supplies temperature frequencies unless hourtemps is specified.}
 
 \item{x}{A pheno_model for the S3 plot method.}
 
