@@ -16,277 +16,59 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>",
                      fig.width = 6, fig.height = 4)
 ```
 
-`evalpheno` lets you construct phenology models by combining a model structure
-with submodels for chill and heat accumulation. This vignette introduces the
-available structures, shows how to set parameters and predict phenology, and
-demonstrates calibration of a single model.
+`evalpheno` constructs temperature-driven phenology models and fits them to
+observed phenological dates. This example constructs a PhenoFlex model [@luedeling_phenoflex_2021],
+adjusts its parameters, and fits its chill and heat requirements to two seasons.
 
-The examples use the bundled temperature series from an experimental orchard
-near Bonn, Germany. All phenology dates used for calibration are **synthetic
-teaching examples**. The short optimizer runs demonstrate the interface;
-they do not establish convergence or validate the models.
+The temperature data come from an experimental orchard near Bonn, Germany.
+The phenology dates below are **synthetic teaching examples**. The short fit
+illustrates the interface; it does not establish convergence or validate the model.
 
-## Choose a model
+## Construct a model
 
-The `pheno_model()` function defines a model's structure and submodels. Choose
-one of four structures using the `structure` argument:
+`pheno_model()` constructs a PhenoFlex model by default, using the Dynamic Model
+for chill and unscaled Growing Degree Hours (GDH) for heat accumulation:
 
-- `"phenoflex"`: PhenoFlex [@luedeling_phenoflex_2021], originally implemented
-  in the R package `chillR` [@luedelingChillRStatisticalMethods2024].
-- `"partial_overlap"`: the partial overlap model [@pope_biologically_2014].
-- `"parallel"`: the parallel model with gradual rest completion
-  [@hanninen_framework_2007].
-- `"sequential"`: the sequential model [@ashcroft_statistical_1977].
-
-```{r structures}
+```{r construct-model}
 library(evalpheno)
 
-seq_model <- pheno_model(structure = "sequential")
-phenoflex_model <- pheno_model(structure = "phenoflex")
-partial_overlap_model <- pheno_model(structure = "partial_overlap")
-parallel_model <- pheno_model(structure = "parallel")
-```
-
-### How the structures differ
-
-All four structures describe spring phenology as the result of winter dormancy
-release and subsequent development. They use chilling (cool temperatures) and
-forcing (warmer temperatures, also called heat), but differ in how these
-processes interact.
-
-The **sequential model** allows heat accumulation to contribute to development
-only after the chilling requirement, `yc`, is met. The phenological event occurs
-when accumulated heat reaches the fixed heat requirement, `zc`.
-
-For PhenoFlex and the parallel model a competence to grow function (C~grow~) determines the fraction of potential heat contributes to development. The value of the competence to grow function ranges between 0 and 1  is determined by the already accumulated chill (y).
-
-**PhenoFlex** uses a sigmoidal function to calculate the competence to grow function:
-
-\[
-C_{grow} =
-\begin{cases}
-0, & y = 0, \\
-\displaystyle \frac{1}{1 + \exp\!\left[-s_1 y_c\,\frac{y-y_c}{y}\right]},
-  & y > 0.
-\end{cases}
-\]
-
-The parameter `s1` controls the steepness of this transition. At `yc`, heat effectiveness is
-50%, so additional chilling above `yc` can still increase responsiveness to
-heat. A steep transition approximates sequential behaviour; a gradual
-transition allows more overlap between chilling and forcing. The event occurs
-when effective heat accumulation reaches `zc`.
-
-The **parallel model** uses the gradual rest completion formulation of Hänninen
-and Kramer (2007, equation B4b):
-
-\[
-C_{grow} =
-\begin{cases}
-k_{\min} + (1-k_{\min})\,\displaystyle\frac{y}{y_c},
-  & 0 \leq y < y_c, \\
-1, & y \geq y_c.
-\end{cases}
-\]
-
-Heat effectiveness starts at `kmin` when
-accumulated chill is zero, then increases linearly to 100% at `yc`. Further
-chilling does not increase effectiveness. Here, `kmin` is a minimum heat
-responsiveness, not a threshold for chill accumulation. The event occurs when
-effective heat accumulation reaches `zc`.
-
-The **partial overlap model** starts counting heat when the initial chilling
-requirement, `yc`, is met. During an overlap period, additional chilling reduces
-the heat requirement according to:
-
-\[
-zc = b_1 + b_2 \exp(-b_3 * y_{extra}),
-\]
-
-where \(y_{extra}\) is additional chill accumulated after `yc` is first reached.
-The initial heat requirement is `b1 + b2`; with increasing additional chill,
-it approaches the lower limit `b1`. The parameter `b3` controls the rate of
-decline. Once accumulated heat reaches `b1 * ol`, further chilling no longer
-changes the requirement. Heat then continues accumulating until the event
-occurs. Thus, `ol` determines the extent of overlap in heat units, rather than
-as a fraction of the season or of the final heat requirement.
-
-### Chill and heat submodels
-
-The package supports the Dynamic Model for chill accumulation
-[@erez_dynamic_1990], chill hours, Utah and positive Utah, and the Growing Degree
-Hours (GDH) model for heat accumulation [@anderson_validation_1986]. Select the
-alternatives with `chill_hours()`, `chill_utah()` or `chill_positive_utah()`.
-Positive Utah adds only non-negative daily totals; ordinary Utah retains signed
-totals in `y_raw` and clips the coupling state `y` at zero. `chill_none()`
-bypasses the selected coupling and accumulates heat alone from the specified
-`heat_start_index`. Printing a model shows its structure,
-submodels and parameter values:
-
-```{r structure}
+phenoflex_model <- pheno_model()
 phenoflex_model
 ```
 
-The output shows the model's default settings: the PhenoFlex structure,
-the Dynamic Model for chill accumulation and the GDH model for heat accumulation.
-GDH accumulation can be scaled or unscaled. The default is `"unscaled"` for all
-four structures. PhenoFlex was originally developed with unscaled GDH, while
-other applications commonly use scaled GDH. Scaling multiplies accumulated
-GDH by `Tu - Tb`. With the standard parameters
-(`Tb = 4`, `Tu = 25`, `Tc = 36`), scaled GDH values are therefore 21 times
-the unscaled values. Heat requirements must use the same scaling as the
-heat submodel.
+## Adjust parameters
 
-The default Dynamic Model uses the original kinetic coefficients.
-The Dynamic Model has six parameters. In the kinetic parameterization, four of them
-(`E0`, `E1`, `A0` and `A1`) have values on very different scales.
-This can make parameter adjustment during calibration cumbersome. The characteristic
-parameterization replaces these four parameters with more interpretable quantities:
-`theta_star` and `theta_c` describe temperatures, while `tau` and `pie_c`
-describe times in hours. Running model calibration on the `"characteristic"` parameters
-of the Dynamic Model has shown to be benefitial [@egea_reducing_2021]. For
-PhenoFlex this approach has been implemented by @caspersen_projecting_2024. Internally, the model converts these values to the
-kinetic parameters needed to calculate chill portions. Construction infers
-characteristic input from `theta_star`, `theta_c`, `tau` or `pie_c`, and kinetic
-input from `E0`, `E1`, `A0` or `A1`; the two sets cannot be mixed. Constructed
-models always store kinetic values in `parameters`, retaining supplied
-characteristic values in `chill$characteristic`.
+Supply a named vector to choose starting values. Parameters you omit keep
+their defaults. Here, `yc` is the chill requirement and
+`zc` is the effective heat requirement:
 
-Chill hours uses `CH_lower` and `CH_upper` (default 0 and 7.2 Celsius, both
-inclusive). Utah uses `utah_w1` through `utah_w7`; positive Utah uses
-`pos_utah_w1` through `pos_utah_w7`. The seven temperature zones and default
-weights are documented in `help("chill_hours")`. Set these values through the
-`parameters` argument to `pheno_model()`. The chill requirement `yc` uses the
-selected submodel's units. Its default is 1000 for chill hours, 1200 for Utah
-and positive Utah, and 40 for the Dynamic Model. Choose suitable starting values and bounds when
-changing submodels. A heat-only model has `zc`, `heat_start_index` and GDH
-temperature parameters, with no unused chill-coupling parameters.
-
-## Specify model parameters
-
-Unless you supply parameter values, `pheno_model()` uses defaults for the
-selected structure and submodels. These are starting values, not calibrated
-estimates for a particular species or cultivar. Each structure has its own
-parameters in addition to those of the chill and heat submodels:
-
-<table>
-  <thead>
-    <tr>
-      <th scope="col">Structure</th>
-      <th scope="col">Parameter</th>
-      <th scope="col">Role</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th scope="rowgroup" rowspan="2" style="vertical-align: middle; text-align: left;">Sequential</th>
-      <td><code>yc</code></td>
-      <td>Chill threshold for heat accumulation to start.</td>
-    </tr>
-    <tr>
-      <td><code>zc</code></td>
-      <td>Fixed heat requirement.</td>
-    </tr>
-  </tbody>
-  <tbody>
-    <tr>
-      <th scope="rowgroup" rowspan="3" style="vertical-align: middle; text-align: left;">PhenoFlex</th>
-      <td><code>yc</code></td>
-      <td>Chill value at 50% heat effectiveness.</td>
-    </tr>
-    <tr>
-      <td><code>zc</code></td>
-      <td>Effective heat requirement.</td>
-    </tr>
-    <tr>
-      <td><code>s1</code></td>
-      <td>Steepness of the transition in heat effectiveness.</td>
-    </tr>
-  </tbody>
-  <tbody>
-    <tr>
-      <th scope="rowgroup" rowspan="3" style="vertical-align: middle; text-align: left;">Parallel</th>
-      <td><code>yc</code></td>
-      <td>Chill value at full heat effectiveness.</td>
-    </tr>
-    <tr>
-      <td><code>zc</code></td>
-      <td>Effective heat requirement.</td>
-    </tr>
-    <tr>
-      <td><code>kmin</code></td>
-      <td>Heat effectiveness at zero accumulated chill.</td>
-    </tr>
-  </tbody>
-  <tbody>
-    <tr>
-      <th scope="rowgroup" rowspan="5" style="vertical-align: middle; text-align: left;">Partial overlap</th>
-      <td><code>yc</code></td>
-      <td>Initial chill threshold for heat accumulation to start.</td>
-    </tr>
-    <tr>
-      <td><code>b1</code></td>
-      <td>Lower limit of the heat requirement.</td>
-    </tr>
-    <tr>
-      <td><code>b2</code></td>
-      <td>Extra heat requirement at zero additional chill; the initial total is <code>b1 + b2</code>.</td>
-    </tr>
-    <tr>
-      <td><code>b3</code></td>
-      <td>Rate at which additional chill reduces the heat requirement.</td>
-    </tr>
-    <tr>
-      <td><code>ol</code></td>
-      <td>Overlap multiplier; additional chill stops affecting the requirement when heat reaches <code>b1 * ol</code>.</td>
-    </tr>
-  </tbody>
-</table>
-
-Specify parameter values in a **named** vector. Names identify the parameters,
-so you do not need to supply them in a particular order. You can also
-specify only a subset of the parameters and leave the remaining values
-at their defaults.
-
-The following example uses the default kinetic chill parameters and scaled GDH, and
-sets three structure parameters:
-
-```{r specified-arguments}
-phenoflex_model_2 <- pheno_model(
-  structure = "phenoflex",
-  chill = chill_dynamic(),
-  heat = heat_gdh("scaled"),
-  parameters = c(yc = 20, zc = 5000, s1 = 0.15)
-)
-phenoflex_model_2
+```{r adjust-parameters}
+phenoflex_model <- pheno_model(parameters = c(yc = 40, zc = 250))
+model_parameters(phenoflex_model)[c("yc", "zc")]
 ```
 
-Use `parameter_schema()` to inspect the available parameters and their defaults:
+## Inspect the model
 
-```{r parameter-schema}
-parameter_schema(phenoflex_model)
+You visualize the submodels and the model structure with the `plot()` function.
+
+```{r plot-model}
+plot(phenoflex_model)
 ```
 
-Use `model_parameters()` to view the model's current parameter values. These
-are also stored in `phenoflex_model$parameters`.
+For the other structures, submodels, parameter units, and a table of available parameters, see
+[Model structures and submodels](model-structures-and-submodels.html).
 
-```{r parameters}
-model_parameters(phenoflex_model)
-```
 
-## Predict phenology
+## Prepare weather and observations
 
-### Prepare hourly weather data
-
-The bundled daily temperature series, `cka_weather`, covers 2007--2009.
-Estimate hourly temperatures with `chillR`, using the station latitude stored
-with the dataset. Then create two complete seasons, each spanning August to
-June of the following year. The hourly temperatures are interpolated estimates,
-not hourly measurements.
+The bundled daily weather covers 2007--2009. For the temperature data handling,
+the [chillR package](https://cran.r-project.org/web/packages/chillR/index.html) [@luedelingChillRStatisticalMethods2024] is handy. 
+The PhenoFlex model originates from the chillR package. 
+Convert the temperature data to hourly temperatures
+and create two seasons, each spanning August to June of the following year:
 
 ```{r weather}
 data("cka_weather", package = "evalpheno")
-head(cka_weather)
 
 hourly <- chillR::stack_hourly_temps(
   cka_weather, latitude = attr(cka_weather, "latitude")
@@ -294,62 +76,46 @@ hourly <- chillR::stack_hourly_temps(
 years <- 2008:2009
 seasons <- chillR::genSeasonList(hourly, mrange = c(8, 6), years = years)
 names(seasons) <- as.character(years)
-season <- seasons[[1]]
+
+observed <- c(`2008` = 125, `2009` = 117)
 ```
 
-Predictions require complete, consecutive days of hourly data with `Temp`,
-`Year` and `JDay` columns. If an `Hour` column is included, its values must run
-from 0 to 23 for each day.
+Supply one observed day of the year per season, in the same order as `seasons`.
+Here, the event is interpreted as bloom. Each weather season must contain
+complete, consecutive days of hourly data with `Temp`, `Year`, and `JDay`
+columns. If `Hour` is included, it must run from 0 to 23 for each day.
 
-### Run a prediction
 
-Use `predict_phenology()` with a model and either one season or a list of
-seasons. Here, the modelled event is interpreted as bloom:
+## Predict with the model
 
-```{r predict}
-predict_phenology(phenoflex_model, seasons)
+Pass the model to `predict_phenology()`. You can either pass a single seaon
+or a season list.
+
+```{r model-prediction}
+predict_phenology(model = phenoflex_model, weather = seasons)
 ```
 
-The function returns the day of the year, with a fractional part representing
-the time of day, or `NA` if the event is not reached. Under the package's date
-convention, `116.0` corresponds to 26 April at noon in a non-leap year.
-If a season spans two calendar years, dates in the first year are expressed
-relative to the end of that year: `0` corresponds to 31 December at noon,
-and `-1` to 30 December at noon.
+Predictions are days of the year with a fractional time of day, or `NA` if
+the event is not reached. Under the package's date convention, `116.0` is
+26 April at noon in a non-leap year. For seasons spanning two calendar years,
+dates in the first year are relative to its end: `0` is 31 December at noon
+and `-1` is 30 December at noon.
 
-## Calibrate a single model
+You can also vizualize the processes leading up the prediction with `plot_processes()`.
 
-The model's temperature responses and transition can also be inspected before
-calibration, or after fitting through `plot_pheno_model(fit)`:
-
-```{r model-visualization, eval=FALSE}
-plot(phenoflex_model)
-plot_model_structure(phenoflex_model)
-overlap <- pheno_model("partial_overlap")
-plot(overlap)
-plot_model_structure(overlap, weather = season)
+```{r plot-processes}
+plot_processes(model = phenoflex_model, weather = seasons)
 ```
 
-The partial-overlap plot marks minimum chilling and its initial heat requirement,
-and shades the region where insufficient chill prevents the event. The `b1 * ol` line is the accumulated-heat threshold at
-which chill stops changing the requirement; optional weather locates that
-cutoff on the season's path. The temperature panels use native submodels in
-their own units. Dynamic Model chill is averaged over a 1200-hour exposure at
-each constant temperature. Component plots are ggplot objects and the overview
-is a patchwork composition; both optional packages must be installed for the overview.
 
-### Fit selected parameters
+## Fit the model
 
-For a standard fit, supply one observed date per season, in the same order as
-the seasons, and choose an evaluation function. `phenology_rss` calculates
-the residual sum of squares between predicted and observed dates; the optimizer
-minimizes this value. The dates below are synthetic.
-
-This example fits `yc` and `zc`. It uses suggested bounds from
-`default_bounds()` and adjusts the bounds for `zc`:
+Choose the parameters to fit by naming them in the bounds. Here, only `yc`
+and `zc` are fitted; all other parameters keep their stored values.
+`default_bounds()` suggests starting ranges, which you should review for
+your species and data. This example narrows the heat requirement range:
 
 ```{r standard-fit}
-observed <- c(`2008` = 125, `2009` = 117)
 bounds <- default_bounds(phenoflex_model, parameter_names = c("yc", "zc"))
 bounds$lower["zc"] <- 180
 bounds$upper["zc"] <- 350
@@ -363,75 +129,23 @@ fit <- fit_phenology(
 )
 fit$par[c("yc", "zc")]
 fit$value
-predict_phenology(fit, seasons)
 ```
 
-The fitted result contains the parameter vector (`fit$par`) and the minimized
-loss (`fit$value`). Pass it directly to `predict_phenology()` to predict dates
-using the fitted parameters.
+`phenology_rss` calculates the residual sum of squares between predicted and
+observed dates. The optimizer minimizes this loss, returned as `fit$value`;
+`fit$par` contains the fitted parameters. `seed` makes the search reproducible.
 
-**Only parameters named in the bounds are included in the search.** Omitted
-parameters remain at their stored values, or at values supplied through the
-fitter's complete `parameters` override. Lower and upper bounds must name the
-same subset, and initial values must lie within those ranges. This example
-therefore keeps the chill and heat response parameters and `s1` constant.
+Two iterations keep this example quick. For a useful calibration, use more
+observations, increase `max_iterations`, check convergence, and repeat the
+search with different starting values or random seeds.
 
-### Fix parameters and control the search
 
-To fix a parameter explicitly, set its lower and upper bounds to the same
-value. The following bounds would fit only `zc`, with `yc` fixed at 40:
+## More vignettes
 
-```{r fixed-search}
-fixed_bounds <- bounds
-fixed_bounds$lower["yc"] <- fixed_bounds$upper["yc"] <- 40
-fixed_bounds
-```
+Continue with [Model structures and submodels](model-structures-and-submodels.html)
+for model choices and plots, [Model calibration: Special cases](model-calibration_special-cases.html)
+for search controls, alternative parameterizations, cross-validation and joint
+fits, or [Bud populations](bud-population.html) for variation among buds.
 
-To use these bounds, replace `lower` and `upper` in the fitting call above
-with `fixed_bounds$lower` and `fixed_bounds$upper`.
-
-If both bounds are omitted, `fit_phenology()` uses the complete default search
-box. Review and adjust these suggestions for your species, model and data.
-`DEoptim` is the default optimizer; select `optimizer = "GenSA"` to use the
-alternative backend. `max_iterations` limits the search, `control` supplies
-optimizer-specific settings, and `seed` makes these examples reproducible.
-
-For meaningful calibration, use more observations, allow enough iterations
-for convergence, and repeat the search from different starting points or
-random seeds. The two-iteration runs here are deliberately short.
-
-### Use kinetic chill parameters
-
-Models work directly with `E0`, `E1`, `A0` and `A1` by default. These original
-coefficients are a separate starting set from the characteristic defaults.
-The fitter detects kinetic calibration from these names in its bounds or
-starting values. The following
-example fits `E0` and `zc`, keeping all other parameters constant:
-
-```{r kinetic-fit}
-kinetic <- pheno_model()
-kinetic_bounds <- default_bounds(kinetic, c("E0", "zc"))
-kinetic_bounds$lower["E0"] <- 4000
-kinetic_bounds$upper["E0"] <- 4300
-kinetic_fit <- fit_phenology(
-  kinetic, evaluation = phenology_rss,
-  seasons = seasons, observed = observed,
-  lower = kinetic_bounds$lower, upper = kinetic_bounds$upper,
-  optimizer = "DEoptim", max_iterations = 2,
-  control = list(NP = 20, trace = FALSE), seed = 18
-)
-kinetic_fit$par[c("E0", "zc")]
-```
-
-For characteristic calibration, name the characteristic parameters in the
-bounds or use `parameterization = "characteristic"` in `fit_phenology()`.
-`default_bounds(model, parameterization = "characteristic")` returns the full
-characteristic search box. `model_parameters(model, "characteristic")` returns
-equivalent starting values, while `default_parameters(model, "characteristic")`
-returns the illustrative characteristic starting set. Check that your chosen
-initial values lie inside the bounds. `fit$par` and calibration settings retain
-the optimizer's representation; `fit$model$parameters` and
-`model_parameters(fit)` contain kinetic coefficients. This also applies to
-collections, populations, multistage models and CV fold models.
 
 ## References
