@@ -12,7 +12,7 @@ Authors@R:
              email = "larscaspersen42@gmail.com",
              comment = c(ORCID = "0009-0000-3057-7327")))
 Maintainer: Lars Caspersen <larscaspersen42@gmail.com>
-BugReports: <https://github.com/larscaspersen/eval_phenoflex>
+BugReports: https://github.com/larscaspersen/eval_phenoflex/issues
 Description: Construct, calibrate and run temperature-driven phenology
     models for temperate trees, including 
     sequential (Ashcroft et al. (1977) <doi:10.21273/HORTSCI.12.4.347>),
