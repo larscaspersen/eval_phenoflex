@@ -10,7 +10,11 @@ build_guide <- function() {
     .libPaths(c(normalizePath(".local-library"), .libPaths()))
   }
 
-  for (package in c("bookdown", "rmarkdown", "evalpheno")) {
+  # Keep local builds and GitHub Actions on the same website dependencies.
+  website_packages <- trimws(strsplit(
+    read.dcf("DESCRIPTION")[1L, "Config/Needs/website"], ",", fixed = TRUE
+  )[[1L]])
+  for (package in c("rmarkdown", "evalpheno", website_packages)) {
     if (!requireNamespace(package, quietly = TRUE)) {
       stop("Install ", package, " before building the guide.")
     }

@@ -12,7 +12,7 @@ each chapter. The ordinary package vignettes remain available.
 From the package root in RStudio, install the tools once:
 
 ```r
-install.packages(c("bookdown", "remotes"))
+install.packages(c("bookdown", "bslib", "downlit", "jsonlite", "xml2", "remotes"))
 remotes::install_deps(dependencies = TRUE)
 ```
 
@@ -29,6 +29,12 @@ In that case, install the current package with
 `install.packages(".", lib = ".local-library", repos = NULL, type = "source")`
 instead, so the guide uses the updated copy. Pandoc is included
 with RStudio; command-line builds can use a separate Pandoc installation.
+
+`bs4_book` requires `bslib`, `downlit`, `jsonlite`, and `xml2` in addition to
+bookdown. These are optional dependencies of bookdown, so installing bookdown
+alone may leave them missing. `Config/Needs/website` in `DESCRIPTION` declares
+the website dependencies for GitHub Actions and the local build's dependency
+checks.
 
 `book/index.Rmd` is the landing page. The chapter order is set in
 `book/_bookdown.yml`; when adding a vignette, also add its filename and title
