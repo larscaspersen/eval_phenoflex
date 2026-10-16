@@ -47,7 +47,7 @@ structures by using `"sequential"`, `"parallel"` or `"partial_overlap"`.
 
 You can visualize the model structure
 
-```{r plot-structure}
+```{r plot-structure, }
 plot(model)
 ```
 
@@ -105,7 +105,7 @@ predict_phenology(model, seasons)
 
 Plot the chill and heat temperature responses together with their transition:
 
-```{r model-plots, eval=FALSE}
+```{r model-plots}
 plot_processes(model, seasons, ribbon = TRUE)
 ```
 
