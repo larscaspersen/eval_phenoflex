@@ -1,4 +1,6 @@
 ---
+csl: vignettes/elsevier-harvard.csl
+bibliography: vignettes/vignette_evalpheno.bib
 output:
   github_document:
     html_preview: false
@@ -162,3 +164,6 @@ For full workflows, see [Getting started](vignettes/getting-started.Rmd),
 [Model structures and submodels](vignettes/model-structures-and-submodels.Rmd),
 [Model calibration](vignettes/model-calibration_special-cases.Rmd), and
 [Bud populations](vignettes/bud-population.Rmd).
+
+
+## References

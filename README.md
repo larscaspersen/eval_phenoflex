@@ -476,8 +476,8 @@ User-defined chill submodels can be supplied through `chill_custom()`.
 Prepare hourly temperature time series for the model prediction. Use
 [chillR
 package](https://cran.r-project.org/web/packages/chillR/index.html)
-\[@luedelingChillRStatisticalMethods2024\] for data acquisition and
-temperature data handling
+(Luedeling et al., 2024) for data acquisition and temperature data
+handling
 
 ``` r
 data("KA_weather", package = "chillR")
@@ -523,11 +523,11 @@ Use the `fit_phenology()` to calibrate the model parameters. Only the
 parameters specified in the lower and upper bounds are adjusted. You
 need to install the [DEoptim
 package](https://cran.r-project.org/web/packages/DEoptim/index.html)
-\[@deoptim_package_2011, @ardia_differential_2011\] to run the
-calibration, alternatively you can also use the [GenSA
+Ardia et al. (2011) to run the calibration, alternatively you can also
+use the [GenSA
 package](https://cran.r-project.org/web/packages/GenSA/index.html)
-\[@xiang_generalized_2013\] (which you then need have installed) by
-supplying `optimizer = "GenSA"` in the function call.
+(Xiang et al., 2013) (which you then need have installed) by supplying
+`optimizer = "GenSA"` in the function call.
 
 ``` r
 require(DEoptim)
@@ -585,3 +585,45 @@ started](vignettes/getting-started.Rmd), [Model structures and
 submodels](vignettes/model-structures-and-submodels.Rmd), [Model
 calibration](vignettes/model-calibration_special-cases.Rmd), and [Bud
 populations](vignettes/bud-population.Rmd).
+
+## References
+
+<div id="refs" class="references csl-bib-body hanging-indent"
+data-entry-spacing="0">
+
+<div id="ref-ardia_differential_2011" class="csl-entry">
+
+Ardia, D., Boudt, K., Carl, P., Mullen, K.M., Peterson, B.G., 2011.
+[Differential Evolution with DEoptim: An application to non-convex
+portfolio optimization](https://doi.org/10.32614/RJ-2011-005). R Journal
+3, 27–34.
+
+</div>
+
+<div id="ref-luedelingChillRStatisticalMethods2024" class="csl-entry">
+
+Luedeling, E., Caspersen, L., Fernandez, E., 2024.
+<span class="nocase">chillR</span>: Statistical methods for phenology
+analysis in temperate fruit trees.
+<https://CRAN.R-project.org/package=chillR>
+
+</div>
+
+<div id="ref-deoptim_package_2011" class="csl-entry">
+
+Mullen, K., Ardia, D., Gil, D., Windover, D., Cline, J., 2011. [DEoptim:
+An R package for global optimization by Differential
+Evolution](https://doi.org/10.18637/jss.v040.i06). Journal of
+Statistical Software 40, 1–26.
+
+</div>
+
+<div id="ref-xiang_generalized_2013" class="csl-entry">
+
+Xiang, Y., Gubian, S., Suomela, B., Hoeng, J., 2013. Generalized
+simulated annealing for efficient GlobalOptimization: The GenSA package
+for r. The R Journal 5/1. <https://journal.r-project.org>
+
+</div>
+
+</div>
