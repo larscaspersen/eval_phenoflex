@@ -51,7 +51,7 @@ model_parameters(phenoflex_model)[c("yc", "zc")]
 
 You visualize the submodels and the model structure with the `plot()` function.
 
-```{r plot-model}
+```{r plot-model,fig.width=6, fig.height=7}
 plot(phenoflex_model)
 ```
 
@@ -103,7 +103,7 @@ and `-1` is 30 December at noon.
 
 You can also vizualize the processes leading up the prediction with `plot_processes()`.
 
-```{r plot-processes}
+```{r plot-processes, fig.width=6, fig.height=7}
 plot_processes(model = phenoflex_model, weather = seasons)
 ```
 

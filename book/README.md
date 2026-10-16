@@ -41,6 +41,10 @@ checks.
 to the chapter list in `book/build.R`. Appearance is configured in
 `book/_output.yml` and `book/style.css`.
 
+`split_bib: true` in `book/_output.yml` adds the cited references to the end of
+each chapter. The final References chapter keeps the complete bibliography
+of works cited in the guide.
+
 ## Publish with GitHub Pages
 
 1. In the GitHub repository, open **Settings → Pages** and choose

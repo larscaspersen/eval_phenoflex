@@ -2,4 +2,4 @@ bookdown::bs4_book:
   css: style.css
   theme:
     primary: "#245a4b"
-  split_bib: false
+  split_bib: true
