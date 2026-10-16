@@ -147,9 +147,9 @@ plot_processes <- function(model, weather, parameters = model_parameters(model),
       inherit.aes = FALSE, width = 0.03 * max(diff(range(heat$value)), 1), linewidth = 0.7)
     result <- result + ggplot2::geom_point(data = bloom, size = 2.8) +
       ggplot2::geom_text(data = bloom, ggplot2::aes(label = label),
-        nudge_y = -0.07 * max(diff(range(heat$value)), 1),
-        nudge_x =  0.01 * max(diff(range(heat$day)), 1),
-        hjust = 0, size = 3.4)
+        nudge_y =  0.07 * max(diff(range(heat$value)), 1),
+        nudge_x =  -0.01 * max(diff(range(heat$day)), 1),
+        hjust = 1, size = 3.4)
   }
   result <- result + ggplot2::facet_wrap(ggplot2::vars(process), ncol = 1, scales = "free_y") +
     ggplot2::scale_x_date(breaks = function(limits) {
