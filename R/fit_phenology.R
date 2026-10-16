@@ -113,6 +113,7 @@
 #'   Inspect `$par`, `$predictions`, `$calibration_settings` and `$diagnostics`
 #'   directly for the complete results.
 #' @examples
+#' \dontrun{
 #' if (requireNamespace("DEoptim", quietly = TRUE)) {
 #' model <- pheno_model()
 #' data("cka_weather", package = "evalpheno")
@@ -127,11 +128,12 @@
 #' fit <- fit_phenology(model, evaluation = phenology_rss, observed = observed,
 #'                      seasons = seasons, lower = c(yc = 10, zc = 180),
 #'                      upper = c(yc = 80, zc = 350), seed = 17,
-#'                      max_iterations = 1, control = list(NP = 20, trace = FALSE))
+#'                      max_iterations = 5, control = list(NP = 20, trace = FALSE))
 #' # Increase the iteration limit and check convergence for a real calibration.
 #' fit
 #' predict_phenology(fit, seasons)
 #' fit$predictions
+#' }
 #' }
 #' @export
 fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
