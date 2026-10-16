@@ -1,0 +1,14 @@
+book_filename: evalpheno-guide
+output_dir: _book
+new_session: true
+delete_merged_file: true
+rmd_files:
+  - index.Rmd
+  - getting-started.Rmd
+  - model-structures-and-submodels.Rmd
+  - model-calibration_special-cases.Rmd
+  - bud-population.Rmd
+  - references.Rmd
+language:
+  ui:
+    chapter_name: "Chapter "

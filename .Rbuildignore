@@ -12,3 +12,5 @@
 ^climate_data$
 ^temp_data$
 ^data-raw$
+^book$
+^\.github$

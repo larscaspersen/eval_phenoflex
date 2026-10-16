@@ -1,0 +1,42 @@
+:root {
+  --guide-ink: #203c34;
+}
+
+body {
+  line-height: 1.7;
+}
+
+main h1,
+main h2,
+main h3 {
+  color: var(--guide-ink);
+  letter-spacing: -0.02em;
+}
+
+main h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+}
+
+main h2 {
+  margin-top: 2.5rem;
+}
+
+div.sourceCode {
+  border: 1px solid #dce5e0;
+  border-radius: 0.4rem;
+}
+
+pre {
+  font-size: 0.85em;
+}
+
+main img {
+  max-width: 100%;
+  height: auto;
+}
+
+main table {
+  font-size: 0.9em;
+}

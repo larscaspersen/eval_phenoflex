@@ -1,0 +1,60 @@
+---
+title: "The evalpheno guide"
+author: "Lars Caspersen"
+description: "Construct, calibrate, and explore temperature-driven phenology models in R."
+site: bookdown::bookdown_site
+bibliography: vignette_evalpheno.bib
+csl: elsevier-harvard.csl
+link-citations: true
+github-repo: larscaspersen/eval_phenoflex
+url: https://larscaspersen.github.io/eval_phenoflex/
+---
+
+# Welcome {-}
+
+`evalpheno` brings together temperature-driven phenology models, parameter
+calibration, and simulations of variation among individual buds. This guide
+takes you from your first model to more detailed calibration and bud-population
+workflows.
+
+## Read the guide {-}
+
+1. [Getting started](getting-started.html): construct a model, prepare weather
+   data, predict bloom dates, and fit model parameters.
+2. [Model structures and submodels](model-structures-and-submodels.html): choose
+   how chill and heat accumulation interact and inspect their parameters.
+3. [Model calibration](model-calibration_special-cases.html): explore
+   cross-validation, successive stages, and calibration across cultivars.
+4. [Bud populations](bud-population.html): simulate variation among buds and
+   their responses to cutting and forcing experiments.
+
+Use the chapter sidebar to move through the guide, the contents panel to find
+sections within a chapter, or the search box to find a topic across chapters.
+
+## Install evalpheno {-}
+
+Install the development version from GitHub:
+
+```{r install, eval=FALSE}
+install.packages("remotes")
+remotes::install_github("larscaspersen/eval_phenoflex")
+```
+
+The examples use R packages such as `chillR`, `DEoptim`, and `ggplot2`. Install
+the package's suggested dependencies to run all examples:
+
+```{r install-examples, eval=FALSE}
+remotes::install_github("larscaspersen/eval_phenoflex", dependencies = TRUE)
+```
+
+## About the examples {-}
+
+The guide uses the package's bundled weather data. Synthetic phenology dates
+and short optimizer runs illustrate the interfaces; use your own observations
+and suitable calibration settings for research applications.
+
+The chapters are built from the package vignettes, so the online guide and the
+installed package documentation share the same source.
+
+Visit the [GitHub repository](https://github.com/larscaspersen/eval_phenoflex)
+for source code, issues, and development updates.

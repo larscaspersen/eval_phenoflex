@@ -42,6 +42,9 @@ vignettes/*.pdf
 # pkgdown site
 docs/
 
+# Generated documentation book
+/book/_build/
+
 # translation temp files
 po/*~
 

@@ -579,11 +579,15 @@ quantile(buds$bloom_jday, c(0.1, 0.5, 0.9), na.rm = TRUE)
 Population models also support cutting and constant-temperature forcing
 experiments.
 
-For full workflows, see [Getting
-started](vignettes/getting-started.Rmd), [Model structures and
-submodels](vignettes/model-structures-and-submodels.Rmd), [Model
-calibration](vignettes/model-calibration_special-cases.Rmd), and [Bud
-populations](vignettes/bud-population.Rmd).
+Read the [online guide](https://larscaspersen.github.io/eval_phenoflex/)
+for full workflows, with chapters on [Getting
+started](https://larscaspersen.github.io/eval_phenoflex/getting-started.html),
+[Model structures and
+submodels](https://larscaspersen.github.io/eval_phenoflex/model-structures-and-submodels.html),
+[Model
+calibration](https://larscaspersen.github.io/eval_phenoflex/model-calibration_special-cases.html),
+and [Bud
+populations](https://larscaspersen.github.io/eval_phenoflex/bud-population.html).
 
 ## References
 
