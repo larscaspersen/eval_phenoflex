@@ -5,7 +5,8 @@
 #' partial-overlap and PhenoFlex coupling with the Dynamic Model, chill hours,
 #' Utah or positive Utah chill and GDH heat. With chill_none(), only heat is
 #' accumulated and the chosen coupling is bypassed.
-#' Printing shows the structure, submodel names and parameters in a compact form.
+#' Printing shows the structure, submodel names and parameters in decimal notation
+#' with at most two decimal places and no trailing zeros.
 #' @encoding UTF-8
 #' @details
 #' \subsection{Model structures}{
@@ -236,8 +237,19 @@ pheno_model <- function(structure = "phenoflex", chill = chill_dynamic(), heat =
 print.pheno_model <- function(x, ...) {
   .print_pheno_components(x)
   cat("Parameters:\n")
-  print(x$parameters, ...)
+  print_args <- list(...)
+  print_args$quote <- FALSE
+  if (is.null(print_args$right)) print_args$right <- TRUE
+  do.call(print, c(list(.format_parameter_values(x$parameters)), print_args))
   invisible(x)
+}
+
+.format_parameter_values <- function(x) {
+  rounded <- round(x, 2)
+  rounded[!is.na(rounded) & rounded == 0] <- 0
+  values <- formatC(rounded, format = "f", digits = 2, drop0trailing = TRUE)
+  names(values) <- names(x)
+  values
 }
 
 .print_pheno_components <- function(x) {
@@ -367,6 +379,9 @@ validate_model_spec <- function(model) {
 #' @return parameter_schema() returns a data frame with name, component, default,
 #' description and unit columns. Combined models also include base_name and cultivar
 #' (NA for shared parameters); model lists use member instead of cultivar.
+#' The data frame has class pheno_parameter_schema and prints defaults in decimal
+#' notation with at most two decimal places and no trailing zeros, while retaining
+#' their numeric values. format() returns a data frame formatted for display.
 #' default_parameters() returns a named numeric vector.
 #' validate_parameters() invisibly returns TRUE or raises an error.
 #' @details
@@ -453,7 +468,7 @@ parameter_schema <- function(model, parameterization = NULL) {
   
   metadata <- .parameter_metadata(model, names(values))
   
-  data.frame(
+  schema <- data.frame(
     name = names(values),
     component = component,
     default = unname(values),
@@ -461,6 +476,24 @@ parameter_schema <- function(model, parameterization = NULL) {
     unit = unname(metadata$unit),
     stringsAsFactors = FALSE
   )
+  class(schema) <- c("pheno_parameter_schema", "data.frame")
+  schema
+}
+
+#' @rdname parameter_schema
+#' @param x A parameter schema returned by parameter_schema().
+#' @param ... Additional arguments passed to print.data.frame().
+#' @export
+print.pheno_parameter_schema <- function(x, ...) {
+  print.data.frame(format(x), ...)
+  invisible(x)
+}
+
+#' @rdname parameter_schema
+#' @export
+format.pheno_parameter_schema <- function(x, ...) {
+  x$default <- .format_parameter_values(x$default)
+  format.data.frame(x, ...)
 }
 
 .parameter_metadata <- function(model, parameter_names) {

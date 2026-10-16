@@ -62,8 +62,9 @@ parameter_schema(model)
 
 ```{r table-schema, echo=FALSE}
 knitr::kable(
-  parameter_schema(model),
+  format(parameter_schema(model)),
   format = "html",
+  align = c("l", "l", "r", "l", "l"),
   row.names = FALSE
 )
 ```

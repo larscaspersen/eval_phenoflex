@@ -105,7 +105,7 @@ structure
 
 <td style="text-align:right;">
 
-4.000000e+01
+40
 </td>
 
 <td style="text-align:left;">
@@ -134,7 +134,7 @@ structure
 
 <td style="text-align:right;">
 
-2.857143e+02
+285.71
 </td>
 
 <td style="text-align:left;">
@@ -163,7 +163,7 @@ structure
 
 <td style="text-align:right;">
 
-5.000000e-01
+0.5
 </td>
 
 <td style="text-align:left;">
@@ -193,7 +193,7 @@ chill
 
 <td style="text-align:right;">
 
-4.153500e+03
+4153.5
 </td>
 
 <td style="text-align:left;">
@@ -223,7 +223,7 @@ chill
 
 <td style="text-align:right;">
 
-1.288880e+04
+12888.8
 </td>
 
 <td style="text-align:left;">
@@ -253,7 +253,7 @@ chill
 
 <td style="text-align:right;">
 
-1.395000e+05
+139500
 </td>
 
 <td style="text-align:left;">
@@ -283,7 +283,7 @@ chill
 
 <td style="text-align:right;">
 
-2.567000e+18
+2567000000000000000
 </td>
 
 <td style="text-align:left;">
@@ -313,7 +313,7 @@ chill
 
 <td style="text-align:right;">
 
-4.000000e+00
+4
 </td>
 
 <td style="text-align:left;">
@@ -342,7 +342,7 @@ chill
 
 <td style="text-align:right;">
 
-1.600000e+00
+1.6
 </td>
 
 <td style="text-align:left;">
@@ -371,7 +371,7 @@ heat
 
 <td style="text-align:right;">
 
-4.000000e+00
+4
 </td>
 
 <td style="text-align:left;">
@@ -400,7 +400,7 @@ heat
 
 <td style="text-align:right;">
 
-2.500000e+01
+25
 </td>
 
 <td style="text-align:left;">
@@ -429,7 +429,7 @@ heat
 
 <td style="text-align:right;">
 
-3.600000e+01
+36
 </td>
 
 <td style="text-align:left;">
@@ -459,10 +459,12 @@ print(model)
 #> Chill submodel: Dynamic Model
 #> Heat submodel:  GDH
 #> Parameters:
-#>           yc           zc           s1           E0           E1           A0 
-#> 8.000000e+01 2.857143e+02 5.000000e-01 4.153500e+03 1.288880e+04 1.395000e+05 
-#>           A1           Tf        slope           Tb           Tu           Tc 
-#> 2.567000e+18 4.000000e+00 1.600000e+00 4.000000e+00 2.500000e+01 3.600000e+01
+#>                  yc                  zc                  s1                  E0
+#>                  80              285.71                 0.5              4153.5
+#>                  E1                  A0                  A1                  Tf
+#>             12888.8              139500 2567000000000000000                   4
+#>               slope                  Tb                  Tu                  Tc
+#>                 1.6                   4                  25                  36
 ```
 
 Alternative chill submodels are `chill_hours()`, `chill_utah()` and

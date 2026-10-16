@@ -64,7 +64,8 @@ values. It supports sequential, linear parallel,
 partial-overlap and PhenoFlex coupling with the Dynamic Model, chill hours,
 Utah or positive Utah chill and GDH heat. With chill_none(), only heat is
 accumulated and the chosen coupling is bypassed.
-Printing shows the structure, submodel names and parameters in a compact form.
+Printing shows the structure, submodel names and parameters in decimal notation
+with at most two decimal places and no trailing zeros.
 }
 \details{
 \subsection{Model structures}{

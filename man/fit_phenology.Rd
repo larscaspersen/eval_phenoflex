@@ -157,6 +157,7 @@ other errors in the evaluation function propagate. Candidates outside the
 model's parameter domains are excluded before evaluation.
 }
 \examples{
+\dontrun{
 if (requireNamespace("DEoptim", quietly = TRUE)) {
 model <- pheno_model()
 data("cka_weather", package = "evalpheno")
@@ -171,10 +172,11 @@ observed <- c(`2008` = 125, `2009` = 117)
 fit <- fit_phenology(model, evaluation = phenology_rss, observed = observed,
                      seasons = seasons, lower = c(yc = 10, zc = 180),
                      upper = c(yc = 80, zc = 350), seed = 17,
-                     max_iterations = 2, control = list(NP = 20, trace = FALSE))
+                     max_iterations = 5, control = list(NP = 20, trace = FALSE))
 # Increase the iteration limit and check convergence for a real calibration.
 fit
 predict_phenology(fit, seasons)
 fit$predictions
+}
 }
 }

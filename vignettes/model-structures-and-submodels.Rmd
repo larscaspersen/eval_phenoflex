@@ -288,7 +288,8 @@ Use `parameter_schema()` to inspect the available parameters and their defaults:
 
 ```{r parameter-schema}
 knitr::kable(
-  parameter_schema(phenoflex_model),
+  format(parameter_schema(phenoflex_model)),
+  align = c("l", "l", "r", "l", "l"),
   format = "html",
   row.names = FALSE
 )

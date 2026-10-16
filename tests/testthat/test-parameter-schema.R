@@ -1,3 +1,67 @@
+test_that("model and schema printing use decimal notation without changing values", {
+  old_options <- options(scipen = -9)
+  on.exit(options(old_options), add = TRUE)
+  model <- pheno_model(parameters = c(s1 = 0.00000001))
+  parameters <- model$parameters
+  schema <- parameter_schema(model)
+  defaults <- schema$default
+
+  model_output <- capture.output(result <- withVisible(print(model)))
+  expect_false(any(grepl("[0-9][eE][+-][0-9]", model_output)))
+  expect_false(any(grepl("[.][0-9]{3}", model_output)))
+  expect_true(any(grepl("2567000000000000000", model_output, fixed = TRUE)))
+  expect_identical(result$value, model)
+  expect_false(result$visible)
+  expect_identical(model$parameters, parameters)
+  expect_equal(getOption("scipen"), -9)
+
+  schema_output <- capture.output(result <- withVisible(print(schema)))
+  expect_false(any(grepl("[0-9][eE][+-][0-9]", schema_output)))
+  expect_true(any(grepl("2567000000000000000", schema_output, fixed = TRUE)))
+  expect_identical(result$value, schema)
+  expect_false(result$visible)
+  expect_identical(schema$default, defaults)
+  expect_type(schema$default, "double")
+  expect_equal(getOption("scipen"), -9)
+
+  expect_false(any(grepl("[.][0-9]{3}", schema_output)))
+})
+
+test_that("parameter displays round to two places and omit trailing zeros", {
+  model <- pheno_model(parameters = c(yc = 1.57, s1 = 1.5701, Tb = -0.001))
+  parameters <- model$parameters
+  output <- capture.output(print(model))
+  expect_true(any(grepl("1.57", output, fixed = TRUE)))
+  expect_false(any(grepl("1.570", output, fixed = TRUE)))
+  expect_false(any(grepl("[.][0-9]{3}", output)))
+  expect_false(any(grepl("(^|[[:space:]])-0([[:space:]]|$)", output)))
+  expect_identical(model$parameters, parameters)
+
+  schema <- parameter_schema(model)
+  schema$default[1:5] <- c(1.57, 1.5701, 1.5, 40, -0.001)
+  original <- schema$default
+  display <- format(schema)
+  expect_identical(as.character(trimws(display$default[1:5])),
+                   c("1.57", "1.57", "1.5", "40", "0"))
+  expect_identical(schema$default, original)
+  expect_type(schema$default, "double")
+})
+
+test_that("decimal schema printing is inherited by indexed and population schemas", {
+  model <- pheno_model()
+  models <- list(combined_pheno_model(model, 2),
+    pheno_model_list(list(model, model)),
+    stage_pheno_models(model, c(200, 300)),
+    population_pheno_model(n = 2))
+  for (model in models) {
+    schema <- parameter_schema(model)
+    expect_s3_class(schema, "pheno_parameter_schema")
+    expect_s3_class(schema, "data.frame")
+    expect_type(schema$default, "double")
+    expect_false(any(grepl("[0-9][eE][+-][0-9]", capture.output(print(schema)))))
+  }
+})
+
 test_that("chill requirement units follow the selected submodel", {
   chills <- list(dynamic = chill_dynamic(), hours = chill_hours(),
     utah = chill_utah(), positive = chill_positive_utah())

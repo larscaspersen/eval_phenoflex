@@ -2,11 +2,17 @@
 % Please edit documentation in R/pheno_model.R
 \name{parameter_schema}
 \alias{parameter_schema}
+\alias{print.pheno_parameter_schema}
+\alias{format.pheno_parameter_schema}
 \alias{default_parameters}
 \alias{validate_parameters}
 \title{Named parameters for a model specification}
 \usage{
 parameter_schema(model, parameterization = NULL)
+
+\method{print}{pheno_parameter_schema}(x, ...)
+
+\method{format}{pheno_parameter_schema}(x, ...)
 
 default_parameters(model, parameterization = NULL)
 
@@ -24,6 +30,10 @@ requirements once, expanding zc to indexed calibration names.}
 schema or defaults. NULL uses the model's representation (kinetic for constructed
 models); "characteristic" exposes characteristic calibration names.}
 
+\item{x}{A parameter schema returned by parameter_schema().}
+
+\item{...}{Additional arguments passed to print.data.frame().}
+
 \item{parameters}{Named numeric vector with exactly the names in the schema;
 order is arbitrary. Matrices and arrays are not parameter vectors.
 Complete Dynamic Model vectors may use either representation; names select
@@ -36,6 +46,9 @@ checks the converted values without modifying the supplied vector.}
 parameter_schema() returns a data frame with name, component, default,
 description and unit columns. Combined models also include base_name and cultivar
 (NA for shared parameters); model lists use member instead of cultivar.
+The data frame has class pheno_parameter_schema and prints defaults in decimal
+notation with at most two decimal places and no trailing zeros, while retaining
+their numeric values. format() returns a data frame formatted for display.
 default_parameters() returns a named numeric vector.
 validate_parameters() invisibly returns TRUE or raises an error.
 }
