@@ -53,7 +53,11 @@ plot(model)
 
 Get an overview on the parameters and their meaning with `parameter_schema()`
 
-```{r table-schema}
+```{r table-schema-plain, eval=FALSE}
+parameter_schema(model)
+```
+
+```{r table-schema, echo=FALSE}
 knitr::kable(
   parameter_schema(model),
   format = "html",
@@ -64,9 +68,7 @@ knitr::kable(
 
 Specify model parameters either when constructing the model with the help of a **named** vector or adjust model parameters later on:
 
-```{r table-schema}
-print(model)
-
+```{r adjust-par}
 model$parameters['yc'] <- 80
 
 print(model)
@@ -81,7 +83,7 @@ in the parameter schema and can be calibrated. User-defined chill submodels can 
 
 ## Predict bloom dates
 
-Prepare hourly temperature time series for the model prediction. Use chillR for data acquisition and temperature data handling
+Prepare hourly temperature time series for the model prediction. Use [chillR package](https://cran.r-project.org/web/packages/chillR/index.html) [@luedelingChillRStatisticalMethods2024] for data acquisition and temperature data handling
 
 ```{r process-weather}
 data("KA_weather", package = "chillR")
@@ -119,6 +121,7 @@ just heat accumulation.
 ## Calibrate model parameters
 
 Use the `fit_phenology()` to calibrate the model parameters. Only the parameters specified in the lower and upper bounds are adjusted.
+You need to install the [DEoptim package](https://cran.r-project.org/web/packages/DEoptim/index.html) [@deoptim_package_2011, @ardia_differential_2011] to run the calibration, alternatively you can also use the [GenSA package](https://cran.r-project.org/web/packages/GenSA/index.html) [@xiang_generalized_2013] (which you then need have installed) by supplying `optimizer = "GenSA"` in the function call.
 
 ```{r}
 require(DEoptim)
@@ -136,8 +139,6 @@ fit <- fit_phenology(model, evaluation = phenology_rss, observed = observed,
 print(fit)
 
 ```
-
-
 ## Model a bud population
 
 Share chill and potential heat accumulation across buds while allowing their

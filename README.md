@@ -31,122 +31,530 @@ Choose a model structure and the chill and heat submodels:
 ``` r
 library(evalpheno)
 
-model <- pheno_model(
-  structure = "phenoflex",
-  chill = chill_dynamic(),
-  heat = heat_gdh("unscaled")
-)
+model <- pheno_model()
 ```
 
-Use `"sequential"`, `"parallel"` or `"partial_overlap"` for another
-structure, with `chill_dynamic()` for Dynamic Model chill.
-Models use the original `E0`, `E1`, `A0` and `A1` coefficients by default.
-Supplying `theta_star`, `theta_c`, `tau` or `pie_c` automatically selects
-characteristic input; mixing it with kinetic input raises an error. Characteristic
-values are converted at construction and retained in `model$chill$characteristic`;
-`model$parameters` always contains kinetic values.
+By default it constructs a PhenoFlex model with Dynamic Model for chill
+accumulation and Growing Degree Hour Model for heat accumulation. You
+can also choose different model structures by using `"sequential"`,
+`"parallel"` or `"partial_overlap"`.
+
+You can visualize the model structure
+
+``` r
+plot(model)
+```
+
+![](README_files/figure-gfm/plot-structure-1.png)<!-- -->
+
+Get an overview on the parameters and their meaning with
+`parameter_schema()`
+
+``` r
+parameter_schema(model)
+```
+
+<table>
+
+<thead>
+
+<tr>
+
+<th style="text-align:left;">
+
+name
+</th>
+
+<th style="text-align:left;">
+
+component
+</th>
+
+<th style="text-align:right;">
+
+default
+</th>
+
+<th style="text-align:left;">
+
+description
+</th>
+
+<th style="text-align:left;">
+
+unit
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td style="text-align:left;">
+
+yc
+</td>
+
+<td style="text-align:left;">
+
+structure
+</td>
+
+<td style="text-align:right;">
+
+4.000000e+01
+</td>
+
+<td style="text-align:left;">
+
+Chill requirement
+</td>
+
+<td style="text-align:left;">
+
+Chill Portions
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+zc
+</td>
+
+<td style="text-align:left;">
+
+structure
+</td>
+
+<td style="text-align:right;">
+
+2.857143e+02
+</td>
+
+<td style="text-align:left;">
+
+Heat requirement
+</td>
+
+<td style="text-align:left;">
+
+h
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+s1
+</td>
+
+<td style="text-align:left;">
+
+structure
+</td>
+
+<td style="text-align:right;">
+
+5.000000e-01
+</td>
+
+<td style="text-align:left;">
+
+Slope parameter for transition from chill accumulation to heat
+accumulation
+</td>
+
+<td style="text-align:left;">
+
+1 / (Chill Portions)
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+E0
+</td>
+
+<td style="text-align:left;">
+
+chill
+</td>
+
+<td style="text-align:right;">
+
+4.153500e+03
+</td>
+
+<td style="text-align:left;">
+
+time-independent activation energy of forming the precursor to the
+dormancy-breaking factor
+</td>
+
+<td style="text-align:left;">
+
+dimensionless
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+E1
+</td>
+
+<td style="text-align:left;">
+
+chill
+</td>
+
+<td style="text-align:right;">
+
+1.288880e+04
+</td>
+
+<td style="text-align:left;">
+
+time-independent activation energy of destroying the precursor to the
+dormancy-breaking factor
+</td>
+
+<td style="text-align:left;">
+
+dimensionless
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+A0
+</td>
+
+<td style="text-align:left;">
+
+chill
+</td>
+
+<td style="text-align:right;">
+
+1.395000e+05
+</td>
+
+<td style="text-align:left;">
+
+amplitude of the (hypothetical) process involved in forming the
+precursor to the dormancy-breaking factor
+</td>
+
+<td style="text-align:left;">
+
+dimensionless
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+A1
+</td>
+
+<td style="text-align:left;">
+
+chill
+</td>
+
+<td style="text-align:right;">
+
+2.567000e+18
+</td>
+
+<td style="text-align:left;">
+
+amplitude of the (hypothetical) process involved in destroying the
+precursor to the dormancy-breaking factor
+</td>
+
+<td style="text-align:left;">
+
+dimensionless
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+Tf
+</td>
+
+<td style="text-align:left;">
+
+chill
+</td>
+
+<td style="text-align:right;">
+
+4.000000e+00
+</td>
+
+<td style="text-align:left;">
+
+Transition temperature for irreversible chill conversion
+</td>
+
+<td style="text-align:left;">
+
+degree C
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+slope
+</td>
+
+<td style="text-align:left;">
+
+chill
+</td>
+
+<td style="text-align:right;">
+
+1.600000e+00
+</td>
+
+<td style="text-align:left;">
+
+Slope of temperature-dependent chill conversion
+</td>
+
+<td style="text-align:left;">
+
+K^-1
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+Tb
+</td>
+
+<td style="text-align:left;">
+
+heat
+</td>
+
+<td style="text-align:right;">
+
+4.000000e+00
+</td>
+
+<td style="text-align:left;">
+
+Base temperature for heat accumulation
+</td>
+
+<td style="text-align:left;">
+
+degree C
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+Tu
+</td>
+
+<td style="text-align:left;">
+
+heat
+</td>
+
+<td style="text-align:right;">
+
+2.500000e+01
+</td>
+
+<td style="text-align:left;">
+
+Optimal temperature for heat accumulation
+</td>
+
+<td style="text-align:left;">
+
+degree C
+</td>
+
+</tr>
+
+<tr>
+
+<td style="text-align:left;">
+
+Tc
+</td>
+
+<td style="text-align:left;">
+
+heat
+</td>
+
+<td style="text-align:right;">
+
+3.600000e+01
+</td>
+
+<td style="text-align:left;">
+
+Upper critical temperature for heat accumulation
+</td>
+
+<td style="text-align:left;">
+
+degree C
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+Specify model parameters either when constructing the model with the
+help of a **named** vector or adjust model parameters later on:
+
+``` r
+model$parameters['yc'] <- 80
+
+print(model)
+#> Structure:      PhenoFlex
+#> Chill submodel: Dynamic Model
+#> Heat submodel:  GDH
+#> Parameters:
+#>           yc           zc           s1           E0           E1           A0 
+#> 8.000000e+01 2.857143e+02 5.000000e-01 4.153500e+03 1.288880e+04 1.395000e+05 
+#>           A1           Tf        slope           Tb           Tu           Tc 
+#> 2.567000e+18 4.000000e+00 1.600000e+00 4.000000e+00 2.500000e+01 3.600000e+01
+```
+
 Alternative chill submodels are `chill_hours()`, `chill_utah()` and
-`chill_positive_utah()`. `chill_none()` creates a heat-only model, bypassing
-chill-dependent coupling. Chill-hours thresholds and Utah zone weights appear
-in the parameter schema and can be calibrated. Positive Utah adds only positive
-daily totals. Set chill requirements and search bounds in the selected model's
-own units; they are not interchangeable with Dynamic Model portions.
-Default `yc` is 1000 for chill hours, 1200 for Utah and positive Utah, and
-40 for the Dynamic Model.
+`chill_positive_utah()`. `chill_none()` creates a heat-only model,
+bypassing chill-dependent coupling. Chill-hours thresholds and Utah zone
+weights appear in the parameter schema and can be calibrated.
+User-defined chill submodels can be supplied through `chill_custom()`.
 
-User-defined chill submodels can be supplied through `chill_custom()`:
+## Predict bloom dates
 
-```r
-triangular_chill <- function(weather, parameters) {
-  temp <- head(weather$Temp, -1L)
-  increments <- pmax(0, 1 - abs(temp - parameters[["Topt"]]) / parameters[["width"]])
-  matrix(c(0, cumsum(increments)), ncol = 1, dimnames = list(NULL, "y"))
-}
-custom <- chill_custom(
-  triangular_chill, defaults = c(Topt = 5, width = 5),
-  lower = c(Topt = 0, width = 1), upper = c(Topt = 10, width = 15),
-  validate = function(p) p[["width"]] > 0, label = "Triangular chill"
-)
-custom_model <- pheno_model(chill = custom)
+Prepare hourly temperature time series for the model prediction. Use
+[chillR
+package](https://cran.r-project.org/web/packages/chillR/index.html)
+\[@luedelingChillRStatisticalMethods2024\] for data acquisition and
+temperature data handling
+
+``` r
+data("KA_weather", package = "chillR")
+hourly <- chillR::stack_hourly_temps(
+  KA_weather, latitude = 50.4)$hourtemps
+seasons <- chillR::genSeasonList(hourly, mrange = c(8, 6), years = 1999:2009)
+names(seasons) <- as.character(1999:2009)
 ```
-
-Construction checks the callback on a small hourly sample; prediction checks
-every returned trajectory. `validate_chill_custom(custom, weather)` checks
-supplied weather explicitly. See `help("chill_custom")` for the matrix contract,
-optional sample weather and parameter-domain validation.
-
-## Parameterize and predict
-
-Set parameters by name; omitted values use the selected model’s
-defaults. `parameter_schema(model)` describes its parameters and
-`model_parameters(model)` returns their current values.
-
-For characteristic calibration, request bounds with
-`default_bounds(model, parameterization = "characteristic")`, or name selected
-characteristic parameters in the bounds. The fitter infers the representation
-from the bounds or explicit starting values. `model_parameters(model,
-"characteristic")` supplies equivalent characteristic starting values. Fitted
-models store kinetic coefficients; `fit$par` retains the optimizer's coordinates.
 
 ``` r
 model <- pheno_model(parameters = c(yc = 40, zc = 250))
 
-# Prepare two seasons from the bundled daily weather data.
-data("cka_weather", package = "evalpheno")
-hourly <- chillR::stack_hourly_temps(
-  cka_weather, latitude = attr(cka_weather, "latitude")
-)$hourtemps
-seasons <- chillR::genSeasonList(hourly, mrange = c(8, 6), years = 2008:2009)
-
 predict_phenology(model, seasons)
-#> [1] 121.0417 112.3750
+#>      1999      2000      2001      2002      2003      2004      2005      2006 
+#> 111.16667 113.58333 112.91667  92.04167 103.33333 103.04167 102.87500 121.87500 
+#>      2007      2008      2009 
+#> 102.29167 117.95833 109.08333
 ```
 
-Predictions are fractional days of the year; `NA` means the event was
-not reached. Use `basic_output = FALSE` to inspect chill and heat
-trajectories.
+## Visualize the prcoesses
 
-## Visualize the model
-
-Plot the chill and heat temperature responses together with their transition:
+Plot the chill and heat temperature responses together with their
+transition:
 
 ``` r
-model <- pheno_model("partial_overlap")
-plot(model)
-plot_temperature_response(model)
-plot_model_structure(model)
-
-# Overlay the season's effective chill/heat path and actual overlap cutoff.
-plot_model_structure(model, weather = seasons[[1]])
-plot_processes(model, seasons[[1]])
-plot_processes(model, seasons)
 plot_processes(model, seasons, ribbon = TRUE)
 ```
 
-The partial-overlap plot marks minimum chilling `yc` and the initial heat
-requirement `b1 + b2`, with the lower heat asymptote `b1` and overlap cutoff `b1 * ol`.
-The region below minimum chilling is shaded: no amount of heat can trigger the event.
-Dynamic Model chill axes stop at 120 portions by default; `chill_range` overrides this.
-The latter is an accumulated-heat threshold; its chill coordinate depends on
-the weather. Other structures show the chill-dependent fraction of effective
-heat. Temperature responses use the native submodels and chosen heat scaling;
-Dynamic Model chill is averaged over 1200 hours at constant temperature.
+`plot_processes()` follows chill accumulation, the transition, and
+effective heat through time. With a season list, grey curves show
+individual seasons and black curves show pointwise medians. A dot marks
+the median bloom date, with whiskers spanning the earliest and latest
+successful predictions. Set `ribbon = TRUE` to replace the individual
+curves with a shaded min-max range. Partial overlap shows its changing
+heat requirement in the transition panel; heat-only models show just
+heat accumulation.
 
-The component functions return editable ggplot objects, and `plot(model)`
-returns a patchwork composition. Install `ggplot2` and `patchwork` to use them.
-Observed-temperature histograms or gradients can be added with `hourtemps` and
-`weather_freq_plot` in `plot_temperature_response()` or `plot_pheno_model()`.
-In `plot(model, weather = seasons[[1]])`, the supplied season is used automatically.
-Panel labels show the selected `chill_months` and `heat_months`, and the caption
-identifies the weather source and relative frequencies.
+## Calibrate model parameters
 
-`plot_processes()` follows chill accumulation, the transition, and effective heat
-through time. With a season list, grey curves show individual seasons and black
-curves show pointwise medians. A dot marks the median bloom date, with whiskers
-spanning the earliest and latest successful predictions. Set `ribbon = TRUE`
-to replace the individual curves with a shaded min-max range. Partial overlap shows
-its changing heat requirement in the transition panel; heat-only models show
-just heat accumulation.
+Use the `fit_phenology()` to calibrate the model parameters. Only the
+parameters specified in the lower and upper bounds are adjusted. You
+need to install the [DEoptim
+package](https://cran.r-project.org/web/packages/DEoptim/index.html)
+\[@deoptim_package_2011, @ardia_differential_2011\] to run the
+calibration, alternatively you can also use the [GenSA
+package](https://cran.r-project.org/web/packages/GenSA/index.html)
+\[@xiang_generalized_2013\] (which you then need have installed) by
+supplying `optimizer = "GenSA"` in the function call.
+
+``` r
+require(DEoptim)
+#> Loading required package: DEoptim
+#> Loading required package: parallel
+#> 
+#> DEoptim package
+#> Differential Evolution algorithm in R
+#> Authors: D. Ardia, K. Mullen, B. Peterson and J. Ulrich
+model <- pheno_model()
+lower <- c(yc = 10)
+upper <- c(yc = 80)
+
+#use real observations instead of synthetic ones
+observed <- predict_phenology(model, seasons)
+
+#run the optimizer, use more iterations than in this example
+fit <- fit_phenology(model, evaluation = phenology_rss, observed = observed,
+                     seasons = seasons, lower, upper,seed = 17, max_iterations = 2)
+#> Iteration: 1 bestvalit: 2.612847 bestmemit:   38.552002
+#> Iteration: 2 bestvalit: 2.612847 bestmemit:   38.552002
+
+print(fit)
+#> Calibrated phenology model (DEoptim)
+#> Loss: 0 
+#> Estimated parameters:
+#> yc 
+#> 40
+```
 
 ## Model a bud population
 
@@ -163,15 +571,15 @@ means[c("yc", "zc")] <- c(40, 250)
 
 buds <- predict_population_phenology(population, seasons[[1]], parameters = means)
 quantile(buds$bloom_jday, c(0.1, 0.5, 0.9), na.rm = TRUE)
-#>      10%      50%      90%
-#> 119.1125 120.8750 123.0833
+#>      10%      50%      90% 
+#> 102.2417 111.0417 113.0458
 ```
 
 Population models also support cutting and constant-temperature forcing
 experiments.
 
 For full workflows, see [Getting
-started](vignettes/getting-started.Rmd),
-[Model structures and submodels](vignettes/model-structures-and-submodels.Rmd), [Model
+started](vignettes/getting-started.Rmd), [Model structures and
+submodels](vignettes/model-structures-and-submodels.Rmd), [Model
 calibration](vignettes/model-calibration_special-cases.Rmd), and [Bud
 populations](vignettes/bud-population.Rmd).
