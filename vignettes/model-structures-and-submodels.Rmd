@@ -317,13 +317,13 @@ names(seasons) <- c("2008", "2009")
 ```
 
 
-```{r model-visualization, eval=FALSE}
+```{r model-visualization, fig.width=6, fig.height=7}
 plot(phenoflex_model, weather = seasons[[1]],
      chill_months = c(11, 12, 1, 2), heat_months = 1:5)
 ```
 The histogram indicates the upper part of the heat response curve is unlikely to receive any information from the weather time series. This can be especially helpfull as a test after the model calibration to judge how informed the calibrated model parameters are by the weather. 
 
-```{r model-visualization-partial, fig.width=6, fig.height=7, eval=FALSE}
+```{r model-visualization-partial, fig.width=6, fig.height=7}
 plot(partial_overlap_model, weather = seasons[[1]])
 ```
 
