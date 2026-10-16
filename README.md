@@ -506,6 +506,8 @@ transition:
 plot_processes(model, seasons, ribbon = TRUE)
 ```
 
+![](README_files/figure-gfm/model-plots-1.png)<!-- -->
+
 `plot_processes()` follows chill accumulation, the transition, and
 effective heat through time. With a season list, grey curves show
 individual seasons and black curves show pointwise medians. A dot marks
