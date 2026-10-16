@@ -16,13 +16,26 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15174551.svg)](https://doi.org/10.5281/zenodo.15174551)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15174550.svg)](https://doi.org/10.5281/zenodo.15174550)
 <!-- badges: end -->
 
 `evalpheno` lets you construct temperature-driven phenology models, set their
 parameters, and simulate variation among individual buds. Models combine
 chill and heat accumulation with sequential, parallel, partial-overlap or
 PhenoFlex structures.
+
+## How to cite
+
+If you use `evalpheno` in your work, please cite the package version you used.
+For version 0.0.3.2, use:
+
+> Caspersen, L. (2025). *evalpheno: Modular Phenology Models and Calibration*
+> (Version 0.0.3.2) [R package]. Zenodo.
+> <https://doi.org/10.5281/zenodo.17924364>
+
+For other releases, use the corresponding version-specific DOI from
+[Zenodo](https://doi.org/10.5281/zenodo.15174550). The DOI badge above uses the
+all-versions DOI, which links to the latest archived release.
 
 ## Installation
 
