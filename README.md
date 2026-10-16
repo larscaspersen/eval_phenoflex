@@ -34,12 +34,12 @@ library(evalpheno)
 model <- pheno_model()
 ```
 
-By default it constructs a PhenoFlex model with Dynamic Model for chill
-accumulation and Growing Degree Hour Model for heat accumulation. You
-can also choose different model structures by using `"sequential"`,
-`"parallel"` or `"partial_overlap"`.
+By default, `pheno_model()` constructs a PhenoFlex model with the
+Dynamic Model for chill accumulation and the Growing Degree Hour Model
+for heat accumulation. You can select other model structures using
+`"sequential"`, `"parallel"` or `"partial_overlap"`.
 
-You can visualize the model structure
+You can visualize the model structure:
 
 ``` r
 plot(model)
@@ -47,8 +47,8 @@ plot(model)
 
 ![](README_files/figure-gfm/plot-structure-1.png)<!-- -->
 
-Get an overview on the parameters and their meaning with
-`parameter_schema()`
+Use `parameter_schema()` to view the model parameters and their
+descriptions:
 
 ``` r
 parameter_schema(model)
@@ -448,8 +448,8 @@ degree C
 
 </table>
 
-Specify model parameters either when constructing the model with the
-help of a **named** vector or adjust model parameters later on:
+Supply model parameters as a **named** vector when constructing the
+model, or adjust them afterward:
 
 ``` r
 model$parameters['yc'] <- 80
@@ -473,11 +473,11 @@ User-defined chill submodels can be supplied through `chill_custom()`.
 
 ## Predict bloom dates
 
-Prepare hourly temperature time series for the model prediction. Use
+Prepare hourly temperature time series to predict bloom dates. The
 [chillR
 package](https://cran.r-project.org/web/packages/chillR/index.html)
-(Luedeling et al., 2024) for data acquisition and temperature data
-handling
+(Luedeling et al., 2024) provides tools for acquiring and processing
+temperature data:
 
 ``` r
 data("KA_weather", package = "chillR")
@@ -497,10 +497,9 @@ predict_phenology(model, seasons)
 #> 102.29167 117.95833 109.08333
 ```
 
-## Visualize the prcoesses
+## Visualize the processes
 
-Plot the chill and heat temperature responses together with their
-transition:
+Plot chill and heat accumulation and the transition between them:
 
 ``` r
 plot_processes(model, seasons, ribbon = TRUE)
@@ -508,26 +507,26 @@ plot_processes(model, seasons, ribbon = TRUE)
 
 ![](README_files/figure-gfm/model-plots-1.png)<!-- -->
 
-`plot_processes()` follows chill accumulation, the transition, and
-effective heat through time. With a season list, grey curves show
+`plot_processes()` shows chill accumulation, the transition, and
+effective heat over time. With a season list, grey curves show
 individual seasons and black curves show pointwise medians. A dot marks
 the median bloom date, with whiskers spanning the earliest and latest
 successful predictions. Set `ribbon = TRUE` to replace the individual
-curves with a shaded min-max range. Partial overlap shows its changing
-heat requirement in the transition panel; heat-only models show just
-heat accumulation.
+curves with a shaded range from the minimum to the maximum.
+Partial-overlap models show their changing heat requirement in the
+transition panel; heat-only models show just heat accumulation.
 
 ## Calibrate model parameters
 
-Use the `fit_phenology()` to calibrate the model parameters. Only the
-parameters specified in the lower and upper bounds are adjusted. You
-need to install the [DEoptim
+Use `fit_phenology()` to calibrate the model parameters. Only the
+parameters specified in the lower and upper bounds are adjusted. Install
+the [DEoptim
 package](https://cran.r-project.org/web/packages/DEoptim/index.html)
-Ardia et al. (2011) to run the calibration, alternatively you can also
-use the [GenSA
+Ardia et al. (2011) to use the default optimizer. Alternatively, install
+the [GenSA
 package](https://cran.r-project.org/web/packages/GenSA/index.html)
-(Xiang et al., 2013) (which you then need have installed) by supplying
-`optimizer = "GenSA"` in the function call.
+(Xiang et al., 2013) and supply `optimizer = "GenSA"` in the function
+call.
 
 ``` r
 require(DEoptim)
@@ -541,12 +540,12 @@ model <- pheno_model()
 lower <- c(yc = 10)
 upper <- c(yc = 80)
 
-#use real observations instead of synthetic ones
+# Replace these synthetic predictions with observed bloom dates.
 observed <- predict_phenology(model, seasons)
 
-#run the optimizer, use more iterations than in this example
+# Run the optimizer. Use more iterations for actual calibrations.
 fit <- fit_phenology(model, evaluation = phenology_rss, observed = observed,
-                     seasons = seasons, lower, upper,seed = 17, max_iterations = 2)
+                     seasons = seasons, lower, upper, seed = 17, max_iterations = 2)
 #> Iteration: 1 bestvalit: 2.612847 bestmemit:   38.552002
 #> Iteration: 2 bestvalit: 2.612847 bestmemit:   38.552002
 
