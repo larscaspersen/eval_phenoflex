@@ -1,6 +1,7 @@
 ---
 title: "The evalpheno guide"
 author: "Lars Caspersen"
+date: "`r Sys.Date()`"
 description: "Construct, calibrate, and explore temperature-driven phenology models in R."
 site: bookdown::bookdown_site
 bibliography: vignette_evalpheno.bib
@@ -58,3 +59,16 @@ installed package documentation share the same source.
 
 Visit the [GitHub repository](https://github.com/larscaspersen/eval_phenoflex)
 for source code, issues, and development updates.
+
+## Citing the software and chapters {-}
+
+For research using `evalpheno`, cite the software version you used; see the
+[software citation](https://github.com/larscaspersen/eval_phenoflex#how-to-cite).
+When referring to an explanation or example in this guide, use the citation
+at the end of that chapter. Each chapter provides its own URL and downloadable
+BibTeX entry. A citation for the complete guide appears below.
+
+The guide is updated over time. Its citations identify the package version and
+the date shown on the page. A rendered date records when the page was built,
+rather than when its content last changed. The software's Zenodo DOI identifies
+the archived software release; it is not a separate DOI for a guide chapter.

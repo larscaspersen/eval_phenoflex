@@ -7,6 +7,19 @@ Edit chapter content in `vignettes/*.Rmd`. `book/build.R` generates book inputs
 under `book/_build/`, adds chapter headings, and uses separate R sessions for
 each chapter. The ordinary package vignettes remain available.
 
+Each generated chapter displays the author and date from its vignette YAML,
+along with the package version from `DESCRIPTION`. The existing dynamic
+`` date: "`r Sys.Date()`" `` values are shown as **Rendered**, using one date for
+the complete build. To display a fixed date instead, set an ISO date such as
+`date: "2026-10-17"` in the vignette; the book labels this **Date**.
+
+`book/chapter-metadata.R` generates a formatted citation and BibTeX download
+for each chapter, plus a citation for the complete guide on the landing page.
+The build copies these `.bib` files into `_book/citations/`. Citations identify
+the page URL, package version and displayed date. They do not assign the
+software DOI to individual chapters. The original vignette YAML stays the
+source for chapter authorship and dates.
+
 ## Preview locally
 
 From the package root in RStudio, install the tools once:

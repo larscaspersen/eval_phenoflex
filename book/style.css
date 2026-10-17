@@ -23,6 +23,37 @@ main h2 {
   margin-top: 2.5rem;
 }
 
+.chapter-meta {
+  color: #52645d;
+  font-size: 0.95rem;
+  margin: -0.75rem 0 2rem;
+}
+
+.chapter-meta p {
+  margin-bottom: 0.25rem;
+}
+
+.guide-citation {
+  background: #f3f7f4;
+  border-left: 3px solid #245a4b;
+  border-radius: 0 0.4rem 0.4rem 0;
+  overflow-wrap: anywhere;
+  padding: 1rem 1.25rem;
+}
+
+.guide-citation details {
+  margin-top: 1rem;
+}
+
+.guide-citation summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.guide-citation pre {
+  margin: 0.75rem 0 0;
+}
+
 div.sourceCode {
   border: 1px solid #dce5e0;
   border-radius: 0.4rem;

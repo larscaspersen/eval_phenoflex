@@ -4,6 +4,9 @@ build_guide <- function() {
     stop("Run source('book/build.R') from the evalpheno package root.")
   }
   root <- normalizePath(".", winslash = "/", mustWork = TRUE)
+  source(file.path(root, "book", "chapter-metadata.R"), local = TRUE)
+  build_date <- Sys.Date()
+  version <- read.dcf("DESCRIPTION")[1L, "Version"]
   old_libraries <- .libPaths()
   on.exit(.libPaths(old_libraries), add = TRUE)
   if (dir.exists(".local-library")) {
@@ -19,6 +22,7 @@ build_guide <- function() {
       stop("Install ", package, " before building the guide.")
     }
   }
+  guide_url <- rmarkdown::yaml_front_matter("book/index.Rmd")$url
 
   # Let fresh chapter sessions use the same package libraries as this session.
   old_r_libs <- Sys.getenv("R_LIBS", unset = NA_character_)
@@ -54,6 +58,17 @@ build_guide <- function() {
     stop("Could not copy the bibliography and citation style.")
   }
 
+  citation_dir <- file.path(stage, "citations")
+  dir.create(citation_dir, showWarnings = FALSE)
+  index <- file.path(stage, "index.Rmd")
+  guide_info <- guide_metadata(file.path(root, "book", "index.Rmd"), build_date)
+  guide_cite <- guide_citation(
+    "The evalpheno guide", guide_info, version, guide_url, "evalpheno-guide",
+    file.path(citation_dir, "evalpheno-guide.bib")
+  )
+  writeLines(c(readLines(index, warn = FALSE, encoding = "UTF-8"), "",
+               guide_cite), index, useBytes = TRUE)
+
   # Generate chapter inputs without changing or duplicating vignette sources.
   chapters <- c(
     "getting-started" = "Getting started",
@@ -71,7 +86,14 @@ build_guide <- function() {
     body <- lines[seq.int(delimiters[2L] + 1L, length(lines))]
     body <- body[!grepl("^## References[[:space:]]*$", body)]
     heading <- paste0("# ", chapters[[slug]], " {#", slug, "}")
-    writeLines(c(heading, "", body), file.path(stage, paste0(slug, ".Rmd")),
+    metadata <- guide_metadata(source, build_date)
+    citation <- guide_citation(
+      chapters[[slug]], metadata, version, paste0(guide_url, slug, ".html"),
+      paste0("evalpheno-", slug), file.path(citation_dir, paste0(slug, ".bib")),
+      chapter = TRUE
+    )
+    writeLines(c(heading, "", guide_byline(metadata, version), body, "", citation),
+               file.path(stage, paste0(slug, ".Rmd")),
                useBytes = TRUE)
   }
 
@@ -79,6 +101,11 @@ build_guide <- function() {
   on.exit(setwd(old_directory), add = TRUE)
   bookdown::render_book("index.Rmd", output_format = "bookdown::bs4_book",
                         encoding = "UTF-8")
+  dir.create(file.path("_book", "citations"), showWarnings = FALSE)
+  if (!all(file.copy(list.files(citation_dir, full.names = TRUE),
+                     file.path("_book", "citations"), overwrite = TRUE))) {
+    stop("Could not copy the downloadable citations.")
+  }
   file.create(file.path("_book", ".nojekyll"))
   message("Guide built at ", file.path(stage, "_book", "index.html"))
   invisible(file.path(stage, "_book", "index.html"))
