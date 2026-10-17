@@ -23,7 +23,7 @@ for example full bloom, which defined accoridng to the BBCH scale as the time po
 
 ## Preparation
 
-First the temperature observation needs to be processed into a list of seasons. For the weather handling, I recommend using the [chillR package](https://cran.r-project.org/web/packages/chillR/index.html) [@luedelingChillRStatisticalMethods2024].
+First the temperature observation needs to be processed into a list of seasons. For the weather handling, I recommend using the [chillR package](https://CRAN.R-project.org/package=chillR) [@luedelingChillRStatisticalMethods2024].
 
 ```{r weather}
 library(evalpheno)

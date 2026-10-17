@@ -490,7 +490,7 @@ User-defined chill submodels can be supplied through `chill_custom()`.
 
 Prepare hourly temperature time series to predict bloom dates. The
 [chillR
-package](https://cran.r-project.org/web/packages/chillR/index.html)
+package](https://CRAN.R-project.org/package=chillR)
 (Luedeling et al., 2024) provides tools for acquiring and processing
 temperature data:
 
@@ -536,10 +536,10 @@ transition panel; heat-only models show just heat accumulation.
 Use `fit_phenology()` to calibrate the model parameters. Only the
 parameters specified in the lower and upper bounds are adjusted. Install
 the [DEoptim
-package](https://cran.r-project.org/web/packages/DEoptim/index.html)
+package](https://CRAN.R-project.org/package=DEoptim)
 Ardia et al. (2011) to use the default optimizer. Alternatively, install
 the [GenSA
-package](https://cran.r-project.org/web/packages/GenSA/index.html)
+package](https://CRAN.R-project.org/package=GenSA)
 (Xiang et al., 2013) and supply `optimizer = "GenSA"` in the function
 call.
 

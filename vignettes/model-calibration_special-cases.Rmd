@@ -20,7 +20,7 @@ each cultivar or phenological stage (budbreak, flowering). However,
 there are situations where specialized model calibration may be desired. This vignette will demonstrate evalphenos function to do cross-validation, the model calibration of several successive phenological stages and the partial pooling of model structure across cultivars.
 
 In the first step, the phenology model is defined. In addition, the temperature data is converted to hourly format and split by season, meaning that we create a list with separate
-data.frames, each entry contains hourly temperature from the start of the season, by default September, to the end of the season, by default June in the following year. For the weather handling, I recommend using the [chillR package](https://cran.r-project.org/web/packages/chillR/index.html) [@luedelingChillRStatisticalMethods2024].
+data.frames, each entry contains hourly temperature from the start of the season, by default September, to the end of the season, by default June in the following year. For the weather handling, I recommend using the [chillR package](https://CRAN.R-project.org/package=chillR) [@luedelingChillRStatisticalMethods2024].
 
 ```{r weather}
 library(evalpheno)
@@ -63,9 +63,9 @@ values must lie within those ranges.
 
 If both bounds are omitted, `fit_phenology()` uses the complete default search
 box. Review and adjust these suggestions for your species, model and data.
-[DEoptim](https://cran.r-project.org/web/packages/DEoptim/index.html) [@deoptim_package_2011, @ardia_differential_2011] is the default optimizer; 
+[DEoptim](https://CRAN.R-project.org/package=DEoptim) [@deoptim_package_2011, @ardia_differential_2011] is the default optimizer;
 select `optimizer = "GenSA"` to use the
-alternative backend from the [GenSA package](https://cran.r-project.org/web/packages/GenSA/index.html) [@xiang_generalized_2013]. 
+alternative backend from the [GenSA package](https://CRAN.R-project.org/package=GenSA) [@xiang_generalized_2013].
 `max_iterations` limits the search, `control` supplies
 optimizer-specific settings, and `seed` makes these examples reproducible.
 

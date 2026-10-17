@@ -62,7 +62,7 @@ For the other structures, submodels, parameter units, and a table of available p
 ## Prepare weather and observations
 
 The bundled daily weather covers 2007--2009. For the temperature data handling,
-the [chillR package](https://cran.r-project.org/web/packages/chillR/index.html) [@luedelingChillRStatisticalMethods2024] is handy. 
+the [chillR package](https://CRAN.R-project.org/package=chillR) [@luedelingChillRStatisticalMethods2024] is handy.
 The PhenoFlex model originates from the chillR package. 
 Convert the temperature data to hourly temperatures
 and create two seasons, each spanning August to June of the following year:
