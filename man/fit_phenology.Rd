@@ -56,18 +56,10 @@ both R's RNG and GenSA's internal RNG and preserves the caller's RNG state.
 It overrides \code{control$seed}. Time-limited runs need not be reproducible.}
 
 \item{control}{Named list of optimizer-specific controls. See
-\code{\link[DEoptim:DEoptim.control]{DEoptim::DEoptim.control()}} or \code{\link[GenSA:GenSA]{GenSA::GenSA()}}. DEoptim supports
-\code{parallelType = "parallel"}, \code{"foreach"}, \code{"auto"} and \code{cluster}.
-For \code{"parallel"}, install parallelly to determine the available worker count;
-supply a PSOCK cluster to choose the count explicitly. The fitter loads
-evalpheno and \code{control$packages} on these workers using the caller's library
-paths. It stops only clusters it creates, including on errors. Export custom
-global dependencies with \code{control$parVar} or \code{parallel::clusterExport()}.
-For \code{"foreach"}, register and manage a backend yourself; its workers must
-be able to find evalpheno and any \code{foreachArgs$.packages}. Export custom
-dependencies with \code{foreachArgs$.export}. Deterministic DEoptim evaluators
-are reproducible with a supplied seed; stochastic evaluators can depend on
-the backend and worker count. GenSA defaults to \code{smooth = FALSE}.}
+\code{\link[DEoptim:DEoptim.control]{DEoptim::DEoptim.control()}} or \code{\link[GenSA:GenSA]{GenSA::GenSA()}}. Fitting runs serially;
+parallel execution controls are temporarily unsupported. For DEoptim,
+\code{parallelType} must be \code{"none"} or \code{0}, and \code{cluster} must be NULL.
+GenSA defaults to \code{smooth = FALSE}.}
 
 \item{max_iterations}{Optional positive integer iteration limit; overrides
 \code{control$itermax} for DEoptim or \code{control$maxit} for GenSA. Iterations are

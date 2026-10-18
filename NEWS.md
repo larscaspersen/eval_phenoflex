@@ -1,3 +1,10 @@
+# evalpheno 0.0.3.2
+
+* Temporarily remove parallel fitting support and its automated worker tests
+  following failures on R-hub. fit_phenology() now accepts only serial DEoptim
+  execution controls. Remove the unused parallel fitting dependencies.
+  The parallel phenology model structure remains available.
+
 # evalpheno 0.0.3.1
 
 * Print calibrated models as a compact optimizer, loss and estimated-parameter

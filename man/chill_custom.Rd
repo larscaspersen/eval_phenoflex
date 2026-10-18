@@ -75,8 +75,6 @@ without supplied bounds stay fixed at their stored values in \code{\link[=defaul
 Use \code{validate} to reject parameter-domain violations. Invalid candidates are
 excluded during fitting. Callback errors and malformed trajectories stop
 fitting with an informative error instead of being silently treated as loss.
-For parallel fitting, capture needed constants/helpers in the callback's
-closure and use namespace-qualified calls to external packages.
 }
 \examples{
 triangular <- function(weather, parameters) {

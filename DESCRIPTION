@@ -42,20 +42,16 @@ Imports:
     purrr,
     GenSA,
     magrittr,
-    parallel,
     Rcpp,
     tidyr
 LinkingTo:
     Rcpp
 Suggests:
     DEoptim,
-    doParallel,
     dplyr,
-    foreach,
     ggplot2 (>= 3.4.0),
     jsonlite,
     knitr,
-    parallelly,
     patchwork,
     rmarkdown,
     scales,

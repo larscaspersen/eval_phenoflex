@@ -29,8 +29,6 @@
 #' Use `validate` to reject parameter-domain violations. Invalid candidates are
 #' excluded during fitting. Callback errors and malformed trajectories stop
 #' fitting with an informative error instead of being silently treated as loss.
-#' For parallel fitting, capture needed constants/helpers in the callback's
-#' closure and use namespace-qualified calls to external packages.
 #' @param fun Callback accepting weather and parameters.
 #' @param defaults Finite numeric vector with distinct, non-empty parameter names.
 #'   `numeric()` supports a callback with no adjustable chill parameters.

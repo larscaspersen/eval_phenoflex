@@ -50,18 +50,10 @@
 #'   both R's RNG and GenSA's internal RNG and preserves the caller's RNG state.
 #'   It overrides `control$seed`. Time-limited runs need not be reproducible.
 #' @param control Named list of optimizer-specific controls. See
-#'   [DEoptim::DEoptim.control()] or [GenSA::GenSA()]. DEoptim supports
-#'   `parallelType = "parallel"`, `"foreach"`, `"auto"` and `cluster`.
-#'   For `"parallel"`, install parallelly to determine the available worker count;
-#'   supply a PSOCK cluster to choose the count explicitly. The fitter loads
-#'   evalpheno and `control$packages` on these workers using the caller's library
-#'   paths. It stops only clusters it creates, including on errors. Export custom
-#'   global dependencies with `control$parVar` or `parallel::clusterExport()`.
-#'   For `"foreach"`, register and manage a backend yourself; its workers must
-#'   be able to find evalpheno and any `foreachArgs$.packages`. Export custom
-#'   dependencies with `foreachArgs$.export`. Deterministic DEoptim evaluators
-#'   are reproducible with a supplied seed; stochastic evaluators can depend on
-#'   the backend and worker count. GenSA defaults to `smooth = FALSE`.
+#'   [DEoptim::DEoptim.control()] or [GenSA::GenSA()]. Fitting runs serially;
+#'   parallel execution controls are temporarily unsupported. For DEoptim,
+#'   `parallelType` must be `"none"` or `0`, and `cluster` must be NULL.
+#'   GenSA defaults to `smooth = FALSE`.
 #' @param max_iterations Optional positive integer iteration limit; overrides
 #'   `control$itermax` for DEoptim or `control$maxit` for GenSA. Iterations are
 #'   generations for DEoptim and annealing steps for GenSA, not evaluation counts.
@@ -201,6 +193,12 @@ fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
   if (!is.null(max_seconds)) .fit_positive_scalar(max_seconds, "max_seconds")
 
   if (optimizer == "DEoptim") {
+    if ((!is.null(control$parallelType) &&
+         !identical(control$parallelType, "none") &&
+         !identical(control$parallelType, 0) && !identical(control$parallelType, 0L)) ||
+        !is.null(control$cluster))
+      stop("Parallel fitting is temporarily unavailable; use serial DEoptim controls (parallelType = 'none', cluster = NULL).",
+           call. = FALSE)
     if (!is.null(max_seconds) || !is.null(control$max.time))
       stop("DEoptim has no native time limit; use max_iterations or its stopping controls.",
            call. = FALSE)
@@ -238,7 +236,7 @@ fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
   evaluations <- 0L
   evaluate <- .fit_objective(parameters, free, lower, upper, model, evaluation,
                             if (has_observed) c(list(observed = observed), list(...)) else list(...))
-  # GenSA uses local tracking; DEoptim's native result also works across workers.
+  # GenSA uses local tracking; DEoptim provides its optimum and evaluation count.
   objective <- if (optimizer == "DEoptim") evaluate else function(x) {
     evaluations <<- evaluations + 1L
     value <- evaluate(x)
@@ -255,33 +253,9 @@ fit_phenology <- function(model, evaluation, lower = NULL, upper = NULL,
   if (any(free)) {
     if (optimizer == "DEoptim") {
       de_control <- do.call(DEoptim::DEoptim.control, control)
-      if (!is.null(de_control$cluster) || de_control$parallelType == "parallel") {
-        cl <- de_control$cluster
-        if (is.null(cl)) {
-          if (!requireNamespace("parallelly", quietly = TRUE))
-            stop("Install 'parallelly' or supply control$cluster for parallel DEoptim.", call. = FALSE)
-          cl <- parallel::makePSOCKcluster(parallelly::availableCores())
-          on.exit(parallel::stopCluster(cl), add = TRUE)
-        } else if (!inherits(cl, "cluster")) {
-          stop("control$cluster must be a parallel cluster object.", call. = FALSE)
-        }
-        initialize_worker <- function(paths, packages) {
-          .libPaths(paths)
-          for (package in packages) library(package, character.only = TRUE)
-          NULL
-        }
-        # Bootstrap library paths before a worker deserializes our namespace.
-        environment(initialize_worker) <- baseenv()
-        parallel::clusterCall(cl, initialize_worker, .libPaths(),
-                              unique(c("evalpheno", de_control$packages)))
-        if (!is.null(seed)) parallel::clusterSetRNGStream(cl, seed)
-        de_control$cluster <- cl
-        # A supplied cluster takes precedence. Keep lifecycle ownership here.
-        de_control$parallelType <- "none"
-      } else if (de_control$parallelType == "foreach") {
-        de_control$foreachArgs$.packages <- unique(c("evalpheno", de_control$packages,
-                                                    de_control$foreachArgs$.packages))
-      }
+      if (!identical(de_control$parallelType, "none") || !is.null(de_control$cluster))
+        stop("Parallel fitting is temporarily unavailable; use serial DEoptim controls (parallelType = 'none', cluster = NULL).",
+             call. = FALSE)
       optimizer_result <- DEoptim::DEoptim(objective, lower[free], upper[free], control = de_control)
       evaluations <- 1L + optimizer_result$optim$nfeval
       if (optimizer_result$optim$bestval < best_value) {
@@ -346,7 +320,7 @@ print.phenology_fit <- function(x, digits = max(3L, getOption("digits") - 3L), .
   invisible(x)
 }
 
-# Keep the worker closure separate from the fitter's tracking and cluster state.
+# Build the objective independently of the fitter's tracking state.
 .fit_objective <- function(parameters, free, lower, upper, model, evaluation, arguments) {
   force(parameters); force(free); force(lower); force(upper)
   force(model); force(evaluation); force(arguments)

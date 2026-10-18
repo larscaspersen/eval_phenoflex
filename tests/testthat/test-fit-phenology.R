@@ -104,6 +104,27 @@ test_that("DEoptim rejects time limits it does not support", {
                "DEoptim has no native time limit")
 })
 
+test_that("DEoptim fitting accepts only serial execution controls", {
+  x <- fit_example()
+  run <- function(control) fit_phenology(x$model, x$loss, x$lower, x$upper,
+    target = x$target, max_iterations = 1, control = control)
+  for (type in list("parallel", "foreach", "auto", 1, 2))
+    expect_error(run(list(parallelType = type)), "Parallel fitting is temporarily unavailable")
+  expect_error(run(list(cluster = structure(list(), class = "cluster"))),
+               "Parallel fitting is temporarily unavailable")
+  skip_if_not_installed("DEoptim")
+  # Optimizer controls also allow abbreviated argument names.
+  expect_error(run(list(parallelT = "parallel")), "Parallel fitting is temporarily unavailable")
+  expect_error(run(list(cl = structure(list(), class = "cluster"))),
+               "Parallel fitting is temporarily unavailable")
+  serial <- run(list(NP = 20, trace = FALSE))
+  for (type in list("none", 0, 0L)) {
+    fit <- run(list(parallelType = type, NP = 20, trace = FALSE))
+    expect_identical(fit$par, serial$par)
+    expect_identical(fit$value, serial$value)
+  }
+})
+
 test_that("fixed models and population specifications return fitted models", {
   model <- population_pheno_model(seed = 17)
   p <- model$model$parameters
@@ -220,7 +241,7 @@ test_that("bad bounds, starting points, limits and controls fail clearly", {
   expect_error(run(seed = -1), "seed")
   expect_error(run(control = list(3)), "named list")
   expect_error(run(control = list(trace = FALSE, trace = TRUE)), "duplicate")
-  expect_error(run(control = list(cluster = "invalid")), "parallel cluster object")
+  expect_error(run(control = list(cluster = "invalid")), "Parallel fitting is temporarily unavailable")
   expect_error(run(control = list(itermax = 0)), "control\\$itermax")
   expect_error(run(optimizer = "GenSA", control = list(maxit = 0)), "control\\$maxit")
 })
