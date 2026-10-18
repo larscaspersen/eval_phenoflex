@@ -63,5 +63,9 @@ rsconnect/
 /temp_data/
 /data/*
 !/data/cka_weather.rda
+!/data/phenoflex_parnames_kinetic.rda
+!/data/phenoflex_parnames_characteristic.rda
+!/data/phenoflex_parnames_old.rda
+!/data/phenoflex_parnames_new.rda
 /experimental/
 /development/

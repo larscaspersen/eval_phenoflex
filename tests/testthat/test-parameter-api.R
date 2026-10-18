@@ -6,9 +6,10 @@ test_that("parameter names retain the legacy vocabulary and data interface", {
   expect_identical(phenoflex_parnames_old[-(5:8)], phenoflex_parnames_new[-(5:8)])
   for (name in c("phenoflex_parnames_old", "phenoflex_parnames_new",
                  "phenoflex_parnames_kinetic", "phenoflex_parnames_characteristic")) {
-    env <- new.env()
-    utils::data(list = name, package = "evalpheno", envir = env)
-    expect_identical(env[[name]], get(name))
+    env <- new.env(parent = emptyenv())
+    expect_no_warning(utils::data(list = name, package = "evalpheno", envir = env))
+    expect_true(exists(name, envir = env, inherits = FALSE))
+    expect_identical(env[[name]], getExportedValue("evalpheno", name))
   }
 })
 

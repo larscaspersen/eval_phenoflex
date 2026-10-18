@@ -1,5 +1,8 @@
 # evalpheno 0.0.3.2
 
+* Include all four PhenoFlex parameter-name datasets in version control so
+  data() can load them from packages built on a fresh checkout, as documented.
+
 * Temporarily remove parallel fitting support and its automated worker tests
   following failures on R-hub. fit_phenology() now accepts only serial DEoptim
   execution controls. Remove the unused parallel fitting dependencies.
