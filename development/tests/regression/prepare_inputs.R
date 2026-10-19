@@ -1,13 +1,13 @@
 # Run from the package root. Uses the installed evalpheno selected by R_LIBS.
-source("tests/regression/cases.R")
-destination <- "tests/testthat/fixtures/weather-regression"
+source("development/tests/regression/cases.R")
+destination <- "development/tests/testthat/fixtures/weather-regression"
 dir.create(destination, recursive = TRUE, showWarnings = FALSE)
 path <- file.path(destination, "inputs.rds")
 if (file.exists(path) && !"--overwrite" %in% commandArgs(TRUE))
   stop("Frozen inputs exist. Use --overwrite only when deliberately replacing the fixtures.")
-coords <- read.csv("tests/stations.csv")
+coords <- read.csv("development/tests/stations.csv")
 ka <- new.env(); utils::data("KA_weather", package = "chillR", envir = ka)
-weather <- list(cka = read.csv("tests/cka.csv"), quillota = read.csv("tests/quillota.csv"),
+weather <- list(cka = read.csv("development/tests/cka.csv"), quillota = read.csv("development/tests/quillota.csv"),
                 chillR_KA = subset(ka$KA_weather, Year >= 2007 & Year <= 2009))
 latitude <- c(cka = coords$latitude[match("Klein-Altendorf", coords$station)],
               quillota = coords$latitude[match("Quillota", coords$station)],
@@ -61,7 +61,7 @@ write.csv(do.call(rbind, lapply(names(observations), function(station)
   data.frame(station, year = 2008:2009, cultivar_A = observations[[station]]$A,
              cultivar_B = observations[[station]]$B, observations[[station]]$stages[-1]))),
   file.path(destination, "synthetic_observations.csv"), row.names = FALSE)
-provenance <- c("tests/cka.csv", "tests/quillota.csv", "tests/stations.csv")
+provenance <- c("development/tests/cka.csv", "development/tests/quillota.csv", "development/tests/stations.csv")
 write.csv(data.frame(file = provenance, md5 = unname(tools::md5sum(provenance))),
           file.path(destination, "weather_sources.csv"), row.names = FALSE)
 cat("Prepared six frozen seasons in", path, "\n")

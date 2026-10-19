@@ -1,6 +1,6 @@
 # Run from package root against the installed candidate package selected by R_LIBS.
-source("tests/regression/cases.R")
-destination <- "tests/testthat/fixtures/weather-regression"
+source("development/tests/regression/cases.R")
+destination <- "development/tests/testthat/fixtures/weather-regression"
 cat("Testing evalpheno", as.character(packageVersion("evalpheno")), "from", find.package("evalpheno"), "\n")
 provenance <- read.csv(file.path(destination, "baseline_sources.csv"))
 stopifnot(identical(unname(tools::md5sum(file.path(destination, "inputs.rds"))),

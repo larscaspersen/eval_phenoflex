@@ -1,0 +1,6 @@
+"case_id","station","season","function_name","cultivar","stage","parameterization","output","element","status","value","expected","difference","passed"
+"three_stages","cka","2008+2009","eval_phenoflex_three_stages","","","kinetic","F",1,"finite",1135.51041666667,382975,-381839.489583333,FALSE
+"known_three_stage_index_error","cka","2008+2009","eval_phenoflex_three_stages","","","kinetic","raises_purrr_indexed_error",1,"finite",0,1,-1,FALSE
+"three_stages","quillota","2008+2009","eval_phenoflex_three_stages","","","kinetic","F",1,"finite",24.2916666666668,63475,-63450.7083333333,FALSE
+"three_stages","chillR_KA","2008+2009","eval_phenoflex_three_stages","","","kinetic","F",1,"finite",1135.51041666667,382975,-381839.489583333,FALSE
+"known_three_stage_index_error","chillR_KA","2008+2009","eval_phenoflex_three_stages","","","kinetic","raises_purrr_indexed_error",1,"finite",0,1,-1,FALSE

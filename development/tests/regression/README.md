@@ -19,24 +19,25 @@ Then **restart R** so an already loaded namespace or DLL cannot mask the new bui
 
 ```r
 .libPaths(c(normalizePath(".local-library"), .libPaths()))
-source("tests/regression/run_regression.R")
+source("development/tests/regression/run_regression.R")
 ```
 
 On PowerShell, with Rscript on PATH, the equivalent comparison command is:
 
 ```powershell
 $env:R_LIBS = Join-Path (Get-Location) '.local-library'
-Rscript tests/regression/run_regression.R
+Rscript development/tests/regression/run_regression.R
 ```
 
 The runner prints the package library it actually tests. It writes a comparison
 to `development/regression-results/comparison.csv` and fails on differences.
 Numerical tolerance is `1e-8 + 1e-10 * abs(expected)`. Missing values and output
-shapes must match. The test is also included in the usual testthat/package checks.
+shapes must match. The test is included in the full development test suite;
+package checks run only the small smoke suite in `tests/testthat/`.
 
 ## Saved results
 
-Under `tests/testthat/fixtures/weather-regression/`:
+Under `development/tests/testthat/fixtures/weather-regression/`:
 
 - `baseline.csv`: all 3,858 expected values.
 - `baseline_cka.csv`: Klein-Altendorf outputs.
@@ -96,7 +97,7 @@ negative Julian day instead of the hourly threshold-crossing row. This is now
 fixed: the chill check uses the first hourly budburst index, and a missing
 budburst yields the existing penalty safely.
 
-Independent correctness tests in `tests/testthat/test-three-stage-index.R`
+Independent correctness tests in `development/tests/testthat/test-three-stage-index.R`
 cover December/January, leap day, insufficient chill, missing budburst, and
 agreement with separately evaluated stage dates for all six weather seasons.
 Only five baseline values changed: three stage-objective values and the two
@@ -109,7 +110,7 @@ remains so the correction is directly comparable to the original snapshot.
 Sequential heat now uses the chill state after the current interval's update,
 matching the parallel kernel's timing. The interval reaching the chill requirement
 contributes its full heat increment. An independent analytic test in
-`tests/testthat/test-sequential-timing.R` covers threshold crossing, equality,
+`development/tests/testthat/test-sequential-timing.R` covers threshold crossing, equality,
 the final interval, insufficient chill and temperatures below the heat base.
 
 Only two saved values changed: the `fixed_sequential` objectives for CKA and
@@ -147,12 +148,12 @@ Only do this using a reviewed implementation that should define the new referenc
 
 ```powershell
 # Initial generation (already completed here):
-Rscript tests/regression/prepare_inputs.R
-Rscript tests/regression/generate_baseline.R
+Rscript development/tests/regression/prepare_inputs.R
+Rscript development/tests/regression/generate_baseline.R
 
 # Deliberate replacement; these commands otherwise refuse to overwrite files:
-Rscript tests/regression/prepare_inputs.R --overwrite
-Rscript tests/regression/generate_baseline.R --overwrite
+Rscript development/tests/regression/prepare_inputs.R --overwrite
+Rscript development/tests/regression/generate_baseline.R --overwrite
 ```
 
 Keep the frozen weather unless inputs intentionally change. For a reviewed model

@@ -68,4 +68,5 @@ rsconnect/
 !/data/phenoflex_parnames_old.rda
 !/data/phenoflex_parnames_new.rda
 /experimental/
-/development/
+/development/*
+!/development/tests/

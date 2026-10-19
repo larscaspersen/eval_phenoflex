@@ -1,0 +1,13 @@
+"station","season","model","old_bloom","new_bloom","max_x_change","max_y_change","max_z_change"
+"cka",2008,"parallel_model",85,85,0,0,0
+"cka",2008,"po_model",2267,2267,0,0,0
+"cka",2009,"parallel_model",61,61,0,0,0
+"cka",2009,"po_model",2322,2322,0,0,0
+"quillota",2008,"parallel_model",110,110,0,0,0
+"quillota",2008,"po_model",2079,2079,0,0,0
+"quillota",2009,"parallel_model",85,85,0,0,0
+"quillota",2009,"po_model",2269,2269,0,0,0
+"chillR_KA",2008,"parallel_model",85,85,0,0,0
+"chillR_KA",2008,"po_model",2267,2267,0,0,0
+"chillR_KA",2009,"parallel_model",61,61,0,0,0
+"chillR_KA",2009,"po_model",2322,2322,0,0,0

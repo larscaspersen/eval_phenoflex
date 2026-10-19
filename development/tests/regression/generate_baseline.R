@@ -1,6 +1,6 @@
 # Explicit one-time snapshot command. Never invoked by the regression test runner.
-source("tests/regression/cases.R")
-destination <- "tests/testthat/fixtures/weather-regression"
+source("development/tests/regression/cases.R")
+destination <- "development/tests/testthat/fixtures/weather-regression"
 baseline <- file.path(destination, "baseline.csv")
 if (file.exists(baseline) && !"--overwrite" %in% commandArgs(TRUE))
   stop("Baseline exists. Review changes before deliberately using --overwrite.")
@@ -14,7 +14,7 @@ write.csv(results, baseline, row.names = FALSE, na = "NA")
 for (station in unique(results$station))
   write.csv(results[results$station == station, ], file.path(destination, paste0("baseline_", station, ".csv")),
             row.names = FALSE, na = "NA")
-files <- c("tests/regression/cases.R", file.path(destination, "inputs.rds"),
+files <- c("development/tests/regression/cases.R", file.path(destination, "inputs.rds"),
            list.files("R", full.names = TRUE), list.files("src", pattern = "[.](cpp|h)$", full.names = TRUE))
 write.csv(data.frame(file = files, md5 = unname(tools::md5sum(files))),
           file.path(destination, "baseline_sources.csv"), row.names = FALSE)
